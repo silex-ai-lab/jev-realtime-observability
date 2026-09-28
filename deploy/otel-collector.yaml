@@ -1,0 +1,16 @@
+# Receives OTLP from agents and forwards spans to the app's OTLP/HTTP JSON endpoint (/v1/traces).
+# Spans without silex.event_id / silex.boundary are ignored by the app's normaliser.
+receivers:
+  otlp:
+    protocols:
+      http: { endpoint: 0.0.0.0:4318 }
+processors:
+  batch: {}
+exporters:
+  otlphttp/silex:
+    endpoint: http://app:8787
+    encoding: json
+    headers: { authorization: "Bearer ${env:SILEX_INGEST_KEY}" }
+service:
+  pipelines:
+    traces: { receivers: [otlp], processors: [batch], exporters: [otlphttp/silex] }

@@ -1,0 +1,35 @@
+[
+ {
+  "tenant_id": "t-demo",
+  "tx_id": "tx-cb2cfce4-aca0-4cf0-a14d-3526020e5b7f",
+  "operation_id": "op-17a9dadc-a179-448d-8261-017ffa5623e1",
+  "invoice_id": "INV-7731",
+  "amount_usd": 8420,
+  "payee": "Pacific Paper Co.",
+  "account_ref": "ACCT-118-01",
+  "status": "posted",
+  "created_at": "2026-09-28T23:28:20.189Z"
+ },
+ {
+  "tenant_id": "t-demo",
+  "tx_id": "tx-4c54216e-ebbb-421b-8a4a-8080b28c84ff",
+  "operation_id": "op-fe0309c3-594e-4343-9372-c61044a50670",
+  "invoice_id": "INV-8102",
+  "amount_usd": 12900,
+  "payee": "Harbor Freight Logistics LLC",
+  "account_ref": "ACCT-204-07",
+  "status": "posted",
+  "created_at": "2026-09-28T23:28:20.215Z"
+ },
+ {
+  "tenant_id": "t-demo",
+  "tx_id": "tx-46bb45d7-1caa-418b-b28b-ab8ae8bfed6a",
+  "operation_id": "op-12abedb6-8cb3-4da6-a046-427908cb1dda",
+  "invoice_id": "INV-8160",
+  "amount_usd": 4300,
+  "payee": "Pacific Paper Co.",
+  "account_ref": "ACCT-118-01",
+  "status": "posted",
+  "created_at": "2026-09-28T23:28:20.281Z"
+ }
+]

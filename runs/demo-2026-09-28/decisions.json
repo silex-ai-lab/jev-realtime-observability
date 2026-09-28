@@ -1,0 +1,2113 @@
+[
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.009666999999922155,
+    "policy_ms": 0.15554099999997106,
+    "snapshot_ms": 0.6868749999999864,
+    "judge_http_rtt_ms": null,
+    "ingest_to_signal_ms": 3
+   },
+   "event_id": "ev-1734ece9-f976-468e-b1a4-29c394cbb4f5",
+   "semantic": {
+    "hits": [],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:20.170Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": null,
+   "decision_id": "dec-2175026f-8c84-4885-a204-58205d6de268",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-6853b41d-74cb-430b-aaec-c41a63676e12",
+   "rule_results": [
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-56418278-e154-4648-b11d-097346c1dbd2",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.08933300000001054,
+    "policy_ms": 0.0415419999999358,
+    "snapshot_ms": 3.315958999999907,
+    "judge_http_rtt_ms": 206.43879200000003,
+    "ingest_to_signal_ms": 214
+   },
+   "event_id": "ev-4ed191d8-8cf5-4762-9074-831302a2f3eb",
+   "semantic": {
+    "hits": [
+     {
+      "band": "below",
+      "value": 0.4175,
+      "question_id": "goal_deviation"
+     }
+    ],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:20.371Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": "allow",
+   "decision_id": "dec-85f82795-82fe-47fb-869d-3d942d936c5f",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-f998bc34-0682-4aef-a3a8-b5fef9b5ce10",
+   "rule_results": [
+    {
+     "reason": "tool present in the tool registry",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_known"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "not a payment action (impact read)",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "not a payment action (impact read)",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-82ab4ace-b606-4e1b-b902-141574774fb3",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.00933300000019699,
+    "policy_ms": 0.018667000000050393,
+    "snapshot_ms": 1.0835419999998521,
+    "judge_http_rtt_ms": null,
+    "ingest_to_signal_ms": 192
+   },
+   "event_id": "ev-331cc699-0623-4229-bc52-05f80a21e702",
+   "semantic": {
+    "hits": [],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:20.375Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": null,
+   "decision_id": "dec-2f2ba2e1-9640-4180-a9df-e6c5d35dda23",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-5af14309-d7ba-42e4-9b51-3eaee3985ac4",
+   "rule_results": [
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-c2cadfb6-423d-40ce-9486-af37f1324836",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.008458000000018728,
+    "policy_ms": 0.02945799999997689,
+    "snapshot_ms": 0.6249589999999898,
+    "judge_http_rtt_ms": 417.0671249999999,
+    "ingest_to_signal_ms": 420
+   },
+   "event_id": "ev-a4fd0f77-9e9d-4a12-8a3c-a616e6335313",
+   "semantic": {
+    "hits": [
+     {
+      "band": "below",
+      "value": 0.4922,
+      "question_id": "goal_deviation"
+     }
+    ],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:20.597Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": "allow",
+   "decision_id": "dec-e7d3a681-391a-4f56-8e6c-7e42d28eb3db",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-27b7e275-3dd3-4787-98a9-ce81086d8bfc",
+   "rule_results": [
+    {
+     "reason": "tool present in the tool registry",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_known"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "not a payment action (impact read)",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "not a payment action (impact read)",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-48ca77db-d9e4-432d-9a8b-681be46e6a41",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.004415999999991982,
+    "policy_ms": 0.01558300000010604,
+    "snapshot_ms": 0.7327500000001237,
+    "judge_http_rtt_ms": null,
+    "ingest_to_signal_ms": 411
+   },
+   "event_id": "ev-9c156f30-d26d-4885-a5b6-3db53fd3e1a7",
+   "semantic": {
+    "hits": [],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:20.601Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": null,
+   "decision_id": "dec-2c530e8b-f883-4273-9a89-c5edcf4a1dd5",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-43584050-a081-4724-9ffc-9a70b6cf975d",
+   "rule_results": [
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-051a8c4a-4940-4830-bbb2-7f7a379cc116",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.009332999999969616,
+    "policy_ms": 0.04362500000002001,
+    "snapshot_ms": 2.126708000000008,
+    "judge_http_rtt_ms": 796.0675000000001,
+    "ingest_to_signal_ms": 990
+   },
+   "event_id": "ev-e3b3f7d4-760f-4d0b-a7c2-21ab9ac9dd22",
+   "semantic": {
+    "hits": [
+     {
+      "band": "below",
+      "value": 0.2833,
+      "question_id": "goal_deviation"
+     },
+     {
+      "band": "below",
+      "value": 0.222,
+      "question_id": "sensitive_data_transfer"
+     },
+     {
+      "band": "below",
+      "value": 0.0256,
+      "question_id": "payee_relation"
+     }
+    ],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:21.176Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": "allow",
+   "decision_id": "dec-368f2783-1aa3-410a-af7d-178132002037",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-3d7d797f-edf6-43fa-ac62-74a6bba8d95a",
+   "rule_results": [
+    {
+     "reason": "tool present in the tool registry",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_known"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "amount 8420 within the approval limit 25000",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:amount_usd",
+      "facts:approval_limit_usd"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "destination domain bank.northwind.example is allowlisted",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain",
+      "facts:domain_allowed"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "payment has an approved approval",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:approval_status"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-d40de1a8-951d-4cf1-9b44-fdd314b8e4f1",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.005707999999913227,
+    "policy_ms": 0.03808300000036979,
+    "snapshot_ms": 0.6881670000000213,
+    "judge_http_rtt_ms": 952.445125,
+    "ingest_to_signal_ms": 1364
+   },
+   "event_id": "ev-06b0d2fd-9eb5-43c4-8be1-34e6feea39ed",
+   "semantic": {
+    "hits": [
+     {
+      "band": "below",
+      "value": 0.0234,
+      "question_id": "claim_support"
+     }
+    ],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:21.557Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": null,
+   "decision_id": "dec-0f953534-73cc-4982-8fe9-9c0367eb9ed1",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-b3b8375c-36bb-4ebc-a366-da4c058d6a4e",
+   "rule_results": [
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-e36a96bb-bd1e-41de-ad1a-9f6c5d808661",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.004500000000007276,
+    "policy_ms": 0.021957999999813183,
+    "snapshot_ms": 0.6376660000000811,
+    "judge_http_rtt_ms": null,
+    "ingest_to_signal_ms": 1351
+   },
+   "event_id": "ev-ae0eb487-6f7e-4217-a99a-d338d953e4e3",
+   "semantic": {
+    "hits": [],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:21.560Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": null,
+   "decision_id": "dec-2f00a2bb-09af-49a0-85a9-055661b048f7",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-0adb4f78-569a-4b04-8934-a87b1d9f4bb7",
+   "rule_results": [
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-94949a98-265d-4eb8-8e52-2d5923f4c647",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.0040829999998095445,
+    "policy_ms": 0.021999999999934516,
+    "snapshot_ms": 0.733208999999988,
+    "judge_http_rtt_ms": 549.9057090000001,
+    "ingest_to_signal_ms": 1525
+   },
+   "event_id": "ev-742de9a1-f8c6-40ed-9ed5-651ebab1bb1b",
+   "semantic": {
+    "hits": [
+     {
+      "band": "below",
+      "value": 0.4297,
+      "question_id": "goal_deviation"
+     }
+    ],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:21.730Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": "allow",
+   "decision_id": "dec-df0da7e8-7c1f-4b6a-94c7-9e30d8cbd10a",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-a90f9c7a-8138-444b-8609-f074ca133549",
+   "rule_results": [
+    {
+     "reason": "tool present in the tool registry",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_known"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "not a payment action (impact read)",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "not a payment action (impact read)",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-d08d71ce-1909-411b-aaa9-bdc906ae0137",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.0037919999999758147,
+    "policy_ms": 0.014416999999866675,
+    "snapshot_ms": 0.5667909999997391,
+    "judge_http_rtt_ms": null,
+    "ingest_to_signal_ms": 1517
+   },
+   "event_id": "ev-c648bb9f-9f3c-40fc-aab1-c2bc12d12f85",
+   "semantic": {
+    "hits": [],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:21.733Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": null,
+   "decision_id": "dec-d9a3de81-f31a-414c-8e80-7bbbdfdbd59b",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-7ee472d5-4361-4b0e-876b-f29a84eb74b4",
+   "rule_results": [
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-dbf222f5-a9c4-4e09-b605-41dfa8e1dbb7",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [
+    "amount_limit: amount 48000 exceeds the approval limit 25000"
+   ],
+   "timings": {
+    "rules_ms": 0.003165999999964697,
+    "policy_ms": 0.0470420000001468,
+    "snapshot_ms": 1.082999999999629,
+    "judge_http_rtt_ms": null,
+    "ingest_to_signal_ms": 1511
+   },
+   "event_id": "ev-0528ea04-f6f8-4e96-82d8-bb6871731396",
+   "semantic": {
+    "hits": [],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:21.736Z",
+   "decided_by": "rule",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": "deny",
+   "decision_id": "dec-c15ffc4f-9c1e-4d89-846d-d93e89bedaaa",
+   "recommended": "BLOCK",
+   "snapshot_id": "snap-1214c3aa-5a00-4c9d-aab2-612ea034f195",
+   "rule_results": [
+    {
+     "reason": "tool present in the tool registry",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_known"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "amount 48000 exceeds the approval limit 25000",
+     "rule_id": "amount_limit",
+     "verdict": "BLOCK",
+     "evidence_refs": [
+      "facts:amount_usd",
+      "facts:approval_limit_usd"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "destination domain bank.northwind.example is allowlisted",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain",
+      "facts:domain_allowed"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "payment has an approved approval",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:approval_status"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": null,
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.0015839999996387633,
+    "policy_ms": 0.003916000000117492,
+    "snapshot_ms": 0.42787500000031287,
+    "judge_http_rtt_ms": null,
+    "ingest_to_signal_ms": 1509
+   },
+   "event_id": "ev-942cde74-2612-4ac1-bd49-4ceafeb4e35b",
+   "semantic": {
+    "hits": [],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:21.738Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": null,
+   "decision_id": "dec-95e30d4c-da5a-438f-830e-29a3a8062ae2",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-187a5418-b4e1-4227-b87a-6f79f92bc872",
+   "rule_results": [
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-ea750a14-9628-475d-8048-68e8ee6e89b1",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [
+    "approval_evidence: payment without an approved approval (approval_status=missing)"
+   ],
+   "timings": {
+    "rules_ms": 0.002708999999867956,
+    "policy_ms": 0.007000000000061846,
+    "snapshot_ms": 1.122957999999926,
+    "judge_http_rtt_ms": null,
+    "ingest_to_signal_ms": 1504
+   },
+   "event_id": "ev-238bd5d3-837c-4ab7-b251-8adda62c449b",
+   "semantic": {
+    "hits": [],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:21.741Z",
+   "decided_by": "rule",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": "hold_for_approval",
+   "decision_id": "dec-2afa07f6-b8ca-4d0a-996c-fbb5437616d6",
+   "recommended": "HOLD",
+   "snapshot_id": "snap-03d8468a-013d-4e0d-9bf5-594aaf255e1d",
+   "rule_results": [
+    {
+     "reason": "tool present in the tool registry",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_known"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "amount 9800 within the approval limit 25000",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:amount_usd",
+      "facts:approval_limit_usd"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "destination domain bank.northwind.example is allowlisted",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain",
+      "facts:domain_allowed"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "payment without an approved approval (approval_status=missing)",
+     "rule_id": "approval_evidence",
+     "verdict": "HOLD",
+     "evidence_refs": [
+      "facts:approval_status"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": null,
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.0012500000002546585,
+    "policy_ms": 0.00491699999975026,
+    "snapshot_ms": 0.47258400000009715,
+    "judge_http_rtt_ms": null,
+    "ingest_to_signal_ms": 1503
+   },
+   "event_id": "ev-65fe55a8-9de6-4b4a-bc68-11fb8475cd15",
+   "semantic": {
+    "hits": [],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:21.743Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": null,
+   "decision_id": "dec-b7f6ddd6-05bb-4ef3-8be2-3ee45a25aded",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-bc4c432f-52b2-4cac-91a4-636655c1454c",
+   "rule_results": [
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-e67e12ab-e5f3-47f8-84c6-25dd2e3c62e0",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.0049579999999878055,
+    "policy_ms": 0.01945800000021336,
+    "snapshot_ms": 1.3601669999998194,
+    "judge_http_rtt_ms": 742.4945829999997,
+    "ingest_to_signal_ms": 2094
+   },
+   "event_id": "ev-050ad401-e4c2-48d6-a9e3-c0aa45a400d1",
+   "semantic": {
+    "hits": [
+     {
+      "band": "below",
+      "value": 0.4363,
+      "question_id": "goal_deviation"
+     },
+     {
+      "band": "below",
+      "value": 0.312,
+      "question_id": "sensitive_data_transfer"
+     },
+     {
+      "band": "below",
+      "value": 0.4453,
+      "question_id": "payee_relation"
+     }
+    ],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:22.306Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": "allow",
+   "decision_id": "dec-85fb99dd-9ae4-4143-80d4-d670fb118164",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-0f804185-e954-4676-8a0d-cc43f8fcf5d8",
+   "rule_results": [
+    {
+     "reason": "tool present in the tool registry",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_known"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "amount 12900 within the approval limit 25000",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:amount_usd",
+      "facts:approval_limit_usd"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "destination domain bank.northwind.example is allowlisted",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain",
+      "facts:domain_allowed"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "payment has an approved approval",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:approval_status"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-1427d0be-52fa-44a5-a1f7-9f690cc0f8c0",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [
+    "domain_allowlist: destination domain northwind-remit.example is not in the allowlist"
+   ],
+   "timings": {
+    "rules_ms": 0.003875000000334694,
+    "policy_ms": 0.004708999999820662,
+    "snapshot_ms": 0.5595419999999649,
+    "judge_http_rtt_ms": null,
+    "ingest_to_signal_ms": 2053
+   },
+   "event_id": "ev-50b923e4-d2b4-4410-be7d-a61ec0cf2008",
+   "semantic": {
+    "hits": [],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:22.309Z",
+   "decided_by": "rule",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": "deny",
+   "decision_id": "dec-31986faa-1019-4c7d-beea-bd98edf23311",
+   "recommended": "BLOCK",
+   "snapshot_id": "snap-f49be5df-ed9d-46e5-a0c8-18d00ec2c651",
+   "rule_results": [
+    {
+     "reason": "tool present in the tool registry",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_known"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "not a payment action (impact write)",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "destination domain northwind-remit.example is not in the allowlist",
+     "rule_id": "domain_allowlist",
+     "verdict": "BLOCK",
+     "evidence_refs": [
+      "facts:dest_domain",
+      "facts:domain_allowed"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "not a payment action (impact write)",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": null,
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.0018749999999272404,
+    "policy_ms": 0.006750000000010914,
+    "snapshot_ms": 0.45895800000016607,
+    "judge_http_rtt_ms": null,
+    "ingest_to_signal_ms": 2049
+   },
+   "event_id": "ev-d3a0dba1-a5cc-4e4f-a9ea-7586ace6ffdb",
+   "semantic": {
+    "hits": [],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:22.311Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": null,
+   "decision_id": "dec-377e031a-185a-499d-8754-04308af078e2",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-34579d8b-bb54-4c9c-8479-ea276a020fa6",
+   "rule_results": [
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-bfcbfbf9-7a80-4389-b191-3b9a765ad077",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [
+    "required semantic signal unavailable (judge timeout); not treated as low risk"
+   ],
+   "timings": {
+    "rules_ms": 0.0017920000000231084,
+    "policy_ms": 0.017083999999613297,
+    "snapshot_ms": 0.4442500000000109,
+    "judge_http_rtt_ms": 3.2214590000003227,
+    "ingest_to_signal_ms": 2046
+   },
+   "event_id": "ev-5fc78894-16ba-48cc-9646-4da02d7f77f2",
+   "semantic": {
+    "hits": [],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:22.317Z",
+   "decided_by": "judge_unavailable",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": "allow_and_alert",
+   "decision_id": "dec-7515d273-4823-42eb-8c8d-4048ca66ea2d",
+   "recommended": "ALERT",
+   "snapshot_id": "snap-f1f3571e-1b8b-4f7e-ac53-6b987c76b9b1",
+   "rule_results": [
+    {
+     "reason": "tool present in the tool registry",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_known"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "not a payment action (impact read)",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "not a payment action (impact read)",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [
+    "judge timeout"
+   ],
+   "evaluation_id": "eval-944f9cf8-4972-4bd6-a0ce-d304b24cb65d",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.0032499999997526174,
+    "policy_ms": 0.003957999999784079,
+    "snapshot_ms": 0.5132920000000922,
+    "judge_http_rtt_ms": null,
+    "ingest_to_signal_ms": 2045
+   },
+   "event_id": "ev-b4cb4565-bd68-454d-8d69-4e688700082e",
+   "semantic": {
+    "hits": [],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:22.319Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": null,
+   "decision_id": "dec-8fd58c23-19f2-42f6-bed2-220224a0711e",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-1d7ad418-d7f6-4a52-9137-0c2d3ba8c87c",
+   "rule_results": [
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-06b73a06-327e-4fa4-bd78-52e191bb73da",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [
+    "required semantic signal unavailable (judge timeout); not treated as low risk"
+   ],
+   "timings": {
+    "rules_ms": 0.003083000000060565,
+    "policy_ms": 0.008916999999655673,
+    "snapshot_ms": 1.107542000000194,
+    "judge_http_rtt_ms": 0.7618750000001455,
+    "ingest_to_signal_ms": 2045
+   },
+   "event_id": "ev-45e77f91-7cbf-4b89-a58b-65df663ba6a2",
+   "semantic": {
+    "hits": [],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:22.323Z",
+   "decided_by": "judge_unavailable",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": "hold_for_approval",
+   "decision_id": "dec-c42b8a76-bd46-4732-ac14-88d09754414d",
+   "recommended": "HOLD",
+   "snapshot_id": "snap-4a07643b-a15b-4ba2-aaf0-55cf99b413c8",
+   "rule_results": [
+    {
+     "reason": "tool present in the tool registry",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_known"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "amount 4300 within the approval limit 25000",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:amount_usd",
+      "facts:approval_limit_usd"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "destination domain bank.northwind.example is allowlisted",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain",
+      "facts:domain_allowed"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "payment has an approved approval",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:approval_status"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [
+    "judge timeout"
+   ],
+   "evaluation_id": "eval-5f2392af-2449-46d6-ac0e-62def50c56b6",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.002084000000195374,
+    "policy_ms": 0.004083000000264292,
+    "snapshot_ms": 0.4707499999999527,
+    "judge_http_rtt_ms": null,
+    "ingest_to_signal_ms": 2043
+   },
+   "event_id": "ev-99601f16-c75d-42f5-9007-dc5c63337692",
+   "semantic": {
+    "hits": [],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:22.325Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": null,
+   "decision_id": "dec-02513115-1e1a-43f9-959b-b50e375ef4c2",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-d2ec996d-bfc9-4872-a5ed-8dc24dcc576b",
+   "rule_results": [
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-e8c4460c-707b-4dbc-a2ca-2a1a2ff317a8",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ },
+ {
+  "body": {
+   "reasons": [],
+   "timings": {
+    "rules_ms": 0.002207999999882304,
+    "policy_ms": 0.017457999999805907,
+    "snapshot_ms": 1.1144170000002305,
+    "judge_http_rtt_ms": 801.7163329999998,
+    "ingest_to_signal_ms": 2296
+   },
+   "event_id": "ev-69b881ec-4f39-4083-be54-b9e1c8f1837f",
+   "semantic": {
+    "hits": [
+     {
+      "band": "below",
+      "value": 0.3777,
+      "question_id": "instruction_override"
+     }
+    ],
+    "calibrated": false
+   },
+   "tenant_id": "t-demo",
+   "created_at": "2026-09-28T23:28:22.548Z",
+   "decided_by": "default",
+   "provenance": {
+    "source_mode": "live_sandbox_shadow",
+    "judge_source": "kev-local:jaredpalmer/kev-4b",
+    "enforcement_mode": "shadow",
+    "tool_environment": "sandbox"
+   },
+   "would_have": "allow",
+   "decision_id": "dec-16223601-3360-40d8-9ce8-f07b96443132",
+   "recommended": "NO_CONFIGURED_RISK",
+   "snapshot_id": "snap-4d5f23ff-878c-4b50-b032-15d6f5843264",
+   "rule_results": [
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "unknown_tool",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "registry.tools"
+    },
+    {
+     "reason": "state is fresh",
+     "rule_id": "stale_state",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:snapshot_age_ms",
+      "facts:stale_after_ms"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "prior failures under the repeat-failure limit",
+     "rule_id": "repeat_failure",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:prior_tool_failures",
+      "facts:repeat_failure_n"
+     ],
+     "authoritative_source": "sandbox.events"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "amount_limit",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no destination domain to check",
+     "rule_id": "domain_allowlist",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:dest_domain"
+     ],
+     "authoritative_source": "sandbox.tenant_policy"
+    },
+    {
+     "reason": "no candidate action to check",
+     "rule_id": "approval_evidence",
+     "verdict": "PASS",
+     "evidence_refs": [
+      "facts:tool_impact"
+     ],
+     "authoritative_source": "sandbox.erp.approvals"
+    }
+   ],
+   "coverage_gaps": [],
+   "evaluation_id": "eval-b8a9f826-5d3c-4a04-a4f3-053859157e4d",
+   "policy_version": "policy-a1",
+   "enforced_action": null
+  }
+ }
+]

@@ -1,0 +1,42 @@
+{
+ "judge": {
+  "backend": "kev-local",
+  "run": "jaredpalmer/kev-4b",
+  "base": "Qwen/Qwen3.5-4B-Base",
+  "revision": null,
+  "temperature": 2.406050072164233,
+  "runtime": "mlx/bfloat16/mps"
+ },
+ "runs": [
+  {
+   "scenario": "S1",
+   "run_id": "run-s1-2c440267",
+   "errors": []
+  },
+  {
+   "scenario": "S2",
+   "run_id": "run-s2-2c43202f",
+   "errors": []
+  },
+  {
+   "scenario": "S3",
+   "run_id": "run-s3-9502426c",
+   "errors": []
+  },
+  {
+   "scenario": "S4",
+   "run_id": "run-s4-5c3c4d7a",
+   "errors": []
+  },
+  {
+   "scenario": "S6",
+   "run_id": "run-s6-287f2cc1",
+   "errors": []
+  },
+  {
+   "scenario": "F1",
+   "run_id": "run-f1-78104cf6",
+   "errors": []
+  }
+ ]
+}

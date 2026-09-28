@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Real-time Agent Risk Signals · Silex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header class="jv-top">
+  <div class="jv-top-row">
+    <span class="jv-brand">SILEX <small>Real-time Agent Risk Signals · Jev-driven decision plane</small></span>
+    <span class="jv-badge" data-simulated-badge title="No real Jev or LLM calls. The judge is a scripted simulator; latencies are simulated against the report's POC budget; all data is fictional.">SIMULATED · scripted judge, simulated latency, fictional tenant</span>
+    <a class="jv-back" href="../index.html">← Live console</a>
+  </div>
+  <nav class="jv-tabs" role="tablist">
+    <button role="tab" data-tab="live" aria-selected="true">Live</button>
+    <button role="tab" data-tab="replay" aria-selected="false">Replay</button>
+    <button role="tab" data-tab="studio" aria-selected="false">Policy Studio</button>
+    <button role="tab" data-tab="about" aria-selected="false">About &amp; evidence</button>
+  </nav>
+</header>
+
+<main>
+  <!-- LIVE -->
+  <section data-panel="live" role="tabpanel">
+    <p class="jv-lede">Not another trace viewer: a <b>state → action → outcome</b> control loop for an AP / Procurement agent.
+      Every span at a trust boundary goes <b>hard rules → Jev battery → policy</b>; code owns the thresholds and the action,
+      and execution stays with the customer's gateway. Click any row to inspect its decision.</p>
+
+    <div class="jv-kpis" id="kpis"></div>
+
+    <div class="jv-controls">
+      <div class="grp">
+        <button class="btn primary" data-play aria-pressed="false">▶ Play</button>
+        <button class="btn" data-step title="Route the next span">Step</button>
+        <button class="btn" data-speed="1" aria-pressed="true">1×</button>
+        <button class="btn" data-speed="4" aria-pressed="false">4×</button>
+        <span class="jv-clock" id="clock">t+0:00.0</span>
+      </div>
+      <span class="sep"></span>
+      <div class="grp" aria-label="Inject a scenario">
+        <label>Inject</label>
+        <button class="btn" data-inject="S1" title="Normal payment">S1 normal</button>
+        <button class="btn" data-inject="S2" title="Invoice vendor ≠ account holder">S2 payee</button>
+        <button class="btn" data-inject="S3" title="Amount over approval limit">S3 over-limit</button>
+        <button class="btn" data-inject="S4" title="No approval evidence">S4 no approval</button>
+        <button class="btn" data-inject="S5" title="200 OK but ERP not posted">S5 read-back</button>
+        <button class="btn" data-inject="S6" title="Injected instruction in an invoice note">S6 injection</button>
+        <button class="btn" data-inject="F1" title="Judge timeout on a lookup and a payment">F1 timeout</button>
+      </div>
+      <span class="sep"></span>
+      <div class="grp">
+        <label for="fault">Judge fault</label>
+        <select class="btn" id="fault" data-fault>
+          <option value="">none (L0)</option>
+          <option value="rtt_spike">RTT spike (L1 · may time out → L2)</option>
+          <option value="timeout">timeout (L2)</option>
+          <option value="down">Jev down (L2)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="jv-live">
+      <div class="card">
+        <header>
+          <h2 class="grow">Live trace stream</h2>
+          <select class="btn" id="f-boundary" aria-label="Filter by boundary">
+            <option value="">all boundaries</option>
+            <option value="pre_input">pre_input</option>
+            <option value="post_generation">post_generation</option>
+            <option value="pre_tool">pre_tool</option>
+            <option value="post_tool">post_tool</option>
+          </select>
+          <select class="btn" id="f-decision" aria-label="Filter by verdict">
+            <option value="">all verdicts</option>
+            <option value="nonallow">not ALLOW</option>
+            <option>ALLOW</option><option>REVIEW</option><option>HOLD</option><option>BLOCK</option><option>ALERT</option><option>STOP</option>
+          </select>
+          <select class="btn" id="f-agent" aria-label="Filter by agent">
+            <option value="">all agents</option>
+            <option value="ap-agent">ap-agent</option>
+          </select>
+          <select class="btn" id="f-risk" aria-label="Filter by risk">
+            <option value="">any risk</option>
+            <option value="high">risk high</option><option value="medium">risk medium</option><option value="low">risk low</option>
+          </select>
+          <label class="jv-meta"><input type="checkbox" id="f-scen"> scenarios only</label>
+        </header>
+        <div class="jv-stream" id="stream" aria-live="polite"></div>
+      </div>
+
+      <aside class="card jv-insp">
+        <header><h2 class="grow">Decision inspector</h2><span class="chip sim">judge simulated</span></header>
+        <div class="jv-insp-body" id="inspector" data-inspector>
+          <p class="jv-empty">Select a span, or press Play.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- REPLAY -->
+  <section data-panel="replay" role="tabpanel" hidden>
+    <p class="jv-lede">Re-run one logged span under different thresholds. The simulated judge answers are keyed by span, so only the
+      <b>policy</b> changes between the two runs. The report's test: <b>a threshold changes semantic routing only; it can never bypass the
+      amount limit, approval evidence or the allowlist.</b></p>
+    <div class="two">
+      <div class="card pad">
+        <h3 style="margin-top:0">Span</h3>
+        <select class="btn" data-replay-span id="replay-span" style="width:100%"></select>
+        <h3>Thresholds (risk value per question)</h3>
+        <div class="thr" id="replay-thr"></div>
+        <p class="jv-meta" id="replay-err" data-policy-error></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn primary" data-replay-run>Re-run with these thresholds</button>
+          <button class="btn" id="replay-sweep">Sweep every threshold</button>
+          <button class="btn" id="replay-reset">Reset to live policy</button>
+        </div>
+      </div>
+      <div class="card pad">
+        <div class="cmp">
+          <div data-replay-before id="replay-before"><span class="jv-meta">Before</span></div>
+          <div data-replay-after id="replay-after"><span class="jv-meta">After</span></div>
+        </div>
+        <p class="note info" data-replay-note id="replay-note">Pick a span and re-run.</p>
+        <div id="replay-sweep-out"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STUDIO -->
+  <section data-panel="studio" role="tabpanel" hidden>
+    <p class="jv-lede">The policy is code: questions, thresholds, per-tool mode and failure semantics. Every applied edit is a new
+      policy version, and the live stream records which version decided each span. Hard-rule constants (limit, allowlist) are not here:
+      <b>no policy edit reaches them</b>. Edits live in this tab only and reset on reload.</p>
+    <div class="two">
+      <div class="card pad">
+        <h3 style="margin-top:0">Live policy <span class="chip by" data-policy-version id="studio-version"></span></h3>
+        <div class="thr" id="studio-thr"></div>
+        <h3>Tools · mode and failure semantics</h3>
+        <div class="tbl-wrap"><table class="tbl" id="studio-tools"></table></div>
+        <p class="jv-meta" data-policy-error id="studio-err"></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="btn" id="studio-revert">Revert to policy-v1</button>
+        </div>
+        <h3>Diff vs policy-v1</h3>
+        <div id="studio-diff" class="mono jv-meta">No changes.</div>
+      </div>
+      <div class="card pad">
+        <h3 style="margin-top:0">Judgment battery · one call, atomic questions</h3>
+        <div class="tbl-wrap"><table class="tbl" id="studio-battery"></table></div>
+        <h3>Hard rules (code, not policy)</h3>
+        <div class="tbl-wrap"><table class="tbl" id="studio-rules"></table></div>
+        <p class="note warn">Calibration metrics (ECE, Brier, PR-AUC) need labelled real traffic: two independent reviewers on 100–300 frozen traces
+          (report p.10 protocol). None is computed here.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section data-panel="about" role="tabpanel" hidden>
+    <div class="two">
+      <div class="card pad">
+        <h3 style="margin-top:0">What is simulated</h3>
+        <ul>
+          <li><b>The judge.</b> No Jev (or any model) is called. <code>jev-sim</code> derives each probability from State Engine features
+            (payee-name similarity, destination allowlist, injection markers, sensitive fields…) plus small seeded jitter.
+            The Inspector lists the features behind every answer.</li>
+          <li><b>Latency.</b> Drawn per span from the report's POC budget (p.9): rules 5–15 ms, serialise/network 30–100 ms,
+            Jev 100–350 ms, policy 5–20 ms. The slow LLM path uses 1.66–2.83 s, the range of the report's external experiments (p.4).
+            Not measured, not an SLA.</li>
+          <li><b>Cost.</b> Jev $/1k uses the vendor list price quoted in the report ($0.042 per M input tokens, output free) with simulated
+            token counts. No LLM price is sourced, so none is shown.</li>
+          <li><b>KPIs</b> are computed from this page's own decision log. False-block rate and P0 recall are against the demo author's
+            scenario labels: <b>not a benchmark</b> (the report: 20 red-team samples cannot prove a 90% catch rate).</li>
+          <li><b>Execution</b> is the customer's. The action column is what a customer gateway would receive; nothing is executed.</li>
+          <li><b>Tenant, vendors, invoices, domains</b> are fictional.</li>
+        </ul>
+        <h3>Architecture shown (report p.6, p.13)</h3>
+        <div class="arch">
+          <div><b>P0 · hard rules</b>amount limit, approval evidence, allowlist, stale state, read-back. Veto; Jev cannot override.</div>
+          <div><b>P1 · Jev battery</b>one call, atomic Noul / Choice / Score questions, full distributions.</div>
+          <div><b>Policy (code)</b>three bands ALLOW / REVIEW / BLOCK per question, margin and confidence floors, per-tool Monitor / Gate.</div>
+          <div><b>P2 · slow path</b>LLM or human for rationale, async; never changes the decision.</div>
+          <div><b>Fallback ladder</b>L1 reduced battery · L2 hard rules + fail open/closed · L3 stop + human. No answer ≠ safe.</div>
+        </div>
+      </div>
+      <div class="card pad">
+        <h3 style="margin-top:0">Evidence from the report (third-party, not from this demo)</h3>
+        <ul class="ev" id="evidence">
+          <li>Arize, RAGTruth / SummEval: Jev about <b>141 ms</b> vs over 3 s for Opus 5 across 23,325 judgments; <b>87%</b> hallucination-detection
+            accuracy after threshold tuning, level with Opus 5 (76% at the default 0.5 threshold). [9]
+            <span class="cav">One public dataset and rubric; does not transfer to your traffic.</span></li>
+          <li>OpenRouter: 88 closed-rubric faithfulness samples, 95.5% agreement with labels vs 94.3% for the LLM; Jev Brier 0.043. [4]
+            <span class="cav">Small sample; calibration does not transfer.</span></li>
+          <li>Arize live guardrail demo: 5 checks in 0.7 s vs 9.2 s, same verdicts on two attack sequences. [5]
+            <span class="cav">A live demo with unfrozen inputs, not a controlled accuracy benchmark.</span></li>
+          <li>LangChain: 5 fixed agent runs × 100 repeats, 0.44 s mean, far lower score variance. [2]
+            <span class="cav">Shows repeatability, not generalisation; one human reviewer.</span></li>
+          <li>AI/ML API, 900 independent samples: Jev weaker than large LLMs on open-ended answer quality. [6]</li>
+          <li>Vendor: 70–500 ms, $0.042 per M input tokens, output free. [7][12]
+            <span class="cav">Vendor disclosure, not a production p95 SLA.</span></li>
+        </ul>
+        <h3>The report's POC gates (hypotheses, not industry benchmarks)</h3>
+        <ul>
+          <li>End-to-end gate p95 ≤ 500 ms (stretch ≤ 300 ms)</li>
+          <li>P0 miss rate reported with a 95% confidence interval</li>
+          <li>False-block rate on normal traffic ≤ 1%</li>
+          <li>100% of pre-tool spans explicitly routed</li>
+          <li>Human review rate ≤ 10%</li>
+        </ul>
+        <p class="jv-meta">Source: “Jev 驱动的实时 Agent 可观测性” (2026-09, research cutoff 2026-09-26). Reference numbers [n] are the report's source list.
+          “Jev” is read there as TypeSafe AI's Jev / System One decision model.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script type="module" src="js/ui/app.js"></script>
+</body>
+</html>

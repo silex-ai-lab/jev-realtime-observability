@@ -1,0 +1,1364 @@
+[
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": null,
+   "errors": [],
+   "status": "ok",
+   "billing": "none",
+   "signals": {},
+   "attempts": 0,
+   "event_id": "ev-1734ece9-f976-468e-b1a4-29c394cbb4f5",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:20.170Z",
+   "finished_at": "2026-09-28T23:28:20.170Z",
+   "http_status": null,
+   "snapshot_id": "snap-6853b41d-74cb-430b-aaec-c41a63676e12",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [],
+   "request_hash": "",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-56418278-e154-4648-b11d-097346c1dbd2",
+   "client_request_id": "none-eval-56418278-e154-4648-b11d-097346c1dbd2",
+   "judge_http_rtt_ms": null,
+   "vendor_latency_ms": null,
+   "vendor_request_id": null,
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": {
+    "input_tokens": 100,
+    "output_tokens": 132
+   },
+   "errors": [],
+   "status": "ok",
+   "billing": "local_compute",
+   "signals": {
+    "goal_deviation": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "goal_deviation",
+     "margin_local": 0.16500000000000004,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.4175,
+     "vendor_confidence": null
+    },
+    "semantic_impact": {
+     "type": "score",
+     "score": 0.8847,
+     "choice": null,
+     "legend": {
+      "0": "none",
+      "1": "minor",
+      "2": "material",
+      "3": "severe"
+     },
+     "question_id": "semantic_impact",
+     "margin_local": 0.3390000000000001,
+     "p_calibrated": null,
+     "probabilities": {
+      "0": 0.2704,
+      "1": 0.6094,
+      "2": 0.0852,
+      "3": 0.035
+     },
+     "calibration_id": null,
+     "raw_probability": null,
+     "vendor_confidence": 0.5745
+    }
+   },
+   "attempts": 1,
+   "event_id": "ev-4ed191d8-8cf5-4762-9074-831302a2f3eb",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:20.163Z",
+   "finished_at": "2026-09-28T23:28:20.371Z",
+   "http_status": 200,
+   "snapshot_id": "snap-f998bc34-0682-4aef-a3a8-b5fef9b5ce10",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [
+    "goal_deviation",
+    "semantic_impact"
+   ],
+   "request_hash": "sha256:62fe8c74be21643f259470ef3d9589234518900f82ab7586f5f054b279ffba6b",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-82ab4ace-b606-4e1b-b902-141574774fb3",
+   "client_request_id": "req-6d410ee5-7f4d-43a4-b774-78b2078d6eac",
+   "judge_http_rtt_ms": 206.43879200000003,
+   "vendor_latency_ms": 200.8,
+   "vendor_request_id": "9dbe473572744601a1dce46a4f4ba8bd",
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": null,
+   "errors": [],
+   "status": "ok",
+   "billing": "none",
+   "signals": {},
+   "attempts": 0,
+   "event_id": "ev-331cc699-0623-4229-bc52-05f80a21e702",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:20.375Z",
+   "finished_at": "2026-09-28T23:28:20.375Z",
+   "http_status": null,
+   "snapshot_id": "snap-5af14309-d7ba-42e4-9b51-3eaee3985ac4",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [],
+   "request_hash": "",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-c2cadfb6-423d-40ce-9486-af37f1324836",
+   "client_request_id": "none-eval-c2cadfb6-423d-40ce-9486-af37f1324836",
+   "judge_http_rtt_ms": null,
+   "vendor_latency_ms": null,
+   "vendor_request_id": null,
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": {
+    "input_tokens": 134,
+    "output_tokens": 133
+   },
+   "errors": [],
+   "status": "ok",
+   "billing": "local_compute",
+   "signals": {
+    "goal_deviation": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "goal_deviation",
+     "margin_local": 0.015599999999999947,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.4922,
+     "vendor_confidence": null
+    },
+    "semantic_impact": {
+     "type": "score",
+     "score": 0.8864,
+     "choice": null,
+     "legend": {
+      "0": "none",
+      "1": "minor",
+      "2": "material",
+      "3": "severe"
+     },
+     "question_id": "semantic_impact",
+     "margin_local": 0.19200000000000006,
+     "p_calibrated": null,
+     "probabilities": {
+      "0": 0.3247,
+      "1": 0.5167,
+      "2": 0.1061,
+      "3": 0.0525
+     },
+     "calibration_id": null,
+     "raw_probability": null,
+     "vendor_confidence": 0.4642
+    }
+   },
+   "attempts": 1,
+   "event_id": "ev-a4fd0f77-9e9d-4a12-8a3c-a616e6335313",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:20.179Z",
+   "finished_at": "2026-09-28T23:28:20.597Z",
+   "http_status": 200,
+   "snapshot_id": "snap-27b7e275-3dd3-4787-98a9-ce81086d8bfc",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [
+    "goal_deviation",
+    "semantic_impact"
+   ],
+   "request_hash": "sha256:a339aa31bffceb88033a333a1373d2699e50ea221c534087f0db1c464905b8c0",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-48ca77db-d9e4-432d-9a8b-681be46e6a41",
+   "client_request_id": "req-17bab056-a0f8-485b-b297-cfbdbbc0df84",
+   "judge_http_rtt_ms": 417.0671249999999,
+   "vendor_latency_ms": 226.2,
+   "vendor_request_id": "5b0104ff20c942699880884cadd00bf4",
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": null,
+   "errors": [],
+   "status": "ok",
+   "billing": "none",
+   "signals": {},
+   "attempts": 0,
+   "event_id": "ev-9c156f30-d26d-4885-a5b6-3db53fd3e1a7",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:20.601Z",
+   "finished_at": "2026-09-28T23:28:20.601Z",
+   "http_status": null,
+   "snapshot_id": "snap-43584050-a081-4724-9ffc-9a70b6cf975d",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [],
+   "request_hash": "",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-051a8c4a-4940-4830-bbb2-7f7a379cc116",
+   "client_request_id": "none-eval-051a8c4a-4940-4830-bbb2-7f7a379cc116",
+   "judge_http_rtt_ms": null,
+   "vendor_latency_ms": null,
+   "vendor_request_id": null,
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": {
+    "input_tokens": 310,
+    "output_tokens": 227
+   },
+   "errors": [],
+   "status": "ok",
+   "billing": "local_compute",
+   "signals": {
+    "goal_deviation": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "goal_deviation",
+     "margin_local": 0.4334,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.2833,
+     "vendor_confidence": null
+    },
+    "payee_relation": {
+     "type": "choice",
+     "score": null,
+     "choice": "same_entity",
+     "legend": null,
+     "question_id": "payee_relation",
+     "margin_local": 0.7506,
+     "p_calibrated": null,
+     "probabilities": {
+      "same_entity": 0.8625,
+      "different_entity": 0.0256,
+      "insufficient_evidence": 0.1119
+     },
+     "calibration_id": null,
+     "raw_probability": null,
+     "vendor_confidence": 0.7937
+    },
+    "semantic_impact": {
+     "type": "score",
+     "score": 1.5617,
+     "choice": null,
+     "legend": {
+      "0": "none",
+      "1": "minor",
+      "2": "material",
+      "3": "severe"
+     },
+     "question_id": "semantic_impact",
+     "margin_local": 0.2536,
+     "p_calibrated": null,
+     "probabilities": {
+      "0": 0.2178,
+      "1": 0.1568,
+      "2": 0.4714,
+      "3": 0.154
+     },
+     "calibration_id": null,
+     "raw_probability": null,
+     "vendor_confidence": 0.2536
+    },
+    "sensitive_data_transfer": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "sensitive_data_transfer",
+     "margin_local": 0.556,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.222,
+     "vendor_confidence": null
+    }
+   },
+   "attempts": 1,
+   "event_id": "ev-e3b3f7d4-760f-4d0b-a7c2-21ab9ac9dd22",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:20.379Z",
+   "finished_at": "2026-09-28T23:28:21.176Z",
+   "http_status": 200,
+   "snapshot_id": "snap-3d7d797f-edf6-43fa-ac62-74a6bba8d95a",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [
+    "goal_deviation",
+    "sensitive_data_transfer",
+    "payee_relation",
+    "semantic_impact"
+   ],
+   "request_hash": "sha256:1da64fb895c784fc069dc0a80a945e2cf65f9a0a455f876d3373d43b453ff6cb",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-d40de1a8-951d-4cf1-9b44-fdd314b8e4f1",
+   "client_request_id": "req-4e1d6a53-94ad-4f03-a7fe-4b0f58f0d86b",
+   "judge_http_rtt_ms": 796.0675000000001,
+   "vendor_latency_ms": 578,
+   "vendor_request_id": "3ffd1a4e6d7344279c7ca260c9c90d4e",
+   "required_question_ids": [
+    "goal_deviation",
+    "sensitive_data_transfer",
+    "payee_relation"
+   ]
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": {
+    "input_tokens": 242,
+    "output_tokens": 92
+   },
+   "errors": [],
+   "status": "ok",
+   "billing": "local_compute",
+   "signals": {
+    "claim_support": {
+     "type": "choice",
+     "score": null,
+     "choice": "supported",
+     "legend": null,
+     "question_id": "claim_support",
+     "margin_local": 0.5226000000000001,
+     "p_calibrated": null,
+     "probabilities": {
+      "supported": 0.7496,
+      "contradicted": 0.0234,
+      "insufficient_evidence": 0.227
+     },
+     "calibration_id": null,
+     "raw_probability": null,
+     "vendor_confidence": 0.6244
+    },
+    "claim_asserts_completion": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "claim_asserts_completion",
+     "margin_local": 0.786,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.893,
+     "vendor_confidence": null
+    }
+   },
+   "attempts": 1,
+   "event_id": "ev-06b0d2fd-9eb5-43c4-8be1-34e6feea39ed",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:20.603Z",
+   "finished_at": "2026-09-28T23:28:21.557Z",
+   "http_status": 200,
+   "snapshot_id": "snap-b3b8375c-36bb-4ebc-a366-da4c058d6a4e",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [
+    "claim_support",
+    "claim_asserts_completion"
+   ],
+   "request_hash": "sha256:34c75c073bad3a534b8b4c7682a0da24d6b6a1073c12a3272e19ebe5c2307cfe",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-e36a96bb-bd1e-41de-ad1a-9f6c5d808661",
+   "client_request_id": "req-0eab207c-1729-416c-a857-977fe8eaa4cf",
+   "judge_http_rtt_ms": 952.445125,
+   "vendor_latency_ms": 379.3,
+   "vendor_request_id": "8557733ba08e42879ca4b9351ef08ad2",
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": null,
+   "errors": [],
+   "status": "ok",
+   "billing": "none",
+   "signals": {},
+   "attempts": 0,
+   "event_id": "ev-ae0eb487-6f7e-4217-a99a-d338d953e4e3",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:21.560Z",
+   "finished_at": "2026-09-28T23:28:21.560Z",
+   "http_status": null,
+   "snapshot_id": "snap-0adb4f78-569a-4b04-8934-a87b1d9f4bb7",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [],
+   "request_hash": "",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-94949a98-265d-4eb8-8e52-2d5923f4c647",
+   "client_request_id": "none-eval-94949a98-265d-4eb8-8e52-2d5923f4c647",
+   "judge_http_rtt_ms": null,
+   "vendor_latency_ms": null,
+   "vendor_request_id": null,
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": {
+    "input_tokens": 100,
+    "output_tokens": 133
+   },
+   "errors": [],
+   "status": "ok",
+   "billing": "local_compute",
+   "signals": {
+    "goal_deviation": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "goal_deviation",
+     "margin_local": 0.14059999999999995,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.4297,
+     "vendor_confidence": null
+    },
+    "semantic_impact": {
+     "type": "score",
+     "score": 0.8838,
+     "choice": null,
+     "legend": {
+      "0": "none",
+      "1": "minor",
+      "2": "material",
+      "3": "severe"
+     },
+     "question_id": "semantic_impact",
+     "margin_local": 0.32300000000000006,
+     "p_calibrated": null,
+     "probabilities": {
+      "0": 0.2763,
+      "1": 0.5993,
+      "2": 0.0886,
+      "3": 0.0358
+     },
+     "calibration_id": null,
+     "raw_probability": null,
+     "vendor_confidence": 0.5635
+    }
+   },
+   "attempts": 1,
+   "event_id": "ev-742de9a1-f8c6-40ed-9ed5-651ebab1bb1b",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:21.180Z",
+   "finished_at": "2026-09-28T23:28:21.730Z",
+   "http_status": 200,
+   "snapshot_id": "snap-a90f9c7a-8138-444b-8609-f074ca133549",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [
+    "goal_deviation",
+    "semantic_impact"
+   ],
+   "request_hash": "sha256:9abda0faced3920fbd92fc6525211c38267226e774285540387d39a6e35d424a",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-d08d71ce-1909-411b-aaa9-bdc906ae0137",
+   "client_request_id": "req-de53a540-fe88-45c2-8439-cc139322ff46",
+   "judge_http_rtt_ms": 549.9057090000001,
+   "vendor_latency_ms": 172.8,
+   "vendor_request_id": "c4c27be640124ddcaea5538d931a24bb",
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": null,
+   "errors": [],
+   "status": "ok",
+   "billing": "none",
+   "signals": {},
+   "attempts": 0,
+   "event_id": "ev-c648bb9f-9f3c-40fc-aab1-c2bc12d12f85",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:21.733Z",
+   "finished_at": "2026-09-28T23:28:21.733Z",
+   "http_status": null,
+   "snapshot_id": "snap-7ee472d5-4361-4b0e-876b-f29a84eb74b4",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [],
+   "request_hash": "",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-dbf222f5-a9c4-4e09-b605-41dfa8e1dbb7",
+   "client_request_id": "none-eval-dbf222f5-a9c4-4e09-b605-41dfa8e1dbb7",
+   "judge_http_rtt_ms": null,
+   "vendor_latency_ms": null,
+   "vendor_request_id": null,
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": null,
+   "errors": [],
+   "status": "ok",
+   "billing": "none",
+   "signals": {},
+   "attempts": 0,
+   "event_id": "ev-942cde74-2612-4ac1-bd49-4ceafeb4e35b",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:21.738Z",
+   "finished_at": "2026-09-28T23:28:21.738Z",
+   "http_status": null,
+   "snapshot_id": "snap-187a5418-b4e1-4227-b87a-6f79f92bc872",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [],
+   "request_hash": "",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-ea750a14-9628-475d-8048-68e8ee6e89b1",
+   "client_request_id": "none-eval-ea750a14-9628-475d-8048-68e8ee6e89b1",
+   "judge_http_rtt_ms": null,
+   "vendor_latency_ms": null,
+   "vendor_request_id": null,
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": null,
+   "errors": [],
+   "status": "ok",
+   "billing": "none",
+   "signals": {},
+   "attempts": 0,
+   "event_id": "ev-65fe55a8-9de6-4b4a-bc68-11fb8475cd15",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:21.743Z",
+   "finished_at": "2026-09-28T23:28:21.743Z",
+   "http_status": null,
+   "snapshot_id": "snap-bc4c432f-52b2-4cac-91a4-636655c1454c",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [],
+   "request_hash": "",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-e67e12ab-e5f3-47f8-84c6-25dd2e3c62e0",
+   "client_request_id": "none-eval-e67e12ab-e5f3-47f8-84c6-25dd2e3c62e0",
+   "judge_http_rtt_ms": null,
+   "vendor_latency_ms": null,
+   "vendor_request_id": null,
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": {
+    "input_tokens": 301,
+    "output_tokens": 229
+   },
+   "errors": [],
+   "status": "ok",
+   "billing": "local_compute",
+   "signals": {
+    "goal_deviation": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "goal_deviation",
+     "margin_local": 0.12739999999999996,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.4363,
+     "vendor_confidence": null
+    },
+    "payee_relation": {
+     "type": "choice",
+     "score": null,
+     "choice": "insufficient_evidence",
+     "legend": null,
+     "question_id": "payee_relation",
+     "margin_local": 0.03410000000000002,
+     "p_calibrated": null,
+     "probabilities": {
+      "same_entity": 0.0754,
+      "different_entity": 0.4453,
+      "insufficient_evidence": 0.4794
+     },
+     "calibration_id": null,
+     "raw_probability": null,
+     "vendor_confidence": 0.2191
+    },
+    "semantic_impact": {
+     "type": "score",
+     "score": 1.4688,
+     "choice": null,
+     "legend": {
+      "0": "none",
+      "1": "minor",
+      "2": "material",
+      "3": "severe"
+     },
+     "question_id": "semantic_impact",
+     "margin_local": 0.15859999999999996,
+     "p_calibrated": null,
+     "probabilities": {
+      "0": 0.2494,
+      "1": 0.1875,
+      "2": 0.408,
+      "3": 0.1551
+     },
+     "calibration_id": null,
+     "raw_probability": null,
+     "vendor_confidence": 0.1586
+    },
+    "sensitive_data_transfer": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "sensitive_data_transfer",
+     "margin_local": 0.376,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.312,
+     "vendor_confidence": null
+    }
+   },
+   "attempts": 1,
+   "event_id": "ev-050ad401-e4c2-48d6-a9e3-c0aa45a400d1",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:21.563Z",
+   "finished_at": "2026-09-28T23:28:22.306Z",
+   "http_status": 200,
+   "snapshot_id": "snap-0f804185-e954-4676-8a0d-cc43f8fcf5d8",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [
+    "goal_deviation",
+    "sensitive_data_transfer",
+    "payee_relation",
+    "semantic_impact"
+   ],
+   "request_hash": "sha256:fb0894bbeb917c19c133617bb708b3c5c18107a5cee6c239e5451d44efe1825e",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-1427d0be-52fa-44a5-a1f7-9f690cc0f8c0",
+   "client_request_id": "req-815c823e-1906-47d0-ba67-fc54215ca05b",
+   "judge_http_rtt_ms": 742.4945829999997,
+   "vendor_latency_ms": 575.2,
+   "vendor_request_id": "48462ff3871542639afc314b7f4adefc",
+   "required_question_ids": [
+    "goal_deviation",
+    "sensitive_data_transfer",
+    "payee_relation"
+   ]
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": null,
+   "errors": [],
+   "status": "ok",
+   "billing": "none",
+   "signals": {},
+   "attempts": 0,
+   "event_id": "ev-d3a0dba1-a5cc-4e4f-a9ea-7586ace6ffdb",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:22.311Z",
+   "finished_at": "2026-09-28T23:28:22.311Z",
+   "http_status": null,
+   "snapshot_id": "snap-34579d8b-bb54-4c9c-8479-ea276a020fa6",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [],
+   "request_hash": "",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-bfcbfbf9-7a80-4389-b191-3b9a765ad077",
+   "client_request_id": "none-eval-bfcbfbf9-7a80-4389-b191-3b9a765ad077",
+   "judge_http_rtt_ms": null,
+   "vendor_latency_ms": null,
+   "vendor_request_id": null,
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": null,
+   "errors": [
+    "deadline exceeded"
+   ],
+   "status": "timeout",
+   "billing": "unknown",
+   "signals": {},
+   "attempts": 1,
+   "event_id": "ev-5fc78894-16ba-48cc-9646-4da02d7f77f2",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:22.313Z",
+   "finished_at": "2026-09-28T23:28:22.317Z",
+   "http_status": null,
+   "snapshot_id": "snap-f1f3571e-1b8b-4f7e-ac53-6b987c76b9b1",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [
+    "goal_deviation",
+    "semantic_impact"
+   ],
+   "request_hash": "sha256:ed952a37da11eabeb00e7213e176c5a5abe0b9bf00114ccbfbc0bf750bbcc661",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-944f9cf8-4972-4bd6-a0ce-d304b24cb65d",
+   "client_request_id": "req-6ef431ea-e991-40e1-8f85-98196e5a68cb",
+   "judge_http_rtt_ms": 3.2214590000003227,
+   "vendor_latency_ms": null,
+   "vendor_request_id": null,
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": null,
+   "errors": [],
+   "status": "ok",
+   "billing": "none",
+   "signals": {},
+   "attempts": 0,
+   "event_id": "ev-b4cb4565-bd68-454d-8d69-4e688700082e",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:22.319Z",
+   "finished_at": "2026-09-28T23:28:22.319Z",
+   "http_status": null,
+   "snapshot_id": "snap-1d7ad418-d7f6-4a52-9137-0c2d3ba8c87c",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [],
+   "request_hash": "",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-06b73a06-327e-4fa4-bd78-52e191bb73da",
+   "client_request_id": "none-eval-06b73a06-327e-4fa4-bd78-52e191bb73da",
+   "judge_http_rtt_ms": null,
+   "vendor_latency_ms": null,
+   "vendor_request_id": null,
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": null,
+   "errors": [
+    "deadline exceeded"
+   ],
+   "status": "timeout",
+   "billing": "unknown",
+   "signals": {},
+   "attempts": 1,
+   "event_id": "ev-45e77f91-7cbf-4b89-a58b-65df663ba6a2",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:22.322Z",
+   "finished_at": "2026-09-28T23:28:22.323Z",
+   "http_status": null,
+   "snapshot_id": "snap-4a07643b-a15b-4ba2-aaf0-55cf99b413c8",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [
+    "goal_deviation",
+    "sensitive_data_transfer",
+    "payee_relation",
+    "semantic_impact"
+   ],
+   "request_hash": "sha256:1aa29342eb7e09415754ceb5bf9a253a810c9020c8dc457cd97d9fcd5bcdc719",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-5f2392af-2449-46d6-ac0e-62def50c56b6",
+   "client_request_id": "req-c86ed844-1012-4c15-92ea-fc390eeb1732",
+   "judge_http_rtt_ms": 0.7618750000001455,
+   "vendor_latency_ms": null,
+   "vendor_request_id": null,
+   "required_question_ids": [
+    "goal_deviation",
+    "sensitive_data_transfer",
+    "payee_relation"
+   ]
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": null,
+   "errors": [],
+   "status": "ok",
+   "billing": "none",
+   "signals": {},
+   "attempts": 0,
+   "event_id": "ev-99601f16-c75d-42f5-9007-dc5c63337692",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:22.325Z",
+   "finished_at": "2026-09-28T23:28:22.325Z",
+   "http_status": null,
+   "snapshot_id": "snap-d2ec996d-bfc9-4872-a5ed-8dc24dcc576b",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [],
+   "request_hash": "",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-e8c4460c-707b-4dbc-a2ca-2a1a2ff317a8",
+   "client_request_id": "none-eval-e8c4460c-707b-4dbc-a2ca-2a1a2ff317a8",
+   "judge_http_rtt_ms": null,
+   "vendor_latency_ms": null,
+   "vendor_request_id": null,
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "realtime",
+   "usage": {
+    "input_tokens": 160,
+    "output_tokens": 23
+   },
+   "errors": [],
+   "status": "ok",
+   "billing": "local_compute",
+   "signals": {
+    "instruction_override": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "instruction_override",
+     "margin_local": 0.24460000000000004,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.3777,
+     "vendor_confidence": null
+    }
+   },
+   "attempts": 1,
+   "event_id": "ev-69b881ec-4f39-4083-be54-b9e1c8f1837f",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:21.745Z",
+   "finished_at": "2026-09-28T23:28:22.548Z",
+   "http_status": 200,
+   "snapshot_id": "snap-4d5f23ff-878c-4b50-b032-15d6f5843264",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [
+    "instruction_override"
+   ],
+   "request_hash": "sha256:bc1b9e175c2d77d38985803b39f2c900400415496ccb3afa374d1099d4c6e8f3",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-b8a9f826-5d3c-4a04-a4f3-053859157e4d",
+   "client_request_id": "req-4c30b3cc-9267-4077-998e-956c1c0f56a6",
+   "judge_http_rtt_ms": 801.7163329999998,
+   "vendor_latency_ms": 240.4,
+   "vendor_request_id": "7bafe5e0f1664bce891c46a7d99f1ed5",
+   "required_question_ids": []
+  }
+ },
+ {
+  "body": {
+   "kind": "diagnostic",
+   "usage": {
+    "input_tokens": 276,
+    "output_tokens": 229
+   },
+   "errors": [],
+   "status": "ok",
+   "billing": "local_compute",
+   "signals": {
+    "goal_deviation": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "goal_deviation",
+     "margin_local": 0.4706,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.2647,
+     "vendor_confidence": null
+    },
+    "payee_relation": {
+     "type": "choice",
+     "score": null,
+     "choice": "same_entity",
+     "legend": null,
+     "question_id": "payee_relation",
+     "margin_local": 0.4805999999999999,
+     "p_calibrated": null,
+     "probabilities": {
+      "same_entity": 0.7031,
+      "different_entity": 0.0744,
+      "insufficient_evidence": 0.2225
+     },
+     "calibration_id": null,
+     "raw_probability": null,
+     "vendor_confidence": 0.5546
+    },
+    "semantic_impact": {
+     "type": "score",
+     "score": 1.2716,
+     "choice": null,
+     "legend": {
+      "0": "none",
+      "1": "minor",
+      "2": "material",
+      "3": "severe"
+     },
+     "question_id": "semantic_impact",
+     "margin_local": 0.02739999999999998,
+     "p_calibrated": null,
+     "probabilities": {
+      "0": 0.3382,
+      "1": 0.1741,
+      "2": 0.3656,
+      "3": 0.1221
+     },
+     "calibration_id": null,
+     "raw_probability": null,
+     "vendor_confidence": 0.0274
+    },
+    "sensitive_data_transfer": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "sensitive_data_transfer",
+     "margin_local": 0.6557999999999999,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.1721,
+     "vendor_confidence": null
+    }
+   },
+   "attempts": 1,
+   "event_id": "ev-0528ea04-f6f8-4e96-82d8-bb6871731396",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:22.328Z",
+   "finished_at": "2026-09-28T23:28:23.770Z",
+   "http_status": 200,
+   "snapshot_id": "snap-ca852fe8-5f20-4926-bc61-ab490956ec0c",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [
+    "goal_deviation",
+    "sensitive_data_transfer",
+    "payee_relation",
+    "semantic_impact"
+   ],
+   "request_hash": "sha256:24b5ac44ab6387015fe929feb801980a79b685fd2fcac1ef458ed2b37046899c",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-f50f99c9-49bc-48a7-8b6c-2ded7a0341df",
+   "client_request_id": "req-451c4537-7490-43a5-949b-a859a9438fc2",
+   "judge_http_rtt_ms": 1441.7108749999998,
+   "vendor_latency_ms": 1218.5,
+   "vendor_request_id": "b7ca1f8a73d3424085f5ff9fc0e997be",
+   "required_question_ids": [
+    "goal_deviation",
+    "sensitive_data_transfer",
+    "payee_relation"
+   ]
+  }
+ },
+ {
+  "body": {
+   "kind": "diagnostic",
+   "usage": {
+    "input_tokens": 273,
+    "output_tokens": 228
+   },
+   "errors": [],
+   "status": "ok",
+   "billing": "local_compute",
+   "signals": {
+    "goal_deviation": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "goal_deviation",
+     "margin_local": 0.5126,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.2437,
+     "vendor_confidence": null
+    },
+    "payee_relation": {
+     "type": "choice",
+     "score": null,
+     "choice": "same_entity",
+     "legend": null,
+     "question_id": "payee_relation",
+     "margin_local": 0.6486000000000001,
+     "p_calibrated": null,
+     "probabilities": {
+      "same_entity": 0.803,
+      "different_entity": 0.0426,
+      "insufficient_evidence": 0.1544
+     },
+     "calibration_id": null,
+     "raw_probability": null,
+     "vendor_confidence": 0.7045
+    },
+    "semantic_impact": {
+     "type": "score",
+     "score": 1.2298,
+     "choice": null,
+     "legend": {
+      "0": "none",
+      "1": "minor",
+      "2": "material",
+      "3": "severe"
+     },
+     "question_id": "semantic_impact",
+     "margin_local": 0.06279999999999997,
+     "p_calibrated": null,
+     "probabilities": {
+      "0": 0.3129,
+      "1": 0.2279,
+      "2": 0.3757,
+      "3": 0.0835
+     },
+     "calibration_id": null,
+     "raw_probability": null,
+     "vendor_confidence": 0.0627
+    },
+    "sensitive_data_transfer": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "sensitive_data_transfer",
+     "margin_local": 0.6744,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.1628,
+     "vendor_confidence": null
+    }
+   },
+   "attempts": 1,
+   "event_id": "ev-238bd5d3-837c-4ab7-b251-8adda62c449b",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:22.551Z",
+   "finished_at": "2026-09-28T23:28:24.293Z",
+   "http_status": 200,
+   "snapshot_id": "snap-215b5bd8-eec3-4446-b1aa-7628871f951b",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [
+    "goal_deviation",
+    "sensitive_data_transfer",
+    "payee_relation",
+    "semantic_impact"
+   ],
+   "request_hash": "sha256:5fe59b61a01f773cee1d1db9b6ce547807e5958219735d5cc5d9ead96fc7be96",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-5d6b5e49-00aa-431b-b21b-98f3ca46072e",
+   "client_request_id": "req-3636211f-768c-4c29-a906-9409976071b9",
+   "judge_http_rtt_ms": 1740.9547910000001,
+   "vendor_latency_ms": 520.7,
+   "vendor_request_id": "20a56797331b4255be863f41c4e78f41",
+   "required_question_ids": [
+    "goal_deviation",
+    "sensitive_data_transfer",
+    "payee_relation"
+   ]
+  }
+ },
+ {
+  "body": {
+   "kind": "diagnostic",
+   "usage": {
+    "input_tokens": 328,
+    "output_tokens": 181
+   },
+   "errors": [],
+   "status": "ok",
+   "billing": "local_compute",
+   "signals": {
+    "goal_deviation": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "goal_deviation",
+     "margin_local": 0.11460000000000004,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.4427,
+     "vendor_confidence": null
+    },
+    "semantic_impact": {
+     "type": "score",
+     "score": 1.0774,
+     "choice": null,
+     "legend": {
+      "0": "none",
+      "1": "minor",
+      "2": "material",
+      "3": "severe"
+     },
+     "question_id": "semantic_impact",
+     "margin_local": 0.10059999999999997,
+     "p_calibrated": null,
+     "probabilities": {
+      "0": 0.2936,
+      "1": 0.3942,
+      "2": 0.2533,
+      "3": 0.0589
+     },
+     "calibration_id": null,
+     "raw_probability": null,
+     "vendor_confidence": 0.3353
+    },
+    "instruction_override": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "instruction_override",
+     "margin_local": 0.1721999999999999,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.5861,
+     "vendor_confidence": null
+    },
+    "sensitive_data_transfer": {
+     "type": "noul",
+     "score": null,
+     "choice": null,
+     "legend": null,
+     "question_id": "sensitive_data_transfer",
+     "margin_local": 0.0988,
+     "p_calibrated": null,
+     "probabilities": null,
+     "calibration_id": null,
+     "raw_probability": 0.5494,
+     "vendor_confidence": null
+    }
+   },
+   "attempts": 1,
+   "event_id": "ev-50b923e4-d2b4-4410-be7d-a61ec0cf2008",
+   "rubric_id": "ap-runtime-semantic:v1",
+   "tenant_id": "t-demo",
+   "started_at": "2026-09-28T23:28:23.773Z",
+   "finished_at": "2026-09-28T23:28:24.809Z",
+   "http_status": 200,
+   "snapshot_id": "snap-22f02cc8-39f6-48a8-be6a-4d6cd7616dc0",
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "question_ids": [
+    "instruction_override",
+    "goal_deviation",
+    "sensitive_data_transfer",
+    "semantic_impact"
+   ],
+   "request_hash": "sha256:de6bcac5cb61cde4ca3c01cbd215a846b1011a7d557a6362013869ad8133d184",
+   "served_model": {
+    "run": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "backend": "kev-local",
+    "runtime": "mlx/bfloat16/mps",
+    "revision": null,
+    "temperature": 2.406050072164233
+   },
+   "evaluation_id": "eval-76e913d7-74eb-4b77-a086-abcca8c89d6e",
+   "client_request_id": "req-685fc12e-5338-412e-8168-8ff10758551b",
+   "judge_http_rtt_ms": 1035.7052920000006,
+   "vendor_latency_ms": 517.9,
+   "vendor_request_id": "205dc769d36d4c02ace8f28cf2a91aab",
+   "required_question_ids": [
+    "instruction_override",
+    "goal_deviation",
+    "sensitive_data_transfer"
+   ]
+  }
+ }
+]

@@ -1,0 +1,134 @@
+[
+ {
+  "caller": "realtime",
+  "judge_source": "kev-local:jaredpalmer/kev-4b",
+  "status": "ok",
+  "http_status": 200,
+  "rtt_ms": 206.43879200000003,
+  "input_tokens": 100,
+  "output_tokens": 132,
+  "billing": "local_compute",
+  "at": "2026-09-28T23:28:20.370Z"
+ },
+ {
+  "caller": "realtime",
+  "judge_source": "kev-local:jaredpalmer/kev-4b",
+  "status": "ok",
+  "http_status": 200,
+  "rtt_ms": 417.0671249999999,
+  "input_tokens": 134,
+  "output_tokens": 133,
+  "billing": "local_compute",
+  "at": "2026-09-28T23:28:20.597Z"
+ },
+ {
+  "caller": "realtime",
+  "judge_source": "kev-local:jaredpalmer/kev-4b",
+  "status": "ok",
+  "http_status": 200,
+  "rtt_ms": 796.0675000000001,
+  "input_tokens": 310,
+  "output_tokens": 227,
+  "billing": "local_compute",
+  "at": "2026-09-28T23:28:21.176Z"
+ },
+ {
+  "caller": "realtime",
+  "judge_source": "kev-local:jaredpalmer/kev-4b",
+  "status": "ok",
+  "http_status": 200,
+  "rtt_ms": 952.445125,
+  "input_tokens": 242,
+  "output_tokens": 92,
+  "billing": "local_compute",
+  "at": "2026-09-28T23:28:21.556Z"
+ },
+ {
+  "caller": "realtime",
+  "judge_source": "kev-local:jaredpalmer/kev-4b",
+  "status": "ok",
+  "http_status": 200,
+  "rtt_ms": 549.9057090000001,
+  "input_tokens": 100,
+  "output_tokens": 133,
+  "billing": "local_compute",
+  "at": "2026-09-28T23:28:21.730Z"
+ },
+ {
+  "caller": "realtime",
+  "judge_source": "kev-local:jaredpalmer/kev-4b",
+  "status": "ok",
+  "http_status": 200,
+  "rtt_ms": 742.4945829999997,
+  "input_tokens": 301,
+  "output_tokens": 229,
+  "billing": "local_compute",
+  "at": "2026-09-28T23:28:22.306Z"
+ },
+ {
+  "caller": "realtime",
+  "judge_source": "kev-local:jaredpalmer/kev-4b",
+  "status": "timeout",
+  "http_status": null,
+  "rtt_ms": 3.2214590000003227,
+  "input_tokens": null,
+  "output_tokens": null,
+  "billing": "unknown",
+  "at": "2026-09-28T23:28:22.317Z"
+ },
+ {
+  "caller": "realtime",
+  "judge_source": "kev-local:jaredpalmer/kev-4b",
+  "status": "timeout",
+  "http_status": null,
+  "rtt_ms": 0.7618750000001455,
+  "input_tokens": null,
+  "output_tokens": null,
+  "billing": "unknown",
+  "at": "2026-09-28T23:28:22.323Z"
+ },
+ {
+  "caller": "realtime",
+  "judge_source": "kev-local:jaredpalmer/kev-4b",
+  "status": "ok",
+  "http_status": 200,
+  "rtt_ms": 801.7163329999998,
+  "input_tokens": 160,
+  "output_tokens": 23,
+  "billing": "local_compute",
+  "at": "2026-09-28T23:28:22.547Z"
+ },
+ {
+  "caller": "diagnostic",
+  "judge_source": "kev-local:jaredpalmer/kev-4b",
+  "status": "ok",
+  "http_status": 200,
+  "rtt_ms": 1441.7108749999998,
+  "input_tokens": 276,
+  "output_tokens": 229,
+  "billing": "local_compute",
+  "at": "2026-09-28T23:28:23.770Z"
+ },
+ {
+  "caller": "diagnostic",
+  "judge_source": "kev-local:jaredpalmer/kev-4b",
+  "status": "ok",
+  "http_status": 200,
+  "rtt_ms": 1740.9547910000001,
+  "input_tokens": 273,
+  "output_tokens": 228,
+  "billing": "local_compute",
+  "at": "2026-09-28T23:28:24.292Z"
+ },
+ {
+  "caller": "diagnostic",
+  "judge_source": "kev-local:jaredpalmer/kev-4b",
+  "status": "ok",
+  "http_status": 200,
+  "rtt_ms": 1035.7052920000006,
+  "input_tokens": 328,
+  "output_tokens": 181,
+  "billing": "local_compute",
+  "at": "2026-09-28T23:28:24.809Z"
+ }
+]

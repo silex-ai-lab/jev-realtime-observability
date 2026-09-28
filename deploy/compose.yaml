@@ -1,0 +1,26 @@
+# Optional deployment topology (plan D4/D5): real PostgreSQL + OpenTelemetry Collector + the app.
+# Not exercised on the build machine (no Docker there); dev and CI use embedded PGlite.
+# Kev runs on the host (MLX needs Apple Silicon; on Linux+CUDA it can run in a container).
+services:
+  postgres:
+    image: postgres:18
+    environment: { POSTGRES_USER: silex, POSTGRES_PASSWORD: silex, POSTGRES_DB: silex }
+    ports: ["127.0.0.1:5432:5432"]
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes: ["./otel-collector.yaml:/etc/otelcol/config.yaml:ro"]
+    ports: ["127.0.0.1:4318:4318"]
+    environment: { SILEX_INGEST_KEY: "${INGEST_KEY}" }
+  app:
+    image: node:25-alpine
+    working_dir: /app
+    volumes: ["..:/app"]
+    command: ["node", "server/main.ts"]
+    env_file: ["../.env"]
+    environment:
+      DATABASE_URL: postgres://silex:silex@postgres:5432/silex
+      HOST: 0.0.0.0
+      JUDGE_BASE_URL: http://host.docker.internal:8009
+    ports: ["127.0.0.1:8787:8787"]
+    depends_on: [postgres]

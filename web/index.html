@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live Agent Risk Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/live.css">
+</head>
+<body>
+<header class="lv-top">
+  <div class="lv-row">
+    <span class="lv-brand">SILEX <small>Live agent risk console · Jev-protocol judge</small></span>
+    <a class="lv-link" href="demo/index.html">Simulated demo →</a>
+  </div>
+  <!-- The four provenance dimensions (RFC §2). Filled from server records, never assumed. -->
+  <div class="lv-prov" id="prov">
+    <span class="pv" data-provenance="source_mode"><b>source</b> <i>—</i></span>
+    <span class="pv" data-provenance="judge_source"><b>judge</b> <i>—</i></span>
+    <span class="pv" data-provenance="tool_environment"><b>tools</b> <i>—</i></span>
+    <span class="pv" data-provenance="enforcement_mode"><b>enforcement</b> <i>—</i></span>
+  </div>
+  <p class="lv-note" id="judge-note">The judge speaks TypeSafe's System One (Jev) protocol. Unless the judge line says <code>typesafe:</code>, the model answering is <b>not</b> TypeSafe's Jev.</p>
+</header>
+
+<main>
+  <section class="card lv-connect" id="connect">
+    <form id="connect-form" autocomplete="off">
+      <label>Reader key <input type="password" id="k-reader" required minlength="16"></label>
+      <label>Admin key <small>(optional, to start sandbox runs)</small> <input type="password" id="k-admin" minlength="16"></label>
+      <button class="btn primary" type="submit">Connect</button>
+      <span class="lv-meta" id="conn-status">Keys stay in this tab's memory only.</span>
+    </form>
+  </section>
+
+  <section class="lv-kpis" id="kpis"></section>
+
+  <section class="card lv-controls">
+    <span class="lv-meta">Sandbox run (real tool execution in the sandbox schema, scripted driver):</span>
+    <span id="scenario-buttons"></span>
+    <span class="lv-meta" id="run-status"></span>
+  </section>
+
+  <div class="lv-grid">
+    <section class="card">
+      <header><h2>Live stream</h2><span class="lv-meta" id="lag"></span></header>
+      <div class="lv-stream" id="stream"><p class="lv-empty">Connect, then start a sandbox run.</p></div>
+    </section>
+    <aside class="card lv-insp">
+      <header><h2>Decision inspector</h2></header>
+      <div id="inspector" data-inspector><p class="lv-empty">Select a row.</p></div>
+    </aside>
+  </div>
+</main>
+<script type="module" src="js/live.js"></script>
+</body>
+</html>

@@ -1,9 +1,13 @@
-// T1 (deepseek) implements: sandbox/schema.sql (Postgres schema "sandbox"), sandbox/seed.ts,
+// T1 (deepseek): sandbox/schema.sql (Postgres schema "sandbox"), sandbox/seed.ts,
 // sandbox/authority.ts, sandbox/gateway.ts, sandbox/tools/*. Synthetic, fictional AP data only.
 // Tools really execute: they read and write sandbox tables. No real money, no real email,
 // no network egress: email.send writes to sandbox.mail_sink.
 import type { Db } from '../server/storage/db.ts';
 import type { ControlDecision, ExecutionReceipt } from '../contracts/decision.ts';
+import { digestOf } from '../contracts/canonical.ts';
+import { createAuthorityReader as authorityReader } from './authority.ts';
+import { createToolGateway as toolGateway } from './gateway.ts';
+import { seedSandbox as seedSandboxImpl } from './seed.ts';
 
 /** Read-only view of authoritative records (RFC §8: separate read-only credentials in spirit). */
 export interface AuthorityReader {
@@ -48,16 +52,16 @@ export interface ToolGateway {
 }
 
 export function createAuthorityReader(db: Db): AuthorityReader {
-  throw new Error('createAuthorityReader: not implemented (T1)');
+  return authorityReader(db);
 }
 export function createToolGateway(db: Db, opts?: ToolGatewayOptions): ToolGateway {
-  throw new Error('createToolGateway: not implemented (T1)');
+  return toolGateway(db, opts);
 }
 /** Applies sandbox/schema.sql (via storage migrate with set "sandbox") and seeds tenant data. Idempotent. */
 export async function seedSandbox(db: Db, tenantId: string): Promise<void> {
-  throw new Error('seedSandbox: not implemented (T1)');
+  return seedSandboxImpl(db, tenantId);
 }
 /** Canonical args digest: sha256 over canonical JSON (sorted keys, no whitespace). Shared by SDK, gateway and preflight. */
 export function argsDigest(args: Record<string, unknown>): string {
-  throw new Error('argsDigest: not implemented (T1)');
+  return digestOf(args);
 }
