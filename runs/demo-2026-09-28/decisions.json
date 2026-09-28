@@ -3,19 +3,19 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.009666999999922155,
-    "policy_ms": 0.15554099999997106,
-    "snapshot_ms": 0.6868749999999864,
+    "rules_ms": 0.008667000000059488,
+    "policy_ms": 0.15620799999999235,
+    "snapshot_ms": 0.5951669999999467,
     "judge_http_rtt_ms": null,
     "ingest_to_signal_ms": 3
    },
-   "event_id": "ev-1734ece9-f976-468e-b1a4-29c394cbb4f5",
+   "event_id": "ev-9aef5d18-57fd-4221-970f-d5db202ae445",
    "semantic": {
     "hits": [],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:20.170Z",
+   "created_at": "2026-09-28T23:37:44.688Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -24,9 +24,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": null,
-   "decision_id": "dec-2175026f-8c84-4885-a204-58205d6de268",
+   "decision_id": "dec-522351b9-68fd-4ec1-8a97-9d765e23aaa9",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-6853b41d-74cb-430b-aaec-c41a63676e12",
+   "snapshot_id": "snap-4e4d659a-78f2-4979-8085-184e3ff22ca4",
    "rule_results": [
     {
      "reason": "no candidate action to check",
@@ -86,7 +86,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-56418278-e154-4648-b11d-097346c1dbd2",
+   "evaluation_id": "eval-e7e2f09c-e8cf-4a5d-85ee-3d939ae0d48a",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -95,13 +95,13 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.08933300000001054,
-    "policy_ms": 0.0415419999999358,
-    "snapshot_ms": 3.315958999999907,
-    "judge_http_rtt_ms": 206.43879200000003,
-    "ingest_to_signal_ms": 214
+    "rules_ms": 0.09049999999990632,
+    "policy_ms": 0.045624999999972715,
+    "snapshot_ms": 3.364915999999994,
+    "judge_http_rtt_ms": 205.72429199999988,
+    "ingest_to_signal_ms": 213
    },
-   "event_id": "ev-4ed191d8-8cf5-4762-9074-831302a2f3eb",
+   "event_id": "ev-010de420-3186-445c-9176-3e834971c6aa",
    "semantic": {
     "hits": [
      {
@@ -113,7 +113,7 @@
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:20.371Z",
+   "created_at": "2026-09-28T23:37:44.887Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -122,9 +122,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": "allow",
-   "decision_id": "dec-85f82795-82fe-47fb-869d-3d942d936c5f",
+   "decision_id": "dec-19725a91-5c18-46b9-8389-e098ce452b95",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-f998bc34-0682-4aef-a3a8-b5fef9b5ce10",
+   "snapshot_id": "snap-e0fc1b4a-84e6-4c14-a8ff-b7bee52c26f3",
    "rule_results": [
     {
      "reason": "tool present in the tool registry",
@@ -184,7 +184,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-82ab4ace-b606-4e1b-b902-141574774fb3",
+   "evaluation_id": "eval-34a4203f-5dbb-427b-a528-0cdc3bb52f97",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -193,19 +193,19 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.00933300000019699,
-    "policy_ms": 0.018667000000050393,
-    "snapshot_ms": 1.0835419999998521,
+    "rules_ms": 0.006583999999975276,
+    "policy_ms": 0.01720799999998235,
+    "snapshot_ms": 0.7106250000001637,
     "judge_http_rtt_ms": null,
-    "ingest_to_signal_ms": 192
+    "ingest_to_signal_ms": 190
    },
-   "event_id": "ev-331cc699-0623-4229-bc52-05f80a21e702",
+   "event_id": "ev-a0ed3940-89b7-431e-8219-1749fae231c3",
    "semantic": {
     "hits": [],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:20.375Z",
+   "created_at": "2026-09-28T23:37:44.891Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -214,9 +214,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": null,
-   "decision_id": "dec-2f2ba2e1-9640-4180-a9df-e6c5d35dda23",
+   "decision_id": "dec-641bff31-70c2-478b-aeba-b5f0161b590a",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-5af14309-d7ba-42e4-9b51-3eaee3985ac4",
+   "snapshot_id": "snap-ec7c2128-8dbc-405e-8e80-372747ad80ab",
    "rule_results": [
     {
      "reason": "no candidate action to check",
@@ -276,7 +276,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-c2cadfb6-423d-40ce-9486-af37f1324836",
+   "evaluation_id": "eval-8cd1978c-0c2f-4a5d-8942-481dd5ade1a9",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -285,13 +285,13 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.008458000000018728,
-    "policy_ms": 0.02945799999997689,
-    "snapshot_ms": 0.6249589999999898,
-    "judge_http_rtt_ms": 417.0671249999999,
+    "rules_ms": 0.01229200000000219,
+    "policy_ms": 0.033792000000175904,
+    "snapshot_ms": 0.5578330000000733,
+    "judge_http_rtt_ms": 417.30437500000005,
     "ingest_to_signal_ms": 420
    },
-   "event_id": "ev-a4fd0f77-9e9d-4a12-8a3c-a616e6335313",
+   "event_id": "ev-9419479c-0e2f-471a-86d4-6d9ad84a8b26",
    "semantic": {
     "hits": [
      {
@@ -303,7 +303,7 @@
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:20.597Z",
+   "created_at": "2026-09-28T23:37:45.115Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -312,9 +312,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": "allow",
-   "decision_id": "dec-e7d3a681-391a-4f56-8e6c-7e42d28eb3db",
+   "decision_id": "dec-ce24bf81-52d0-425d-a4db-84131199b316",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-27b7e275-3dd3-4787-98a9-ce81086d8bfc",
+   "snapshot_id": "snap-2cecfb59-4d99-4bd4-9913-ec333198e970",
    "rule_results": [
     {
      "reason": "tool present in the tool registry",
@@ -374,7 +374,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-48ca77db-d9e4-432d-9a8b-681be46e6a41",
+   "evaluation_id": "eval-64e7b284-1aa7-4734-bc04-fc2dfe096c96",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -383,19 +383,19 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.004415999999991982,
-    "policy_ms": 0.01558300000010604,
-    "snapshot_ms": 0.7327500000001237,
+    "rules_ms": 0.0037919999999758147,
+    "policy_ms": 0.01925000000005639,
+    "snapshot_ms": 0.9149999999999636,
     "judge_http_rtt_ms": null,
-    "ingest_to_signal_ms": 411
+    "ingest_to_signal_ms": 412
    },
-   "event_id": "ev-9c156f30-d26d-4885-a5b6-3db53fd3e1a7",
+   "event_id": "ev-271c6feb-30c9-4519-a76b-b65d0a810ea1",
    "semantic": {
     "hits": [],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:20.601Z",
+   "created_at": "2026-09-28T23:37:45.120Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -404,9 +404,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": null,
-   "decision_id": "dec-2c530e8b-f883-4273-9a89-c5edcf4a1dd5",
+   "decision_id": "dec-90f605f3-8341-4016-8175-e270a4ebcff9",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-43584050-a081-4724-9ffc-9a70b6cf975d",
+   "snapshot_id": "snap-efe05d3c-5888-4b87-a71b-085bf9589604",
    "rule_results": [
     {
      "reason": "no candidate action to check",
@@ -466,7 +466,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-051a8c4a-4940-4830-bbb2-7f7a379cc116",
+   "evaluation_id": "eval-10611dc6-d1d8-4e4a-b0df-1abf08a40d53",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -475,13 +475,13 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.009332999999969616,
-    "policy_ms": 0.04362500000002001,
-    "snapshot_ms": 2.126708000000008,
-    "judge_http_rtt_ms": 796.0675000000001,
-    "ingest_to_signal_ms": 990
+    "rules_ms": 0.00808299999994233,
+    "policy_ms": 0.05100000000015825,
+    "snapshot_ms": 1.6843750000000455,
+    "judge_http_rtt_ms": 796.6011249999999,
+    "ingest_to_signal_ms": 988
    },
-   "event_id": "ev-e3b3f7d4-760f-4d0b-a7c2-21ab9ac9dd22",
+   "event_id": "ev-34f35d35-e522-412d-a361-8b68c14bf0dc",
    "semantic": {
     "hits": [
      {
@@ -503,7 +503,7 @@
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:21.176Z",
+   "created_at": "2026-09-28T23:37:45.692Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -512,9 +512,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": "allow",
-   "decision_id": "dec-368f2783-1aa3-410a-af7d-178132002037",
+   "decision_id": "dec-aae0f5bc-e746-43e1-b39a-2b3ad200d713",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-3d7d797f-edf6-43fa-ac62-74a6bba8d95a",
+   "snapshot_id": "snap-14e5a866-2975-47e0-a440-8fbc0eab6fa2",
    "rule_results": [
     {
      "reason": "tool present in the tool registry",
@@ -576,7 +576,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-d40de1a8-951d-4cf1-9b44-fdd314b8e4f1",
+   "evaluation_id": "eval-3823c88e-8ff1-4170-8e9f-2cf1bc480296",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -585,25 +585,25 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.005707999999913227,
-    "policy_ms": 0.03808300000036979,
-    "snapshot_ms": 0.6881670000000213,
-    "judge_http_rtt_ms": 952.445125,
-    "ingest_to_signal_ms": 1364
+    "rules_ms": 0.005791000000044733,
+    "policy_ms": 0.03912499999978536,
+    "snapshot_ms": 0.8760420000000977,
+    "judge_http_rtt_ms": 946.7227089999999,
+    "ingest_to_signal_ms": 1360
    },
-   "event_id": "ev-06b0d2fd-9eb5-43c4-8be1-34e6feea39ed",
+   "event_id": "ev-1ff12cf9-53c3-4ee1-b628-5769c90f9255",
    "semantic": {
     "hits": [
      {
       "band": "below",
-      "value": 0.0234,
+      "value": 0.0219,
       "question_id": "claim_support"
      }
     ],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:21.557Z",
+   "created_at": "2026-09-28T23:37:46.071Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -612,9 +612,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": null,
-   "decision_id": "dec-0f953534-73cc-4982-8fe9-9c0367eb9ed1",
+   "decision_id": "dec-73e0f5ee-52d1-4fce-805d-4dbfb6be2f96",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-b3b8375c-36bb-4ebc-a366-da4c058d6a4e",
+   "snapshot_id": "snap-f5674025-eae3-4725-b09e-1e15c5d41483",
    "rule_results": [
     {
      "reason": "no candidate action to check",
@@ -674,7 +674,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-e36a96bb-bd1e-41de-ad1a-9f6c5d808661",
+   "evaluation_id": "eval-c110db0c-feba-4f07-8af9-a2ad6ca3cd90",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -683,19 +683,19 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.004500000000007276,
-    "policy_ms": 0.021957999999813183,
-    "snapshot_ms": 0.6376660000000811,
+    "rules_ms": 0.003750000000309228,
+    "policy_ms": 0.018416000000343047,
+    "snapshot_ms": 0.5484159999996336,
     "judge_http_rtt_ms": null,
-    "ingest_to_signal_ms": 1351
+    "ingest_to_signal_ms": 1348
    },
-   "event_id": "ev-ae0eb487-6f7e-4217-a99a-d338d953e4e3",
+   "event_id": "ev-970df2ff-d5d5-4025-9029-61f955abff1a",
    "semantic": {
     "hits": [],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:21.560Z",
+   "created_at": "2026-09-28T23:37:46.074Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -704,9 +704,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": null,
-   "decision_id": "dec-2f00a2bb-09af-49a0-85a9-055661b048f7",
+   "decision_id": "dec-0500394c-2471-49fb-bc2d-c20e10d25e67",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-0adb4f78-569a-4b04-8934-a87b1d9f4bb7",
+   "snapshot_id": "snap-5853751a-b687-4de2-adfd-70abad5a4830",
    "rule_results": [
     {
      "reason": "no candidate action to check",
@@ -766,7 +766,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-94949a98-265d-4eb8-8e52-2d5923f4c647",
+   "evaluation_id": "eval-f94d3faf-6d7d-4d61-a038-cc7e14196957",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -775,13 +775,13 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.0040829999998095445,
-    "policy_ms": 0.021999999999934516,
-    "snapshot_ms": 0.733208999999988,
-    "judge_http_rtt_ms": 549.9057090000001,
-    "ingest_to_signal_ms": 1525
+    "rules_ms": 0.00454200000012861,
+    "policy_ms": 0.028958000000329776,
+    "snapshot_ms": 0.7335829999999532,
+    "judge_http_rtt_ms": 549.1303330000001,
+    "ingest_to_signal_ms": 1523
    },
-   "event_id": "ev-742de9a1-f8c6-40ed-9ed5-651ebab1bb1b",
+   "event_id": "ev-d326ee31-c9d3-4b40-8064-b6204abca3df",
    "semantic": {
     "hits": [
      {
@@ -793,7 +793,7 @@
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:21.730Z",
+   "created_at": "2026-09-28T23:37:46.246Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -802,9 +802,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": "allow",
-   "decision_id": "dec-df0da7e8-7c1f-4b6a-94c7-9e30d8cbd10a",
+   "decision_id": "dec-098a8866-b5fe-43dc-9edf-38e59cc8d472",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-a90f9c7a-8138-444b-8609-f074ca133549",
+   "snapshot_id": "snap-b9df8143-46ca-40b0-870b-a3da2afc83e2",
    "rule_results": [
     {
      "reason": "tool present in the tool registry",
@@ -864,7 +864,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-d08d71ce-1909-411b-aaa9-bdc906ae0137",
+   "evaluation_id": "eval-ecae2ea1-1d11-4163-b457-bf682644e7c6",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -873,19 +873,19 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.0037919999999758147,
-    "policy_ms": 0.014416999999866675,
-    "snapshot_ms": 0.5667909999997391,
+    "rules_ms": 0.003790999999637279,
+    "policy_ms": 0.011291999999684776,
+    "snapshot_ms": 0.7432920000001104,
     "judge_http_rtt_ms": null,
-    "ingest_to_signal_ms": 1517
+    "ingest_to_signal_ms": 1516
    },
-   "event_id": "ev-c648bb9f-9f3c-40fc-aab1-c2bc12d12f85",
+   "event_id": "ev-6e3a1141-e8ea-4f07-a7d6-20a4091ea15e",
    "semantic": {
     "hits": [],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:21.733Z",
+   "created_at": "2026-09-28T23:37:46.250Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -894,9 +894,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": null,
-   "decision_id": "dec-d9a3de81-f31a-414c-8e80-7bbbdfdbd59b",
+   "decision_id": "dec-fe31e9ba-586c-4543-9b52-68d0d79fe8c7",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-7ee472d5-4361-4b0e-876b-f29a84eb74b4",
+   "snapshot_id": "snap-a73c08b3-a3a7-4b33-8478-7fd087a6af10",
    "rule_results": [
     {
      "reason": "no candidate action to check",
@@ -956,7 +956,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-dbf222f5-a9c4-4e09-b605-41dfa8e1dbb7",
+   "evaluation_id": "eval-5bb6729d-a2b1-459e-a85c-382a1211c06e",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -967,19 +967,19 @@
     "amount_limit: amount 48000 exceeds the approval limit 25000"
    ],
    "timings": {
-    "rules_ms": 0.003165999999964697,
-    "policy_ms": 0.0470420000001468,
-    "snapshot_ms": 1.082999999999629,
+    "rules_ms": 0.00454200000012861,
+    "policy_ms": 0.05541700000003402,
+    "snapshot_ms": 1.5473750000001019,
     "judge_http_rtt_ms": null,
     "ingest_to_signal_ms": 1511
    },
-   "event_id": "ev-0528ea04-f6f8-4e96-82d8-bb6871731396",
+   "event_id": "ev-7d43a139-6437-4269-8edd-ece2ec0efa4f",
    "semantic": {
     "hits": [],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:21.736Z",
+   "created_at": "2026-09-28T23:37:46.254Z",
    "decided_by": "rule",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -988,9 +988,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": "deny",
-   "decision_id": "dec-c15ffc4f-9c1e-4d89-846d-d93e89bedaaa",
+   "decision_id": "dec-8481b555-ae8f-48b8-ab54-9bed60ac11f1",
    "recommended": "BLOCK",
-   "snapshot_id": "snap-1214c3aa-5a00-4c9d-aab2-612ea034f195",
+   "snapshot_id": "snap-2c12a258-57a0-4e51-b760-e2793822eddb",
    "rule_results": [
     {
      "reason": "tool present in the tool registry",
@@ -1061,19 +1061,19 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.0015839999996387633,
-    "policy_ms": 0.003916000000117492,
-    "snapshot_ms": 0.42787500000031287,
+    "rules_ms": 0.0019170000000485743,
+    "policy_ms": 0.0048750000000836735,
+    "snapshot_ms": 0.5968330000000606,
     "judge_http_rtt_ms": null,
-    "ingest_to_signal_ms": 1509
+    "ingest_to_signal_ms": 1510
    },
-   "event_id": "ev-942cde74-2612-4ac1-bd49-4ceafeb4e35b",
+   "event_id": "ev-bc8ee00b-dad2-4b7f-8694-6b79c0ac8ffd",
    "semantic": {
     "hits": [],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:21.738Z",
+   "created_at": "2026-09-28T23:37:46.257Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -1082,9 +1082,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": null,
-   "decision_id": "dec-95e30d4c-da5a-438f-830e-29a3a8062ae2",
+   "decision_id": "dec-7d50fdec-e23d-47db-9499-8eeb7010ccef",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-187a5418-b4e1-4227-b87a-6f79f92bc872",
+   "snapshot_id": "snap-a017bcad-9271-4f94-80d3-b1c2f5e7751a",
    "rule_results": [
     {
      "reason": "no candidate action to check",
@@ -1144,7 +1144,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-ea750a14-9628-475d-8048-68e8ee6e89b1",
+   "evaluation_id": "eval-5323c576-5c27-4e0b-a193-900ca8b81e03",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -1155,19 +1155,19 @@
     "approval_evidence: payment without an approved approval (approval_status=missing)"
    ],
    "timings": {
-    "rules_ms": 0.002708999999867956,
-    "policy_ms": 0.007000000000061846,
-    "snapshot_ms": 1.122957999999926,
+    "rules_ms": 0.003666999999950349,
+    "policy_ms": 0.009832999999616732,
+    "snapshot_ms": 1.5442080000002534,
     "judge_http_rtt_ms": null,
-    "ingest_to_signal_ms": 1504
+    "ingest_to_signal_ms": 1506
    },
-   "event_id": "ev-238bd5d3-837c-4ab7-b251-8adda62c449b",
+   "event_id": "ev-17fa9928-15c2-457a-ae1f-caafc9432cc5",
    "semantic": {
     "hits": [],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:21.741Z",
+   "created_at": "2026-09-28T23:37:46.261Z",
    "decided_by": "rule",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -1176,9 +1176,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": "hold_for_approval",
-   "decision_id": "dec-2afa07f6-b8ca-4d0a-996c-fbb5437616d6",
+   "decision_id": "dec-25d3dd6f-ef88-4565-a1a6-fb91b683ca6f",
    "recommended": "HOLD",
-   "snapshot_id": "snap-03d8468a-013d-4e0d-9bf5-594aaf255e1d",
+   "snapshot_id": "snap-241178fc-1b9c-4023-8357-c75dcffe3deb",
    "rule_results": [
     {
      "reason": "tool present in the tool registry",
@@ -1249,19 +1249,19 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.0012500000002546585,
-    "policy_ms": 0.00491699999975026,
-    "snapshot_ms": 0.47258400000009715,
+    "rules_ms": 0.0018749999999272404,
+    "policy_ms": 0.006416999999601103,
+    "snapshot_ms": 0.6262919999999212,
     "judge_http_rtt_ms": null,
-    "ingest_to_signal_ms": 1503
+    "ingest_to_signal_ms": 1506
    },
-   "event_id": "ev-65fe55a8-9de6-4b4a-bc68-11fb8475cd15",
+   "event_id": "ev-e6db6341-81f3-4121-a466-3d60ec1f5b83",
    "semantic": {
     "hits": [],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:21.743Z",
+   "created_at": "2026-09-28T23:37:46.264Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -1270,9 +1270,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": null,
-   "decision_id": "dec-b7f6ddd6-05bb-4ef3-8be2-3ee45a25aded",
+   "decision_id": "dec-fb214a4e-47ee-41d5-a445-9c9602d309e7",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-bc4c432f-52b2-4cac-91a4-636655c1454c",
+   "snapshot_id": "snap-46ec9aec-18c8-47fe-8850-5662630b7cac",
    "rule_results": [
     {
      "reason": "no candidate action to check",
@@ -1332,7 +1332,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-e67e12ab-e5f3-47f8-84c6-25dd2e3c62e0",
+   "evaluation_id": "eval-861c4a9b-60d9-499a-b6f1-7bfe5e5a89e2",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -1341,13 +1341,13 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.0049579999999878055,
-    "policy_ms": 0.01945800000021336,
-    "snapshot_ms": 1.3601669999998194,
-    "judge_http_rtt_ms": 742.4945829999997,
-    "ingest_to_signal_ms": 2094
+    "rules_ms": 0.0039999999999054126,
+    "policy_ms": 0.01758300000028612,
+    "snapshot_ms": 1.2460419999997612,
+    "judge_http_rtt_ms": 743.1747500000001,
+    "ingest_to_signal_ms": 2092
    },
-   "event_id": "ev-050ad401-e4c2-48d6-a9e3-c0aa45a400d1",
+   "event_id": "ev-c0658505-ffc0-49bf-a043-6a3f3119a9ee",
    "semantic": {
     "hits": [
      {
@@ -1369,7 +1369,7 @@
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:22.306Z",
+   "created_at": "2026-09-28T23:37:46.821Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -1378,9 +1378,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": "allow",
-   "decision_id": "dec-85fb99dd-9ae4-4143-80d4-d670fb118164",
+   "decision_id": "dec-567cfc60-4a75-48f7-b838-f6228ded148c",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-0f804185-e954-4676-8a0d-cc43f8fcf5d8",
+   "snapshot_id": "snap-b9714255-83a8-460e-a9d8-7eef68692a70",
    "rule_results": [
     {
      "reason": "tool present in the tool registry",
@@ -1442,7 +1442,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-1427d0be-52fa-44a5-a1f7-9f690cc0f8c0",
+   "evaluation_id": "eval-8fdacd6d-bde4-4310-b1fa-4619a96bbc5d",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -1453,19 +1453,19 @@
     "domain_allowlist: destination domain northwind-remit.example is not in the allowlist"
    ],
    "timings": {
-    "rules_ms": 0.003875000000334694,
-    "policy_ms": 0.004708999999820662,
-    "snapshot_ms": 0.5595419999999649,
+    "rules_ms": 0.004209000000173546,
+    "policy_ms": 0.0060840000001007866,
+    "snapshot_ms": 0.5673749999996289,
     "judge_http_rtt_ms": null,
-    "ingest_to_signal_ms": 2053
+    "ingest_to_signal_ms": 2054
    },
-   "event_id": "ev-50b923e4-d2b4-4410-be7d-a61ec0cf2008",
+   "event_id": "ev-ef61be18-9066-4aba-9550-0e697493fb4b",
    "semantic": {
     "hits": [],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:22.309Z",
+   "created_at": "2026-09-28T23:37:46.824Z",
    "decided_by": "rule",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -1474,9 +1474,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": "deny",
-   "decision_id": "dec-31986faa-1019-4c7d-beea-bd98edf23311",
+   "decision_id": "dec-cc0df1c7-61f0-45a4-b678-2f6a9e09209a",
    "recommended": "BLOCK",
-   "snapshot_id": "snap-f49be5df-ed9d-46e5-a0c8-18d00ec2c651",
+   "snapshot_id": "snap-49f98b32-956b-4aca-adac-7ecc204d855b",
    "rule_results": [
     {
      "reason": "tool present in the tool registry",
@@ -1546,19 +1546,19 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.0018749999999272404,
-    "policy_ms": 0.006750000000010914,
-    "snapshot_ms": 0.45895800000016607,
+    "rules_ms": 0.0024169999996956903,
+    "policy_ms": 0.0069590000002790475,
+    "snapshot_ms": 0.4774999999999636,
     "judge_http_rtt_ms": null,
-    "ingest_to_signal_ms": 2049
+    "ingest_to_signal_ms": 2052
    },
-   "event_id": "ev-d3a0dba1-a5cc-4e4f-a9ea-7586ace6ffdb",
+   "event_id": "ev-2ee9501e-12c8-48d7-82b9-8780fc29eefa",
    "semantic": {
     "hits": [],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:22.311Z",
+   "created_at": "2026-09-28T23:37:46.826Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -1567,9 +1567,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": null,
-   "decision_id": "dec-377e031a-185a-499d-8754-04308af078e2",
+   "decision_id": "dec-4b73cc18-a4c7-4af6-90a7-0ea57d52152d",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-34579d8b-bb54-4c9c-8479-ea276a020fa6",
+   "snapshot_id": "snap-4ad897c0-c18f-494a-9de7-7bf86d72a3a4",
    "rule_results": [
     {
      "reason": "no candidate action to check",
@@ -1629,7 +1629,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-bfcbfbf9-7a80-4389-b191-3b9a765ad077",
+   "evaluation_id": "eval-7a2046ea-fdba-474f-b5bd-1da891cd126f",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -1640,19 +1640,19 @@
     "required semantic signal unavailable (judge timeout); not treated as low risk"
    ],
    "timings": {
-    "rules_ms": 0.0017920000000231084,
-    "policy_ms": 0.017083999999613297,
-    "snapshot_ms": 0.4442500000000109,
-    "judge_http_rtt_ms": 3.2214590000003227,
-    "ingest_to_signal_ms": 2046
+    "rules_ms": 0.001833000000260654,
+    "policy_ms": 0.014708000000155153,
+    "snapshot_ms": 0.43754200000012133,
+    "judge_http_rtt_ms": 3.4621250000000146,
+    "ingest_to_signal_ms": 2051
    },
-   "event_id": "ev-5fc78894-16ba-48cc-9646-4da02d7f77f2",
+   "event_id": "ev-03ed33e9-d11c-4225-abb1-fa46895fabc8",
    "semantic": {
     "hits": [],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:22.317Z",
+   "created_at": "2026-09-28T23:37:46.832Z",
    "decided_by": "judge_unavailable",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -1661,9 +1661,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": "allow_and_alert",
-   "decision_id": "dec-7515d273-4823-42eb-8c8d-4048ca66ea2d",
+   "decision_id": "dec-45443c7f-5d62-4262-964a-c49b4ba42bd0",
    "recommended": "ALERT",
-   "snapshot_id": "snap-f1f3571e-1b8b-4f7e-ac53-6b987c76b9b1",
+   "snapshot_id": "snap-61e2fa8e-61b2-4801-a8c8-8b07604092dd",
    "rule_results": [
     {
      "reason": "tool present in the tool registry",
@@ -1725,7 +1725,7 @@
    "coverage_gaps": [
     "judge timeout"
    ],
-   "evaluation_id": "eval-944f9cf8-4972-4bd6-a0ce-d304b24cb65d",
+   "evaluation_id": "eval-91bdb266-3488-4b41-a36c-3a9d87cc662e",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -1734,19 +1734,19 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.0032499999997526174,
-    "policy_ms": 0.003957999999784079,
-    "snapshot_ms": 0.5132920000000922,
+    "rules_ms": 0.002541999999721156,
+    "policy_ms": 0.005499999999756255,
+    "snapshot_ms": 0.5232500000001892,
     "judge_http_rtt_ms": null,
-    "ingest_to_signal_ms": 2045
+    "ingest_to_signal_ms": 2050
    },
-   "event_id": "ev-b4cb4565-bd68-454d-8d69-4e688700082e",
+   "event_id": "ev-d5278cd3-9fc1-459f-a75b-1e2261c7db92",
    "semantic": {
     "hits": [],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:22.319Z",
+   "created_at": "2026-09-28T23:37:46.835Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -1755,9 +1755,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": null,
-   "decision_id": "dec-8fd58c23-19f2-42f6-bed2-220224a0711e",
+   "decision_id": "dec-96dedc67-b53a-4e57-885d-c824f0c92530",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-1d7ad418-d7f6-4a52-9137-0c2d3ba8c87c",
+   "snapshot_id": "snap-b24019b1-2823-4f65-b9e6-d208f64081cc",
    "rule_results": [
     {
      "reason": "no candidate action to check",
@@ -1817,7 +1817,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-06b73a06-327e-4fa4-bd78-52e191bb73da",
+   "evaluation_id": "eval-a65ed662-960f-45ea-a60b-4ef71af14f12",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -1828,19 +1828,19 @@
     "required semantic signal unavailable (judge timeout); not treated as low risk"
    ],
    "timings": {
-    "rules_ms": 0.003083000000060565,
-    "policy_ms": 0.008916999999655673,
-    "snapshot_ms": 1.107542000000194,
-    "judge_http_rtt_ms": 0.7618750000001455,
-    "ingest_to_signal_ms": 2045
+    "rules_ms": 0.003917000000001281,
+    "policy_ms": 0.01025000000026921,
+    "snapshot_ms": 1.1995409999999538,
+    "judge_http_rtt_ms": 1.1485419999999067,
+    "ingest_to_signal_ms": 2051
    },
-   "event_id": "ev-45e77f91-7cbf-4b89-a58b-65df663ba6a2",
+   "event_id": "ev-bc82d7bb-a2a5-4a0f-bff4-14e09e7e3636",
    "semantic": {
     "hits": [],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:22.323Z",
+   "created_at": "2026-09-28T23:37:46.839Z",
    "decided_by": "judge_unavailable",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -1849,9 +1849,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": "hold_for_approval",
-   "decision_id": "dec-c42b8a76-bd46-4732-ac14-88d09754414d",
+   "decision_id": "dec-e9538f13-f201-4fc7-851f-b9ca86235a8f",
    "recommended": "HOLD",
-   "snapshot_id": "snap-4a07643b-a15b-4ba2-aaf0-55cf99b413c8",
+   "snapshot_id": "snap-05101005-9d5e-4af6-a67b-4fe95161a958",
    "rule_results": [
     {
      "reason": "tool present in the tool registry",
@@ -1915,7 +1915,7 @@
    "coverage_gaps": [
     "judge timeout"
    ],
-   "evaluation_id": "eval-5f2392af-2449-46d6-ac0e-62def50c56b6",
+   "evaluation_id": "eval-1355b271-bcdb-4d19-885f-fb52d06eb707",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -1924,19 +1924,19 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.002084000000195374,
-    "policy_ms": 0.004083000000264292,
-    "snapshot_ms": 0.4707499999999527,
+    "rules_ms": 0.002124999999978172,
+    "policy_ms": 0.004249999999956344,
+    "snapshot_ms": 0.6434580000000096,
     "judge_http_rtt_ms": null,
-    "ingest_to_signal_ms": 2043
+    "ingest_to_signal_ms": 2050
    },
-   "event_id": "ev-99601f16-c75d-42f5-9007-dc5c63337692",
+   "event_id": "ev-41e70353-46d0-483a-9a86-646dc1377a6f",
    "semantic": {
     "hits": [],
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:22.325Z",
+   "created_at": "2026-09-28T23:37:46.842Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -1945,9 +1945,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": null,
-   "decision_id": "dec-02513115-1e1a-43f9-959b-b50e375ef4c2",
+   "decision_id": "dec-ae289106-4499-474c-a056-c33baa0aa7a9",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-d2ec996d-bfc9-4872-a5ed-8dc24dcc576b",
+   "snapshot_id": "snap-37d40502-7332-4418-b9c7-afd704cf7cf2",
    "rule_results": [
     {
      "reason": "no candidate action to check",
@@ -2007,7 +2007,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-e8c4460c-707b-4dbc-a2ca-2a1a2ff317a8",
+   "evaluation_id": "eval-0599a32b-1391-4009-b428-6eef1ce0a610",
    "policy_version": "policy-a1",
    "enforced_action": null
   }
@@ -2016,13 +2016,13 @@
   "body": {
    "reasons": [],
    "timings": {
-    "rules_ms": 0.002207999999882304,
-    "policy_ms": 0.017457999999805907,
-    "snapshot_ms": 1.1144170000002305,
-    "judge_http_rtt_ms": 801.7163329999998,
-    "ingest_to_signal_ms": 2296
+    "rules_ms": 0.003000000000156433,
+    "policy_ms": 0.013875000000098225,
+    "snapshot_ms": 0.7406669999995756,
+    "judge_http_rtt_ms": 793.2781670000004,
+    "ingest_to_signal_ms": 2294
    },
-   "event_id": "ev-69b881ec-4f39-4083-be54-b9e1c8f1837f",
+   "event_id": "ev-333edcdb-b2d1-4816-9d8a-33e13c714648",
    "semantic": {
     "hits": [
      {
@@ -2034,7 +2034,7 @@
     "calibrated": false
    },
    "tenant_id": "t-demo",
-   "created_at": "2026-09-28T23:28:22.548Z",
+   "created_at": "2026-09-28T23:37:47.061Z",
    "decided_by": "default",
    "provenance": {
     "source_mode": "live_sandbox_shadow",
@@ -2043,9 +2043,9 @@
     "tool_environment": "sandbox"
    },
    "would_have": "allow",
-   "decision_id": "dec-16223601-3360-40d8-9ce8-f07b96443132",
+   "decision_id": "dec-43d3f0f5-3258-4b29-9781-28de1a6ccaed",
    "recommended": "NO_CONFIGURED_RISK",
-   "snapshot_id": "snap-4d5f23ff-878c-4b50-b032-15d6f5843264",
+   "snapshot_id": "snap-aba6b811-d60a-43a9-ae3b-08cde5c6cefc",
    "rule_results": [
     {
      "reason": "no candidate action to check",
@@ -2105,7 +2105,7 @@
     }
    ],
    "coverage_gaps": [],
-   "evaluation_id": "eval-b8a9f826-5d3c-4a04-a4f3-053859157e4d",
+   "evaluation_id": "eval-011072fc-b21e-47e4-9fa1-18e4fb32e3e2",
    "policy_version": "policy-a1",
    "enforced_action": null
   }

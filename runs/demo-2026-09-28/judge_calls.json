@@ -4,131 +4,131 @@
   "judge_source": "kev-local:jaredpalmer/kev-4b",
   "status": "ok",
   "http_status": 200,
-  "rtt_ms": 206.43879200000003,
+  "rtt_ms": 205.72429199999988,
   "input_tokens": 100,
   "output_tokens": 132,
   "billing": "local_compute",
-  "at": "2026-09-28T23:28:20.370Z"
+  "at": "2026-09-28T23:37:44.886Z"
  },
  {
   "caller": "realtime",
   "judge_source": "kev-local:jaredpalmer/kev-4b",
   "status": "ok",
   "http_status": 200,
-  "rtt_ms": 417.0671249999999,
+  "rtt_ms": 417.30437500000005,
   "input_tokens": 134,
   "output_tokens": 133,
   "billing": "local_compute",
-  "at": "2026-09-28T23:28:20.597Z"
+  "at": "2026-09-28T23:37:45.115Z"
  },
  {
   "caller": "realtime",
   "judge_source": "kev-local:jaredpalmer/kev-4b",
   "status": "ok",
   "http_status": 200,
-  "rtt_ms": 796.0675000000001,
+  "rtt_ms": 796.6011249999999,
   "input_tokens": 310,
   "output_tokens": 227,
   "billing": "local_compute",
-  "at": "2026-09-28T23:28:21.176Z"
+  "at": "2026-09-28T23:37:45.692Z"
  },
  {
   "caller": "realtime",
   "judge_source": "kev-local:jaredpalmer/kev-4b",
   "status": "ok",
   "http_status": 200,
-  "rtt_ms": 952.445125,
-  "input_tokens": 242,
-  "output_tokens": 92,
+  "rtt_ms": 946.7227089999999,
+  "input_tokens": 244,
+  "output_tokens": 94,
   "billing": "local_compute",
-  "at": "2026-09-28T23:28:21.556Z"
+  "at": "2026-09-28T23:37:46.071Z"
  },
  {
   "caller": "realtime",
   "judge_source": "kev-local:jaredpalmer/kev-4b",
   "status": "ok",
   "http_status": 200,
-  "rtt_ms": 549.9057090000001,
+  "rtt_ms": 549.1303330000001,
   "input_tokens": 100,
   "output_tokens": 133,
   "billing": "local_compute",
-  "at": "2026-09-28T23:28:21.730Z"
+  "at": "2026-09-28T23:37:46.246Z"
  },
  {
   "caller": "realtime",
   "judge_source": "kev-local:jaredpalmer/kev-4b",
   "status": "ok",
   "http_status": 200,
-  "rtt_ms": 742.4945829999997,
+  "rtt_ms": 743.1747500000001,
   "input_tokens": 301,
   "output_tokens": 229,
   "billing": "local_compute",
-  "at": "2026-09-28T23:28:22.306Z"
+  "at": "2026-09-28T23:37:46.821Z"
  },
  {
   "caller": "realtime",
   "judge_source": "kev-local:jaredpalmer/kev-4b",
   "status": "timeout",
   "http_status": null,
-  "rtt_ms": 3.2214590000003227,
+  "rtt_ms": 3.4621250000000146,
   "input_tokens": null,
   "output_tokens": null,
   "billing": "unknown",
-  "at": "2026-09-28T23:28:22.317Z"
+  "at": "2026-09-28T23:37:46.832Z"
  },
  {
   "caller": "realtime",
   "judge_source": "kev-local:jaredpalmer/kev-4b",
   "status": "timeout",
   "http_status": null,
-  "rtt_ms": 0.7618750000001455,
+  "rtt_ms": 1.1485419999999067,
   "input_tokens": null,
   "output_tokens": null,
   "billing": "unknown",
-  "at": "2026-09-28T23:28:22.323Z"
+  "at": "2026-09-28T23:37:46.839Z"
  },
  {
   "caller": "realtime",
   "judge_source": "kev-local:jaredpalmer/kev-4b",
   "status": "ok",
   "http_status": 200,
-  "rtt_ms": 801.7163329999998,
+  "rtt_ms": 793.2781670000004,
   "input_tokens": 160,
   "output_tokens": 23,
   "billing": "local_compute",
-  "at": "2026-09-28T23:28:22.547Z"
+  "at": "2026-09-28T23:37:47.061Z"
  },
  {
   "caller": "diagnostic",
   "judge_source": "kev-local:jaredpalmer/kev-4b",
   "status": "ok",
   "http_status": 200,
-  "rtt_ms": 1441.7108749999998,
+  "rtt_ms": 1433.4599999999996,
   "input_tokens": 276,
   "output_tokens": 229,
   "billing": "local_compute",
-  "at": "2026-09-28T23:28:23.770Z"
+  "at": "2026-09-28T23:37:48.279Z"
  },
  {
   "caller": "diagnostic",
   "judge_source": "kev-local:jaredpalmer/kev-4b",
   "status": "ok",
   "http_status": 200,
-  "rtt_ms": 1740.9547910000001,
+  "rtt_ms": 1732.008042,
   "input_tokens": 273,
   "output_tokens": 228,
   "billing": "local_compute",
-  "at": "2026-09-28T23:28:24.292Z"
+  "at": "2026-09-28T23:37:48.797Z"
  },
  {
   "caller": "diagnostic",
   "judge_source": "kev-local:jaredpalmer/kev-4b",
   "status": "ok",
   "http_status": 200,
-  "rtt_ms": 1035.7052920000006,
+  "rtt_ms": 1029.1968749999996,
   "input_tokens": 328,
   "output_tokens": 181,
   "billing": "local_compute",
-  "at": "2026-09-28T23:28:24.809Z"
+  "at": "2026-09-28T23:37:49.312Z"
  }
 ]
