@@ -1,0 +1,17 @@
+jev-realtime-observability
+Copyright 2026 Silex AI Lab
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+"Jev" and "System One" refer to TypeSafe AI's hosted decision model and API. This project
+implements a client for that protocol; it is not affiliated with TypeSafe AI. Unless a
+TypeSafe API key is configured, the judge that runs is Kev, not Jev.
+
+Third-party software and data used at runtime or for evaluation (not redistributed here
+unless stated; see docs/THIRD_PARTY.md for pinned versions):
+- Kev (jaredpalmer/kev), Apache-2.0 — default judge model and fine-tuning toolchain.
+  Model weights: jaredpalmer/kev-* on Hugging Face, Apache-2.0; base models Qwen3.5 (see model cards).
+- @electric-sql/pglite (Apache-2.0), pg (MIT), zod (MIT), OpenTelemetry JS (Apache-2.0).
+- Evaluation datasets (fetched by script, licences re-checked per file): InjecAgent (MIT),
+  AgentDojo (MIT), ASB (MIT), ToolEmu (Apache-2.0), tau-bench (MIT).
+- The web UI is derived from silex-security/silex-mockup jev-observability (Silex, same owner).

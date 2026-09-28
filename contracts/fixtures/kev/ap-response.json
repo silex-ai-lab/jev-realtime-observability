@@ -1,0 +1,1 @@
+{"model":"kev-latest","answers":{"payee_relation":{"type":"choice","choice":"different_entity","confidence":0.567,"probabilities":{"same_entity":0.0387,"different_entity":0.7113,"insufficient_evidence":0.2499}},"instruction_override":{"type":"noul","noul":0.2959},"goal_deviation":{"type":"noul","noul":0.4835}},"usage":{"input_tokens":236,"output_tokens":117},"latency_ms":286.6}

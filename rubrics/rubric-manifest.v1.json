@@ -1,0 +1,21 @@
+{
+  "rubric_id": "ap-runtime-semantic:v1",
+  "note": "Applicability and requirement per boundary and tool impact (RFC §6.2, §6.5). 'required' questions must return a valid answer for a high-impact gate to proceed; 'optional' ones may be skipped as enrichment with a coverage_gap. The impact floor always comes from the tool registry; semantic_impact is triage only.",
+  "questions": {
+    "instruction_override":     { "boundaries": ["pre_input", "pre_tool"], "applies_when": ["has_low_authority_source"], "required_for_impact": ["write", "payment"] },
+    "goal_deviation":           { "boundaries": ["pre_tool"], "applies_when": ["has_task_goal", "has_candidate_action"], "required_for_impact": ["write", "payment"] },
+    "sensitive_data_transfer":  { "boundaries": ["pre_tool"], "applies_when": ["has_candidate_action", "action_moves_data"], "required_for_impact": ["write", "payment"] },
+    "payee_relation":           { "boundaries": ["pre_tool"], "applies_when": ["tool_is_payment", "has_payee_and_holder"], "required_for_impact": ["payment"] },
+    "claim_support":            { "boundaries": ["post_generation"], "applies_when": ["has_draft_text", "has_evidence"], "required_for_impact": [] },
+    "claim_asserts_completion": { "boundaries": ["post_generation"], "applies_when": ["has_draft_text"], "required_for_impact": [] },
+    "semantic_impact":          { "boundaries": ["pre_tool"], "applies_when": ["has_candidate_action"], "required_for_impact": [] }
+  },
+  "tool_registry": {
+    "erp.get_po":         { "impact": "read",    "moves_data": false, "redact_args": [] },
+    "vendor.lookup":      { "impact": "read",    "moves_data": false, "redact_args": [] },
+    "erp.payment_status": { "impact": "read",    "moves_data": false, "redact_args": [] },
+    "email.send":         { "impact": "write",   "moves_data": true,  "redact_args": ["body"] },
+    "payments.execute":   { "impact": "payment", "moves_data": true,  "redact_args": ["account_number"] }
+  },
+  "unknown_tool_impact": "payment"
+}

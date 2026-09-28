@@ -1,0 +1,1 @@
+{"model":"kev-latest","answers":{"semantic_impact":{"type":"score","score":1.5973,"legend":{"0":"none","1":"minor","2":"material","3":"severe"},"probabilities":{"0":0.259,"1":0.1078,"2":0.4102,"3":0.2231},"confidence":0.1512},"goal_deviation":{"type":"noul","noul":0.4893}},"usage":{"input_tokens":71,"output_tokens":132},"latency_ms":262.9}

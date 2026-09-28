@@ -1,0 +1,32 @@
+{
+  "name": "jev-realtime-observability",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=23.6"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --test-concurrency=1 'tests/unit/**/*.test.ts' 'tests/contract/**/*.test.ts' 'tests/integration/**/*.test.ts' 'tests/security/**/*.test.ts'",
+    "test:e2e": "node --test --test-concurrency=1 'tests/e2e/**/*.test.ts'",
+    "probe": "node tests/probe/run-probes.ts",
+    "server": "node server/main.ts",
+    "kev": "bash scripts/kev-serve.sh"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.222.0",
+    "@opentelemetry/resources": "^2.11.0",
+    "@opentelemetry/sdk-trace-base": "^2.11.0",
+    "pg": "^8.23.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "@types/pg": "^8.23.1",
+    "typescript": "^7.0.2"
+  }
+}

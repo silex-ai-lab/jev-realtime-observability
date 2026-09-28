@@ -1,7 +1,7 @@
 # Jev real-time agent observability — open-source build plan (v0.3)
 
 Author: Claude (planner) · 2026-09-28 · Status: **v0.3 — APPROVED by all three seats in round 3 (plan commit `0aab813`): DEEPSEEK: PLAN-APPROVED · CODEX: PLAN-APPROVED · PLANNER (claude): PLAN-APPROVED.**
-Repo: `jev-realtime-observability` (local; created at `github.com/silex-ai-lab/` only after the plan gate passes) · Review base: *recorded at Step 5*
+Repo: `jev-realtime-observability` (local; created at `github.com/silex-ai-lab/` only after the plan gate passes) · Review base for Gate A: `f9bcc05` (code-gate diffs are taken against it)
 
 **Request (user, 2026-09-28):** "我需要真实的构建一个 opensource 的 realtime agent observability 的 Jev 实现，请根据 gpt 给的 design plan ~/Downloads/jev_desgin_plan_cn.md 在 github.com/silex-ai-lab/ 下面新建一个 repo，目录按需求构建，做这个真实的环境搭建，jev 实现可以利用或者参考这里面的 github 资源：https://github.com/logicrw/awesome-jev-projects/blob/main/README.zh-CN.md，telemetry 的数据可以收集开源数据来做训练、微调或者推理，方案 review 通过后直接开始实现。"
 
