@@ -27,7 +27,7 @@ This file plus `contracts/*.ts`, `rubrics/*.json`, `server/storage/migrations/*.
 | `tests/security/**`, `tests/e2e/**`, `tests/probe/**`, `tests/helpers/{harness.ts,canary.ts}` | codex (T3) |
 
 `contracts/canonical.ts` (`canonicalJson`, `sha256`, `digestOf`) is the only digest implementation:
-`argsDigest(args) = digestOf(args)`, `requestHash(req) = digestOf(req)`, event `content_digest = digestOf(body)`.
+`argsDigest(args) = digestOf(args)`, `requestHash(req) = digestOf(req)`, event `content_digest = eventContentDigest(event)` (server/ingest): the whole event except transport-specific fields (event_id, source_event_id, trace/span ids, schema_version, occurred_at), so an OTLP mirror dedups and any other change under the same id is a conflict.
 
 ## 3. Real judge responses
 

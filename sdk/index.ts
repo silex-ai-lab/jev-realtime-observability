@@ -51,6 +51,7 @@ export function createCapture(o: CaptureOptions): Capture {
       'silex.actor_kind': ev.actor.kind, 'silex.actor_id': ev.actor.id,
     };
     if (ev.task_goal) attrs['silex.task_goal'] = ev.task_goal;
+    if (ev.tool_call_id) attrs['silex.tool_call_id'] = ev.tool_call_id;
     if (ev.operation) attrs['silex.operation'] = JSON.stringify(ev.operation);
     if (ev.result) attrs['silex.result'] = JSON.stringify(ev.result);
     if (ev.text) attrs['silex.text'] = ev.text;

@@ -117,13 +117,14 @@ function renderKpis() {
   const rtt = evals.filter(e => e.status === 'ok' || e.status === 'partial').map(e => e.judge_http_rtt_ms).filter(v => v != null);
   // Semantic coverage counts only evaluations that asked the judge something.
   const asked = evals.filter(e => (e.question_ids ?? []).length > 0);
-  const semOk = asked.filter(e => e.status === 'ok').length;
+  // Covered = every required signal arrived (ok, or partial with all required answers present).
+  const semOk = asked.filter(e => e.status === 'ok' || (e.status === 'partial' && (e.required_question_ids ?? []).every(q => e.signals?.[q]))).length;
   const interventions = decisions.filter(d => d.recommended !== 'NO_CONFIGURED_RISK').length;
   const tiles = [
     ['i2s_judge_p95', 'ingest → signal p95, judge path', ms(nearestRank(i2sJudge, 0.95)), `measured · n=${i2sJudge.length} · p50 ${ms(nearestRank(i2sJudge, 0.5))}`],
     ['i2s_rule_p95', 'ingest → signal p95, no judge call', ms(nearestRank(i2sRule, 0.95)), `measured · n=${i2sRule.length} (rule-decided or nothing to ask; judge failures excluded from both)`],
     ['rtt_p95', 'judge HTTP RTT p95', ms(nearestRank(rtt, 0.95)), `measured · n=${rtt.length}`],
-    ['semantic_coverage', 'semantic coverage', pct(semOk, asked.length), `ok / evaluations that asked questions (n=${asked.length}) · expired ${counts.expired}`],
+    ['semantic_coverage', 'semantic coverage', pct(semOk, asked.length), `required signals delivered / evaluations that asked (n=${asked.length}) · expired ${counts.expired}`],
     ['interventions', 'recommended interventions', String(interventions), `of ${decisions.length} decisions · gaps ${counts.gaps}`],
   ];
   const na = [

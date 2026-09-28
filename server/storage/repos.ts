@@ -86,15 +86,15 @@ export async function getEvent(q: Queryable, tenantId: string, eventId: string):
   return r.rows[0] ? (r.rows[0].body as StoredEvent) : null;
 }
 
-/** Events of a run received at or before `upToReceivedAt`, ordered by received_at, producer_seq. */
+/** The most recent `limit` events of a run received at or before `upToReceivedAt`, returned oldest first. */
 export async function listRunEvents(q: Queryable, tenantId: string, runId: string, upToReceivedAt: string | null, limit: number): Promise<StoredEvent[]> {
   const params: unknown[] = [tenantId, runId];
   let sql = `SELECT body FROM events WHERE tenant_id = $1 AND run_id = $2`;
   if (upToReceivedAt) { params.push(upToReceivedAt); sql += ` AND received_at <= $${params.length}`; }
   params.push(limit);
-  sql += ` ORDER BY received_at ASC, producer_seq ASC LIMIT $${params.length}`;
+  sql += ` ORDER BY received_at DESC, producer_seq DESC LIMIT $${params.length}`;
   const r = await q.query<{ body: unknown }>(sql, params);
-  return r.rows.map(x => x.body as StoredEvent);
+  return r.rows.map(x => x.body as StoredEvent).reverse();
 }
 
 /** Leases the highest-priority ready job (status queued, or leased with lease_until < now). Atomic. */

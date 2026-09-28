@@ -128,6 +128,8 @@ export function createWorker(d: WorkerDeps): Worker {
     // Same process received the event, so wall-clock difference is on one clock (RFC §11.1 note).
     decision.timings.ingest_to_signal_ms = Date.now() - Date.parse(ev.received_at);
     const committed = await d.db.tx(async q => {
+      // Serialises concurrent completions for one event on real Postgres too (migration 0002 unique index is the backstop).
+      await q.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [`${tenantId}/${eventId}`]);
       // Idempotent completion: if a lease expired mid-evaluation and another slot already decided this
       // event, record nothing new (the judge call is still in the ledger; RFC §9.1: no exactly-once inference).
       const prior = await q.query(`SELECT 1 FROM decisions WHERE tenant_id = $1 AND event_id = $2 AND replay_of IS NULL LIMIT 1`, [tenantId, eventId]);

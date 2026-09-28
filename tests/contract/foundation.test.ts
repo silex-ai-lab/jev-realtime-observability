@@ -46,7 +46,7 @@ test('canonical JSON sorts keys deeply and rejects non-finite numbers', () => {
 test('core migrations apply on PGlite and are idempotent', async () => {
   const db = await openDb();
   const first = await migrate(db);
-  assert.deepEqual(first, ['core/0001_init.sql']);
+  assert.deepEqual(first, ['core/0001_init.sql', 'core/0002_decision_unique.sql']);
   assert.deepEqual(await migrate(db), []);
   const t = await db.query<{ n: number }>(`SELECT count(*)::int n FROM information_schema.tables WHERE table_schema = 'public'`);
   assert.ok(t.rows[0].n >= 17);

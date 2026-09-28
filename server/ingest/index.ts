@@ -1,6 +1,7 @@
 // Ingest (RFC §5.2, §9.1, §9.2): authenticated boundary events and OTLP/HTTP JSON spans.
 // An accepted event is persisted together with its evaluation job in one transaction, then 202.
 import { BoundaryEvent, type StoredEvent } from '../../contracts/events.ts';
+import { MANIFEST } from '../state/index.ts';
 import { EVALUATED_BOUNDARIES, SCHEMA_VERSION, type Boundary } from '../../contracts/common.ts';
 import { digestOf } from '../../contracts/canonical.ts';
 import type { Db } from '../storage/db.ts';
@@ -24,12 +25,9 @@ export async function ingestEvents(deps: IngestDeps, tenantId: string, raw: unkn
       continue;
     }
     const ev = parsed.data;
-    const stored: StoredEvent = { ...ev, tenant_id: tenantId, received_at: new Date().toISOString(), ingest_path: path };
-    // Identity content, not the full body: an OTLP mirror of an SDK event differs in id and encoding
-    // but must dedup (RFC §5.2), while a changed boundary, sequence, tool or args under the same id is a conflict.
-    const contentDigest = digestOf({ run_id: ev.run_id, producer_id: ev.producer_id, producer_seq: ev.producer_seq,
-      boundary: ev.boundary, tool: ev.operation?.tool ?? null, args_digest: ev.operation?.args_digest ?? null,
-      result: ev.result?.status ?? null, text_digest: ev.text ? digestOf(ev.text) : null });
+    const contentDigest = eventContentDigest(ev);
+    // Args are redacted per the tool registry before storage; args_digest (over the full args) is kept (CONTRACTS §2).
+    const stored: StoredEvent = { ...redactEvent(ev), tenant_id: tenantId, received_at: new Date().toISOString(), ingest_path: path };
     const evaluate = EVALUATED_BOUNDARIES.includes(ev.boundary);
     const status = await deps.db.tx(async q => {
       const s = await repos.insertEventWithJob(q, stored, contentDigest,
@@ -50,6 +48,30 @@ export async function ingestEvents(deps: IngestDeps, tenantId: string, raw: unkn
   }
   if (out.some(r => r.status === 'inserted')) deps.notify();
   return out;
+}
+
+/**
+ * Digest of everything an event asserts, excluding only transport-specific fields that legitimately differ
+ * between an SDK event and its OTLP mirror (event_id, source_event_id, trace/span ids, schema_version,
+ * occurred_at). Same id + any other difference → conflict (RFC §5.2, §9.1). Attribute values are compared
+ * as strings because OTLP carries booleans as strings.
+ */
+export function eventContentDigest(ev: BoundaryEvent): string {
+  return digestOf({
+    run_id: ev.run_id, producer_id: ev.producer_id, producer_seq: ev.producer_seq, boundary: ev.boundary,
+    actor: ev.actor, task_goal: ev.task_goal ?? null, tool_call_id: ev.tool_call_id ?? null,
+    operation: ev.operation ?? null, result: ev.result ?? null, text: ev.text ?? null, sources: ev.sources ?? [],
+    attributes: Object.fromEntries(Object.entries(ev.attributes ?? {}).map(([k, v]) => [k, String(v)])),
+  });
+}
+
+export function redactEvent(ev: BoundaryEvent): BoundaryEvent {
+  if (!ev.operation) return ev;
+  const reg = MANIFEST.tool_registry[ev.operation.tool];
+  const redact = reg ? reg.redact_args : Object.keys(ev.operation.args);   // unknown tool: store no arg values
+  if (!redact.length) return ev;
+  const args = Object.fromEntries(Object.entries(ev.operation.args).map(([k, v]) => [k, redact.includes(k) ? '[redacted]' : v]));
+  return { ...ev, operation: { ...ev.operation, args } };
 }
 
 /** The event as streamed to the UI: no args values beyond the redacted set already stored. */

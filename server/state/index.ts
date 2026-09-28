@@ -49,7 +49,8 @@ const clip = (s: string, max: number) => (s.length <= max ? { text: s, truncated
 export async function assembleSnapshot(inp: AssembleInput): Promise<Assembled> {
   const { event: ev, authority, tenantId } = inp;
   const hist = [...inp.history]
-    .filter(h => h.event_id !== ev.event_id && Date.parse(h.received_at) <= Date.parse(ev.received_at))
+    .filter(h => h.event_id !== ev.event_id && Date.parse(h.received_at) <= Date.parse(ev.received_at)
+      && !(h.producer_id === ev.producer_id && h.producer_seq > ev.producer_seq))
     .sort((a, b) => Date.parse(a.received_at) - Date.parse(b.received_at) || a.producer_seq - b.producer_seq);
 
   const facts: DecisionSnapshot['facts'] = {};
