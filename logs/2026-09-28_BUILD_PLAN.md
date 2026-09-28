@@ -1,6 +1,6 @@
-# Jev real-time agent observability — open-source build plan (v0.2)
+# Jev real-time agent observability — open-source build plan (v0.3)
 
-Author: Claude (planner) · 2026-09-28 · Status: **v0.2 — round-1 objections folded in; round 2 pending**
+Author: Claude (planner) · 2026-09-28 · Status: **v0.3 — approved by DeepSeek and Codex in round 2 (v0.2); consistency notes folded in; confirmation round 3 pending**
 Repo: `jev-realtime-observability` (local; created at `github.com/silex-ai-lab/` only after the plan gate passes) · Review base: *recorded at Step 5*
 
 **Request (user, 2026-09-28):** "我需要真实的构建一个 opensource 的 realtime agent observability 的 Jev 实现，请根据 gpt 给的 design plan ~/Downloads/jev_desgin_plan_cn.md 在 github.com/silex-ai-lab/ 下面新建一个 repo，目录按需求构建，做这个真实的环境搭建，jev 实现可以利用或者参考这里面的 github 资源：https://github.com/logicrw/awesome-jev-projects/blob/main/README.zh-CN.md，telemetry 的数据可以收集开源数据来做训练、微调或者推理，方案 review 通过后直接开始实现。"
@@ -34,11 +34,11 @@ Repo: `jev-realtime-observability` (local; created at `github.com/silex-ai-lab/`
 | D3 | **Fine-tuning is in scope**, as a LoRA fine-tune of a released Kev checkpoint via Kev's own `kev.train --init_from`, on labels converted from open datasets. We never train a Jev from scratch. | The user asked for training or fine-tuning on open data. | RFC §0 listed "自建 Jev 权重训练" as out of scope; the user's instruction overrides it. It stays limited to adapter fine-tunes |
 | D4 | **Storage: PostgreSQL dialect via PGlite** (embedded Postgres in WASM, `@electric-sql/pglite`) for dev and CI. The **same SQL migrations** run on a real Postgres when `DATABASE_URL` is set, and `deploy/compose.yaml` ships Postgres plus an OTel Collector for real deployments. | This Mac has no Docker or Postgres (checked). The RFC wants Postgres semantics, and PGlite gives them without a system install. | RFC §3 Postgres, kept; the single-replica statement stays |
 | D5 | **OTLP intake:** an in-process OTLP/HTTP **JSON** receiver at `/v1/traces` normalises spans. The Collector config is shipped but optional. The runner exports spans with the official `@opentelemetry/*` SDK. | No Collector binary here. The receiver uses the official protobuf-JSON shape, and golden payloads are tested. | RFC §9.2/§14 |
-| D6 | **The Jev view is ≤ 1,024 tokens** (state + longest question) by default, configurable. | Kev was trained on states of at most 384 tokens and at most 1,024 for state plus one question, and accuracy drops on long documents (Kev README "Length", "Limitations"). | Tighter than the RFC's 2–4k |
+| D6 | **The judge view is ≤ 1,024 tokens** (state + longest question) by default, configurable **per backend**. The default is tuned for Kev; the `typesafe` backend may raise it (hosted Jev accepts 32k). | Kev was trained on states of at most 384 tokens and at most 1,024 for state plus one question, and accuracy drops on long documents (Kev README "Length", "Limitations"). | Tighter than the RFC's 2–4k |
 | D7 | **Backend in TypeScript on Node 25**: native type stripping, no build step. Dependencies are few (`@electric-sql/pglite`, `pg`, `zod`, `@opentelemetry/*`); tests use `node --test`. Python appears only through Kev's own CLI (serve, train, benchmark), managed by `uv`. | RFC §3 asks for a TS backend. One language for the product. | as RFC |
+| D8 | **The agent driver is `scripted_driver` in P0.** An `llm_agent_driver` targets any OpenAI-compatible endpoint (a local `mlx_lm.server` or a key). If none is configured, the UI shows *not configured*; it is never faked. | No LLM API key exists here. Running a local instruct model is a later, optional task (not in Gates A–C). | RFC §4 |
 | D9 | **Baselines B1 and B3 are deferred** (RFC §12.1). Both need a configured LLM judge or slow path, which does not exist here (D8). Wherever they appear, the UI and report render them as **"not measured"**, never as 0% or blank. | No LLM judge is configured. | RFC §12.1 reduced to B0, B2, B2-ft, with the gap labelled |
 | D10 | **Delivery in three gated stages (A, B, C)**, each with its own code review and push (§5). | Round-1 scope objection (Codex 2). | RFC milestones M0–M3 kept; gating split |
-| D8 | **The agent driver is `scripted_driver` in P0.** An `llm_agent_driver` targets any OpenAI-compatible endpoint (a local `mlx_lm.server` or a key). If none is configured, the UI shows *not configured*; it is never faked. | No LLM API key exists here. Running a local instruct model is a later, optional task (not in Gates A–C). | RFC §4 |
 
 ## 2. Claim discipline (the reviewers' first axis)
 
@@ -137,7 +137,7 @@ Every gate runs its own code review, with unanimous `IMPL-APPROVED` required on 
 - The open-data pipeline (§6) and S7/S8.
 - **Blocking deliverable:** B0 and B2 on a pinned, licence-checked eval slice. B2 runs on **both Kev-0.8B and Kev-4B**, so any fine-tune has a same-base baseline. Results are per question, and questions with no training source are marked as such.
 - **Fine-tune (B2-ft): a bounded attempt, not a gate condition.**
-  - A time box of 3 h local wall time, on Kev-0.8B first.
+  - A time box of 3 h local wall time, on Kev-0.8B first. Kev-4B is tried only if the 0.8B run finished inside that box, and it gets its own 3 h box.
   - The report states whichever outcome happened: completed with its result (gain or no gain), or *not completed locally*, with the reason.
   - Cloud GPUs (Modal) only with the user's go-ahead.
 
@@ -201,7 +201,7 @@ Rules for this pipeline:
   - `sdk/**`;
   - `sandbox/{drivers/**,scenarios/**}`;
   - `web/**`: copied UI + live adapter.
-  - Acceptance: S1–S6 and S9 run end to end with real Kev; the SSE resumes after a restart; the UI shows the four provenance dimensions.
+  - Acceptance: S1–S4, S6 and F1-shadow run end to end with real Kev (Gate A); S5, S9, S7 and S8 run end to end (Gate B); the gate path (Gate C). The SSE resumes after a restart, and the UI shows the four provenance dimensions.
 - **T3, verification suite (Codex, build slice; the Gate A items in Gate A, the gate items in Gate C):**
   - `tests/e2e/**`, `tests/security/**`, `tests/probe/**`.
   - Acceptance:
@@ -230,7 +230,7 @@ Rules:
 - The e2e suite passes against a live Kev server.
 - UI probes pass.
 - **Gate B:** the eval report is generated from `eval/run` with its artefacts. B0 and B2 are required; B2-ft is reported whatever its outcome.
-- A recorded demo run (event log, snapshots, raw Kev responses, receipts, outcomes) is committed under `runs/demo-<date>/`, sanitised; there is no customer data anywhere.
+- A recorded demo run is committed under `runs/demo-<date>/`, sanitised; there is no customer data anywhere. What it contains grows by gate: **Gate A** has events, snapshots, raw Kev responses, signals, outbox and UI probe results; **Gate B** adds outcomes and the eval artefacts; **Gate C** adds control decisions and execution receipts.
 - The README states exactly what is real (Kev inference, sandbox tool execution, measured latency) and what is not (hosted Jev unless keyed, human gold labels, real money or email).
 
 ## 9. Publishing
@@ -275,3 +275,18 @@ Verdicts: **CODEX: PLAN-REJECTED · DEEPSEEK: PLAN-APPROVED.**
 | Labels need an evidence class (Codex) | `benchmark_ground_truth_derived`, `heuristic_derived` or `human_reviewed` on every label |
 | awesome-jev projects credited as references only (Codex) | §2 and docs/THIRD_PARTY.md |
 | D6's default is Kev-tuned (DeepSeek, architecture note) | Noted: the 1,024-token default is per backend; the TypeSafe backend may raise it |
+
+### Round 2 (plan v0.2, commit `b842b24`)
+
+Verdicts: **CODEX: PLAN-APPROVED · DEEPSEEK: PLAN-APPROVED.** Consistency notes folded into v0.3, so a confirmation round is needed:
+
+| Note (who) | Change in v0.3 |
+|---|---|
+| T2's acceptance still listed S5/S9, which are Gate B (Codex 1, DeepSeek 2) | T2's acceptance is split by gate |
+| §8's demo run mentioned receipts and outcomes before their gates (Codex 2) | The demo-run contents are listed per gate |
+| D-table out of order (Codex 3, DeepSeek 3) | Reordered D1–D10 |
+| D6 per-backend note lived only in the review table (DeepSeek 1) | Moved into the D6 row |
+| The Kev-4B fine-tune had no time box (DeepSeek 4) | Its own 3 h box, only if 0.8B finished inside its box |
+| (planner, found while fixing) D6 still said "Jev view", contradicting the v0.2 wording rule | Changed to "judge view" |
+
+A first attempt at this confirmation round went out while the v0.3 edit had failed. Both reviewers reported an empty diff, and that round is void. Round 3 below is the rerun on the real v0.3.
