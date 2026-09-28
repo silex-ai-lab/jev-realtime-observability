@@ -299,3 +299,52 @@ Roster:
 - planner: Claude (Opus 5.5);
 - coder-deepseek: OpenCode, `deepseek/deepseek-v4-pro`;
 - reviewer-codex: Codex CLI, `gpt-5.5`, pinned per session.
+
+## Gate A implementation record
+
+Built on branch `gate-a` from base `f9bcc05`:
+- **T0 foundation:** `0bd5e14` (planner), plus `999a42b` (CONTRACTS §7: the fixed seed dataset).
+- **T1** (DeepSeek): judges (client, validator, limiter), rules, repos, sandbox (schema, seed, authority, gateway, and tools with their own authorization), and the stub judge server. 53 unit tests plus one opt-in live-Kev test.
+- **T2** (planner): app, API and SSE, ingest (events and OTLP JSON), state assembler, policy, worker, SDK with OTel mirror, scripted driver and scenarios, the live console, and `web/demo` (the old simulated UI, kept).
+- **T3** (Codex, build slice): security suites (tenant isolation, key canary, replay invariance, zero-call replay, restart durability, dedup/conflict, judge failure), the live-Kev e2e, and UI probes (PASS/FAIL/SKIP). Each security test has a recorded mutation that makes it fail.
+
+**Defects found before review (planner smoke against live Kev):**
+- pre-execution rules firing on `post_tool`;
+- staleness measured from queue time, so a backlog would produce false STOPs;
+- run timeline missing evaluations (found by DeepSeek);
+- worker slots not actually concurrent;
+- non-idempotent completion under lease expiry, with a test proven both ways;
+- KPIs mixing the judge path with the rule-only path, and counting failed calls as judge latency;
+- probe P2 passing without evidence (found by the planner; fixed by Codex).
+
+**Contract fixes found by DeepSeek:**
+- a double body read in the harness;
+- a replay test whose event never tripped `amount_limit`;
+- an S2 expectation inconsistent with experimental mode.
+
+### Code round 1 (HEAD `11e71df`, diff revision `0a6d4f6d52ef`)
+
+Verdicts: **CODEX: IMPL-REJECTED · DEEPSEEK: IMPL-APPROVED.**
+
+| Defect or note (who) | Change |
+|---|---|
+| The conflict digest covered only a subset of fields, so a changed task_goal, sources or result body under the same id was accepted as a duplicate (Codex 1, blocking) | `eventContentDigest` hashes everything except transport fields; the SDK mirror carries `tool_call_id`. `tests/integration/dedup.test.ts`: a real OTel-exporter mirror dedups with zero conflicts, and each content change returns 409. It fails against the old digest |
+| A same-millisecond same-producer event could leak into a snapshot (DeepSeek 1) | seq tie-break in the assembler |
+| Args were stored unredacted despite the contract (DeepSeek 2) | registry redaction at ingest; `args_digest` kept; tested |
+| History kept the first N events, not the last N (DeepSeek 3) | DESC + reverse |
+| Duplicate-decision TOCTOU on real Postgres (DeepSeek 4) | advisory lock in the completion transaction, plus migration 0002 unique index |
+| Contract wording on `content_digest` (DeepSeek 5) | CONTRACTS §2 |
+| The coverage KPI counted partial-with-required evaluations as uncovered (DeepSeek 6) | fixed |
+| The UI never evicts rows (DeepSeek 7) | deferred (cosmetic) |
+
+### Code round 2 (HEAD `2181838`, diff revision `4f4a7d618e396ad92019f8c0aea2fa40904400c1`, base `f9bcc05`)
+
+**CODEX: IMPL-APPROVED · DEEPSEEK: IMPL-APPROVED · PLANNER (claude): IMPL-APPROVED.**
+
+Evidence at this revision:
+- `npm test`: 90 pass, 1 skip.
+- Live e2e against Kev-4B: pass.
+- UI probes with live Kev: 5/5.
+- Demo run recorded on this code: `runs/demo-2026-09-28/`, with 10 raw Kev responses teed from real calls, 12 ledgered judge attempts (2 real F1 aborts), and a sandbox ledger with exactly the three payments that the tools' own authorization allows.
+
+**Gate A outcome:** plan 3 rounds (unanimous in round 3); code 2 rounds. **Merged to `main` and pushed after the unanimous round 2.**
