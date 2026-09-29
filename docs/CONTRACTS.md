@@ -180,3 +180,67 @@ createOutcomeVerifier(db, authority, { deadlineMs: { 'payments.execute': 10_000,
   - `semantic_coverage`;
   - `outcome` state counts;
   - `ingest_to_signal_ms` p50 / p95, split into the judge path and the no-judge path.
+
+## 9. Gate C: the sandbox pre-tool gate (plan §5 Gate C; RFC §3.1, §6.5, §7.1)
+
+**Scope:** gating applies only to write and payment tools (`payments.execute`, `email.send`). Read tools run as in shadow mode.
+
+### 9.1 Authorization version (T1: `sandbox/control.ts`)
+
+`authorityVersion(db, tenantId, call) → Promise<string>` returns `sha256` over the authority facts that call depends on:
+- a payment → invoice (id, amount, vendor), approval (id, status), tenant limit, account (holder, linked vendors);
+- an email → the tenant allowlist.
+
+The gate stamps it into the ControlDecision. The gateway recomputes it at execution: a different value means the authority changed after the decision (for example, an approval revoked), and the call is not executed.
+
+`revokeApproval(db, tenantId, approvalId)` sets the approval to `rejected`. It is a sandbox helper for tests and demos.
+
+### 9.2 Control verification (T1: `sandbox/control.ts` `createControlVerifier(db)`, used as `ToolGatewayOptions.requireControl`)
+
+The gateway **loads the ControlDecision from `control_decisions` by `control_id`**. It never trusts the body a caller passes. It verifies, in this order:
+1. the control exists, and its tenant, run, tool and operation_id match the call;
+2. `digestOf(call.args) === control.args_digest` (no check-A-execute-B);
+3. `control.action === 'allow'`;
+4. `now < expires_at`;
+5. `revoked_at` is null;
+6. `consumed_at` is null;
+7. `authorization_version === authorityVersion(now)`.
+
+Then it executes the side effect and **sets `consumed_at` in the same transaction**, so a nonce is single-use.
+
+Any failure returns receipt status `not_executed` with the failed check as the reason, and writes no side effect.
+
+**Idempotency:** a repeated `operation_id` returns the first receipt and writes nothing (as in Gate A). A second use of a consumed control for a different operation fails check 1 or check 6.
+
+### 9.3 Receipts (T1)
+
+Every gateway execution:
+- inserts an `execution_receipts` row;
+- appends an outbox record of kind `receipt`: `{ receipt_id, operation_id, run_id, tool, status, reason, control_id }`.
+
+### 9.4 `POST /v1/preflight` (T2)
+
+- **Role:** `ingest`, the tool wrapper's key. **Body:** `PreflightRequest` (`contracts/preflight.ts`).
+- **Behaviour:** it stores the pre_tool event with **no job** (it is decided synchronously, not queued), then runs snapshot → rules → judge → `decide` with `enforcement_mode: gate`.
+- **Budget** (`GATE_BUDGET`, RFC §6.5): 600 ms total; judge ≤ min(400 ms, the time remaining minus a 60 ms commit margin); no implicit retries.
+- **The action mapping:**
+
+| Outcome | Action |
+|---|---|
+| NO_CONFIGURED_RISK, ALERT | `allow` |
+| HOLD by rule | `hold_for_approval` |
+| HOLD / UNKNOWN by evidence_gate or judge_unavailable, or REVIEW | `hold_for_review` |
+| BLOCK, STOP, REJECT | `deny` |
+
+- **Persistence and response:** it stores the ControlDecision in `control_decisions`, with a 30 s expiry and a random nonce of at least 16 bytes. It returns `PreflightResponse`; `timings.total_ms` is measured with a monotonic clock.
+- **Judge:** the gate may use its own judge config (`AppOptions.gateJudge`). On this Mac, Kev-4B's p50 exceeds the whole budget (docs/EVAL.md), so the demo gates with Kev-0.8B, and this is stated wherever the gate is shown.
+- **`POST /v1/controls/:control_id/revoke`** (admin) sets `revoked_at`.
+
+### 9.5 Driver and metrics (T2)
+
+- **Gate-mode driver:** `sourceMode: live_sandbox_gate` makes the driver call `/v1/preflight` before every write or payment tool. It passes the returned `control_id` to the gateway and emits post_tool with `receipt_status`, `control_id` and a client-measured `sdk_preflight_ms` attribute.
+- **`/v1/metrics` gains:**
+  - `sdk_preflight_ms` p50 / p95;
+  - `enforcement_coverage` = gated attempts that have a control and a receipt / gated attempts;
+  - `prevented` = receipts `not_executed` under a non-allow control (the only thing the UI may call "prevented", RFC §2);
+  - `executed_under_allow`.
