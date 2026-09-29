@@ -1,0 +1,10 @@
+# TLS reverse proxy in front of the server (Caddy obtains certificates automatically).
+# Exposes only the console and /v1/*; the Kev port (8009) is never exposed.
+observability.example.com {
+	# SSE: stream immediately, no buffering, long-lived connection
+	@stream path /v1/stream
+	reverse_proxy @stream 127.0.0.1:8787 {
+		flush_interval -1
+	}
+	reverse_proxy 127.0.0.1:8787
+}

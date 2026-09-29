@@ -1,0 +1,20 @@
+# Kev judge (jaredpalmer/kev) for jev-realtime-observability. Binds 127.0.0.1 only: the server
+# sends no credential to a kev-local judge, so it must never be reachable from the network.
+# Edit User, WorkingDirectory (the kev clone) and KEV_RUN, then: systemctl enable --now jev-kev
+[Unit]
+Description=Kev judge (System One protocol) for jev-realtime-observability
+After=network-online.target
+
+[Service]
+User=CHANGE_ME
+WorkingDirectory=/home/CHANGE_ME/kev
+Environment=KEV_RUN=jaredpalmer/kev-4b
+Environment=KEV_PORT=8009
+# Set HF_HUB_OFFLINE=1 if the model cache was copied in and the host has no internet.
+ExecStart=/usr/bin/env uv run --extra serve python -m kev.serve --run ${KEV_RUN} --port ${KEV_PORT} --host 127.0.0.1
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

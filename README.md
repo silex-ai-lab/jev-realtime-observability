@@ -41,6 +41,17 @@ npm run server                    # http://127.0.0.1:8787 — live console at /,
 # 3. Open the console, paste READER_KEY (and ADMIN_KEY to start sandbox runs), press S1…S6 / F1.
 ```
 
+## Deploying on another host
+
+Follow the [`deploy-jev-observability`](skills/deploy-jev-observability/SKILL.md) skill. It covers:
+- a host check;
+- the Kev judge;
+- configuration, including gate mode and PostgreSQL;
+- a smoke test;
+- systemd and a TLS proxy.
+
+See [`skills/README.md`](skills/README.md) for how to load it into an agent.
+
 ## Scenarios
 
 | | What the scripted agent does | What the system should record |
