@@ -6,6 +6,9 @@ import { randomUUID } from 'node:crypto';
 import type { Db } from '../../server/storage/db.ts';
 import { sha256 } from '../../contracts/canonical.ts';
 import type { ToolCall } from '../index.ts';
+import { effectiveLedgerStatus } from '../settlement.ts';
+
+const toMs = (v: unknown): number => (v instanceof Date ? v.getTime() : Date.parse(String(v)));
 
 export interface ToolOutcome {
   /** The operation completed (even if the answer is "not found"). */
@@ -47,11 +50,12 @@ async function vendorLookup(db: Db, call: ToolCall): Promise<ToolOutcome> {
 
 async function erpPaymentStatus(db: Db, call: ToolCall): Promise<ToolOutcome> {
   const operationId = call.args.operation_id;
-  const r = await db.query<{ tx_id: string; status: string; amount_usd: number }>(
-    `SELECT tx_id, status, amount_usd FROM sandbox.ledger WHERE tenant_id = $1 AND operation_id = $2 LIMIT 1`, [call.tenantId, operationId]);
+  const r = await db.query<{ tx_id: string; settlement: string; created_at: unknown; amount_usd: number }>(
+    `SELECT tx_id, settlement, created_at, amount_usd FROM sandbox.ledger WHERE tenant_id = $1 AND operation_id = $2 LIMIT 1`, [call.tenantId, operationId]);
   const x = r.rows[0];
   if (!x) return ok(200, { operation_id: operationId, posted: false, tx_id: null });
-  return ok(200, { operation_id: operationId, posted: x.status === 'posted', tx_id: x.tx_id, amount_usd: x.amount_usd });
+  const status = effectiveLedgerStatus(x.settlement, toMs(x.created_at), Date.now());
+  return ok(200, { operation_id: operationId, posted: status === 'posted', status, tx_id: x.tx_id, amount_usd: x.amount_usd });
 }
 
 async function emailSend(db: Db, call: ToolCall): Promise<ToolOutcome> {
@@ -69,8 +73,8 @@ async function emailSend(db: Db, call: ToolCall): Promise<ToolOutcome> {
 
 async function paymentsExecute(db: Db, call: ToolCall): Promise<ToolOutcome> {
   const { invoice_id: invoiceId, po_id: poId, amount_usd: amountUsd, payee, account_ref: accountRef } = call.args;
-  const inv = await db.query<{ invoice_id: string; po_id: string; vendor_name: string; amount_usd: number }>(
-    `SELECT invoice_id, po_id, vendor_name, amount_usd FROM sandbox.invoices WHERE tenant_id = $1 AND invoice_id = $2`, [call.tenantId, invoiceId]);
+  const inv = await db.query<{ invoice_id: string; po_id: string; vendor_name: string; amount_usd: number; settlement: string }>(
+    `SELECT invoice_id, po_id, vendor_name, amount_usd, settlement FROM sandbox.invoices WHERE tenant_id = $1 AND invoice_id = $2`, [call.tenantId, invoiceId]);
   if (!inv.rows[0]) return refuse('invoice not found');
 
   const amount = typeof amountUsd === 'number' && Number.isFinite(amountUsd) ? amountUsd : null;
@@ -86,11 +90,14 @@ async function paymentsExecute(db: Db, call: ToolCall): Promise<ToolOutcome> {
   if (policy.rows[0] && amount > policy.rows[0].approval_limit_usd) return refuse('amount exceeds the tenant approval limit');
 
   const txId = `tx-${randomUUID()}`;
+  const settlement = inv.rows[0].settlement;
   await db.query(
-    `INSERT INTO sandbox.ledger (tenant_id, tx_id, operation_id, invoice_id, amount_usd, payee, account_ref, status) VALUES ($1, $2, $3, $4, $5, $6, $7, 'posted')`,
-    [call.tenantId, txId, call.operationId, String(invoiceId), amount, String(payee), String(accountRef)],
+    `INSERT INTO sandbox.ledger (tenant_id, tx_id, operation_id, invoice_id, amount_usd, payee, account_ref, settlement) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [call.tenantId, txId, call.operationId, String(invoiceId), amount, String(payee), String(accountRef), settlement],
   );
-  return ok(200, { tx_id: txId, status: 'posted', invoice_id: invoiceId, po_id: poId }, txId);
+  // HTTP 200 on insert; the *effective* status is settlement-dependent (S5: 200 does not mean done).
+  const status = effectiveLedgerStatus(settlement, Date.now(), Date.now());
+  return ok(200, { tx_id: txId, settlement, status, invoice_id: invoiceId, po_id: poId }, txId);
 }
 
 const HANDLERS: Record<string, (db: Db, call: ToolCall) => Promise<ToolOutcome>> = {

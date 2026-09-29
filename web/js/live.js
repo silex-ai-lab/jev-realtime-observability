@@ -9,7 +9,8 @@ const pct = (a, b) => (b ? `${((a / b) * 100).toFixed(1)}%` : '—');
 const nearestRank = (xs, q) => { if (!xs.length) return null; const s = [...xs].sort((a, b) => a - b); return s[Math.max(0, Math.ceil(q * s.length) - 1)]; };
 
 const keys = { reader: null, admin: null };
-const rows = new Map();        // event_id → { event, evaluations: [], decisions: [], el }
+const rows = new Map();        // event_id → { event, evaluations: [], decisions: [], outcomes: [], el }
+let serverMetrics = null;
 let cursor = '0', es = null, selected = null, lastAt = null, judgeInfo = null, activePolicy = null;
 const counts = { expired: 0, gaps: 0 };
 
@@ -41,7 +42,7 @@ async function openStream() {
   es?.close();
   const { token } = await api('/v1/stream/tokens', { method: 'POST' });
   es = new EventSource(`/v1/stream?token=${encodeURIComponent(token)}&cursor=${encodeURIComponent(cursor)}`);
-  for (const kind of ['event', 'evaluation', 'decision', 'coverage_gap', 'evaluation_expired', 'run'])
+  for (const kind of ['event', 'evaluation', 'decision', 'coverage_gap', 'evaluation_expired', 'run', 'outcome'])
     es.addEventListener(kind, m => onRecord(JSON.parse(m.data)));
   // Tokens are single-use: reconnect with a fresh token and resume from the last cursor.
   es.onerror = () => { es.close(); setTimeout(() => openStream().catch(() => undefined), 1000); };
@@ -51,7 +52,7 @@ function onRecord(rec) {
   cursor = rec.cursor; lastAt = Date.now();
   const p = rec.payload;
   if (rec.kind === 'event') {
-    const r = rows.get(p.event_id) ?? { evaluations: [], decisions: [] };
+    const r = rows.get(p.event_id) ?? { evaluations: [], decisions: [], outcomes: [] };
     r.event = p; rows.set(p.event_id, r); draw(p.event_id);
   } else if (rec.kind === 'evaluation') {
     const r = rows.get(p.event_id); if (!r) return;
@@ -61,6 +62,10 @@ function onRecord(rec) {
     r.decisions.push(p);
     for (const k of ['source_mode', 'judge_source', 'tool_environment', 'enforcement_mode']) if (p.provenance?.[k]) setProv(k, p.provenance[k]);
     draw(p.event_id);
+  } else if (rec.kind === 'outcome') {
+    // Independent read-back of an executed operation, attached to the post_tool event that started it (RFC §8).
+    const r = rows.get(p.event_id); if (!r) return;
+    (r.outcomes ??= []).push(p); draw(p.event_id);
   } else if (rec.kind === 'evaluation_expired') { counts.expired++; }
   else if (rec.kind === 'coverage_gap') { counts.gaps++; }
   renderKpis();
@@ -94,13 +99,14 @@ function draw(eventId) {
     $('#stream').prepend(r.el);
   }
   const status = d ? d.recommended : EVALUATED.has(ev.boundary) ? 'pending' : '';
+  const oc = (r.outcomes ?? []).at(-1);
   Object.assign(r.el.dataset, { eventId, boundary: ev.boundary, recommended: d?.recommended ?? '', decidedBy: d?.decided_by ?? '' });
   r.el.className = `row ${['BLOCK', 'STOP'].includes(d?.recommended) ? 'hot' : d && d.recommended !== 'NO_CONFIGURED_RISK' ? 'warm' : ''}`;
   r.el.setAttribute('aria-selected', String(selected === eventId));
   r.el.innerHTML = `<span class="t">${esc(new Date(ev.received_at).toLocaleTimeString())}</span>
     <span class="bd"><span class="chip">${esc(ev.boundary)}</span></span>
     <span class="nm">${esc(ev.tool ?? ev.boundary)} <span class="lv-meta">${esc(ev.run_id)}</span></span>
-    <span>${status ? `<span class="chip ${esc(status)}">${esc(status === 'NO_CONFIGURED_RISK' ? 'no configured risk' : status)}</span>` : ''} <span class="lv-meta">${esc(d?.decided_by ?? '')}</span></span>`;
+    <span>${status ? `<span class="chip ${esc(status)}">${esc(status === 'NO_CONFIGURED_RISK' ? 'no configured risk' : status)}</span>` : ''} <span class="lv-meta">${esc(d?.decided_by ?? '')}</span>${oc ? ` <span class="chip oc-${esc(oc.state)}" data-outcome="${esc(oc.state)}">outcome: ${esc(oc.state.replace(/_/g, ' '))}</span>` : ''}</span>`;
 }
 
 // ---- KPIs: from this session's stream; unmeasurable ones say so ------------------------
@@ -132,14 +138,21 @@ function renderKpis() {
     ['recall', 'P0 recall / false intervention', 'not measured', 'needs independent labels (Gate B eval)'],
     ['llm_baseline', 'LLM-judge baseline (B1)', 'not measured', 'no LLM judge configured (plan D9)'],
   ];
+  if (serverMetrics) {
+    const cc = serverMetrics.capture_coverage;
+    tiles.push(['capture_coverage', 'capture coverage (server)', cc.value == null ? '—' : pct(cc.numerator, cc.denominator), `captured / gateway-attempted tool calls · ${cc.numerator}/${cc.denominator}`]);
+    const o = serverMetrics.outcomes ?? {};
+    tiles.push(['outcomes', 'outcome read-back', String(Object.values(o).reduce((a, b) => a + b, 0)), Object.entries(o).map(([k, v]) => `${k.replace(/_/g, ' ')} ${v}`).join(' · ') || 'none yet']);
+  }
   $('#kpis').innerHTML = tiles.map(([id, k, v, s]) => `<div class="kpi" data-kpi="${id}"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join('')
     + na.map(([id, k, v, s]) => `<div class="kpi na" data-kpi="${id}" data-baseline-status="not_measured"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join('');
 }
+setInterval(async () => { if (!keys.reader) return; try { serverMetrics = await api('/v1/metrics'); renderKpis(); } catch { /* keep last */ } }, 3000);
 setInterval(() => { $('#lag').textContent = lastAt ? `last record ${Math.round((Date.now() - lastAt) / 1000)} s ago` : ''; }, 1000);
 
 // ---- scenarios --------------------------------------------------------------------------
 function renderScenarioButtons() {
-  const ids = ['S1', 'S2', 'S3', 'S4', 'S6', 'F1'];
+  const ids = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'F1'];
   $('#scenario-buttons').innerHTML = ids.map(id => `<button class="btn" data-scenario="${id}" ${keys.admin ? '' : 'disabled title="needs an admin key"'}>${id}</button>`).join(' ');
   for (const b of document.querySelectorAll('[data-scenario]')) b.addEventListener('click', async () => {
     try { const r = await api('/v1/sandbox/runs', { method: 'POST', body: { scenario: b.dataset.scenario }, role: 'admin' }); $('#run-status').textContent = `started ${r.run_id}`; }
@@ -170,7 +183,13 @@ async function inspect(eventId) {
   if (evalForSnap) snap = (await api(`/v1/evaluations/${encodeURIComponent(evalForSnap.evaluation_id)}`).catch(() => null))?.snapshot ?? null;
   const out = [];
   out.push(`<div class="lv-meta">${esc(ev.run_id)} · ${esc(ev.boundary)} · ${esc(ev.tool ?? '')} · producer ${esc(ev.producer_id)}#${esc(ev.producer_seq)} · via ${esc(ev.ingest_path)}</div>`);
-  if (ev.boundary === 'post_tool') out.push(`<p class="note ${ev.result_status === 'error' ? 'warn' : 'info'}">Tool reported: <b>${esc(ev.result_status ?? 'no result')}</b>${ev.attributes?.receipt_status ? ` · gateway receipt: ${esc(ev.attributes.receipt_status)}` : ''}. This is the tool's own report; independent read-back verification arrives in Gate B.</p>`);
+  if (ev.boundary === 'post_tool') {
+    out.push(`<p class="note ${ev.result_status === 'error' ? 'warn' : 'info'}">Tool reported: <b>${esc(ev.result_status ?? 'no result')}</b>${ev.attributes?.receipt_status ? ` · gateway receipt: ${esc(ev.attributes.receipt_status)}` : ''}. The tool's own report is not proof of the business result.</p>`);
+    const ocs = r.outcomes ?? [];
+    out.push(ocs.length
+      ? `<h3>Independent read-back (outcome verifier)</h3><ul>${ocs.map(o => `<li><span class="chip oc-${esc(o.state)}">${esc(o.state)}</span> ${esc(o.source ?? '')} <span class="lv-meta">${esc(JSON.stringify(o.checked ?? {}))}</span></li>`).join('')}</ul>`
+      : `<p class="lv-meta">${ev.attributes?.receipt_status === 'executed' && ['payments.execute', 'email.send'].includes(ev.tool) ? 'Read-back pending…' : 'No side effect to verify.'}</p>`);
+  }
   if (!d) out.push(EVALUATED.has(ev.boundary) ? '<p class="note info">Pending: the decision has not been recorded yet.</p>' : '<p class="lv-meta">Lifecycle event (not evaluated).</p>');
   else {
     out.push(`<p><span class="big chip ${esc(d.recommended)}">${esc(d.recommended === 'NO_CONFIGURED_RISK' ? 'no configured risk' : d.recommended)}</span> decided by <b>${esc(d.decided_by)}</b></p>`);
@@ -199,9 +218,16 @@ async function inspect(eventId) {
     out.push(`<details><summary>Judge view (${snap.judge_view.token_estimate} est. tokens${snap.judge_view.truncated ? ', truncated' : ''})</summary><pre class="json">${esc(snap.judge_view.state)}</pre></details>`);
   }
   if (d && activePolicy) out.push(replayBlock(d));
+  if (d && (rt ?? diag)) out.push(`<p><button class="btn" data-model-reeval>Re-ask the judge on this frozen snapshot (a new, real model call)</button></p><div id="reeval-out"></div>`);
   if (d) out.push(`<details><summary>Decision record (JSON)</summary><pre class="json">${esc(JSON.stringify(d, null, 2))}</pre></details>`);
   $('#inspector').innerHTML = out.join('');
   $('#inspector [data-replay-run]')?.addEventListener('click', () => runReplay(d));
+  $('#inspector [data-model-reeval]')?.addEventListener('click', async () => {
+    try {
+      const x = (await api('/v1/replays', { method: 'POST', body: { kind: 'model_reeval', decision_ids: [d.decision_id] } })).results[0];
+      $('#reeval-out').innerHTML = x.error ? `<p class="note bad">${esc(x.error)}</p>` : `<p class="note info" data-reeval-out>New evaluation ${esc(x.after.evaluation_id)} (${esc(x.after.status)}): <b>${esc(x.after.recommended)}</b>. The original evaluation and decision are unchanged.<br>${Object.entries(x.after.signals ?? {}).map(([q, s]) => `${esc(q)} ${s.type === 'noul' ? p3(s.raw_probability) : esc(s.choice ?? p3(s.score))}`).join(' · ')}</p>`;
+    } catch (e) { $('#reeval-out').innerHTML = `<p class="note bad">${esc(e.message)}</p>`; }
+  });
 }
 
 function replayBlock(d) {

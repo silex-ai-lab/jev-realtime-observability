@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { openDb, migrate } from '../../../server/storage/db.ts';
 import { seedSandbox, createAuthorityReader, createToolGateway, argsDigest } from '../../../sandbox/index.ts';
 import { verifyControlDecision } from '../../../sandbox/gateway.ts';
+import { effectiveLedgerStatus } from '../../../sandbox/settlement.ts';
 import type { ToolCall } from '../../../sandbox/index.ts';
 import type { ControlDecision } from '../../../contracts/decision.ts';
 import { digestOf } from '../../../contracts/canonical.ts';
@@ -185,5 +186,74 @@ test('gateway requires a bound, unexpired ControlDecision when requireControl is
     const expired = await gate.execute(call('payments.execute', S1, 'op-gate-2'), { ...control, operation_id: 'op-gate-2', expires_at: new Date(Date.now() - 1).toISOString() });
     assert.equal(expired.receipt.status, 'not_executed');
     assert.equal(expired.result.http_status, 403);
+  } finally { await db.close(); }
+});
+
+test('S5 pending_forever: tool returns 200 but the ledger stays pending forever', async () => {
+  const { gateway, authority, db } = await setup();
+  try {
+    const exec = await gateway.execute(call('payments.execute',
+      { invoice_id: 'INV-8140', po_id: 'PO-4530', amount_usd: 6150, payee: 'Summit Janitorial LLC', account_ref: 'ACCT-422-01' }, 'op-s5'));
+    assert.equal(exec.result.http_status, 200, '200 does not mean done');
+    assert.equal(exec.receipt.status, 'executed');
+    const ledger = await authority.ledgerByOperation('t-alpha', 'op-s5');
+    assert.equal(ledger?.status, 'pending');
+    // even long after, pending_forever never posts
+    await db.query(`UPDATE sandbox.ledger SET created_at = now() - interval '1 hour' WHERE operation_id = 'op-s5'`);
+    assert.equal((await authority.ledgerByOperation('t-alpha', 'op-s5'))?.status, 'pending');
+  } finally { await db.close(); }
+});
+
+test('S9 pending_then_posted:3000: pending until the delay, then posted', async () => {
+  const { gateway, authority, db } = await setup();
+  try {
+    await gateway.execute(call('payments.execute',
+      { invoice_id: 'INV-8171', po_id: 'PO-4560', amount_usd: 2750, payee: 'Pacific Paper Co.', account_ref: 'ACCT-118-01' }, 'op-s9'));
+    assert.equal((await authority.ledgerByOperation('t-alpha', 'op-s9'))?.status, 'pending');
+    await db.query(`UPDATE sandbox.ledger SET created_at = now() - interval '4 seconds' WHERE operation_id = 'op-s9'`);
+    assert.equal((await authority.ledgerByOperation('t-alpha', 'op-s9'))?.status, 'posted');
+  } finally { await db.close(); }
+});
+
+test('S5-fail fail_after:1000: pending, then failed', async () => {
+  const { gateway, authority, db } = await setup();
+  try {
+    await gateway.execute(call('payments.execute',
+      { invoice_id: 'INV-8175', po_id: 'PO-4561', amount_usd: 1800, payee: 'Summit Janitorial LLC', account_ref: 'ACCT-422-01' }, 'op-s5fail'));
+    assert.equal((await authority.ledgerByOperation('t-alpha', 'op-s5fail'))?.status, 'pending');
+    await db.query(`UPDATE sandbox.ledger SET created_at = now() - interval '2 seconds' WHERE operation_id = 'op-s5fail'`);
+    assert.equal((await authority.ledgerByOperation('t-alpha', 'op-s5fail'))?.status, 'failed');
+  } finally { await db.close(); }
+});
+
+test('S8 seeds the alias account ACCT-118-02 linked to V-118', async () => {
+  const { authority, db } = await setup();
+  try {
+    const acct = await authority.account('t-alpha', 'ACCT-118-02');
+    assert.equal(acct?.holder_name, 'Pacific Paper Company');
+    assert.deepEqual(acct?.linked_vendor_ids, ['V-118']);
+  } finally { await db.close(); }
+});
+
+test('effectiveLedgerStatus is a pure function of the hint and age', () => {
+  const t0 = 1_000_000;
+  assert.equal(effectiveLedgerStatus('immediate', t0, t0), 'posted');
+  assert.equal(effectiveLedgerStatus('pending_forever', t0, t0 + 99_999), 'pending');
+  assert.equal(effectiveLedgerStatus('pending_then_posted:3000', t0, t0 + 2999), 'pending');
+  assert.equal(effectiveLedgerStatus('pending_then_posted:3000', t0, t0 + 3000), 'posted');
+  assert.equal(effectiveLedgerStatus('fail_after:1000', t0, t0 + 999), 'pending');
+  assert.equal(effectiveLedgerStatus('fail_after:1000', t0, t0 + 1000), 'failed');
+  assert.equal(effectiveLedgerStatus(undefined, t0, t0), 'posted');
+});
+
+test('gateway_attempts records every attempted call, including refusals', async () => {
+  const { gateway, db } = await setup();
+  try {
+    await gateway.execute(call('payments.execute', S1, 'op-ok'));
+    await gateway.execute(call('payments.execute', { ...S1, invoice_id: 'INV-8120', po_id: 'PO-4502', amount_usd: 48000, payee: 'Cascade Hardware Inc.', account_ref: 'ACCT-311-02' }, 'op-refused'));
+    await gateway.execute(call('payments.execute', S1, 'op-ok'));  // repeat
+    const rows = await db.query<{ operation_id: string; tool: string }>(`SELECT operation_id, tool FROM gateway_attempts WHERE tenant_id = 't-alpha' ORDER BY operation_id`);
+    assert.deepEqual(rows.rows.map(r => r.operation_id), ['op-ok', 'op-refused'], 'refused call still in the denominator');
+    assert.ok(rows.rows.every(r => r.tool === 'payments.execute'));
   } finally { await db.close(); }
 });

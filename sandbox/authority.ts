@@ -2,6 +2,9 @@
 // Never returns an account number. Only reads, never writes.
 import type { Db } from '../server/storage/db.ts';
 import type { AuthorityReader } from './index.ts';
+import { effectiveLedgerStatus } from './settlement.ts';
+
+const toMs = (v: unknown): number => (v instanceof Date ? v.getTime() : Date.parse(String(v)));
 
 const arr = (v: unknown): string[] => {
   if (Array.isArray(v)) return v.map(String);
@@ -51,10 +54,12 @@ export function createAuthorityReader(db: Db): AuthorityReader {
       return { account_ref: x.account_ref, holder_name: x.holder_name, linked_vendor_ids: links.rows.map(l => l.vendor_id) };
     },
     async ledgerByOperation(tenantId, operationId) {
-      const r = await db.query<{ tx_id: string; status: 'posted' | 'pending' | 'failed'; amount_usd: number; payee: string }>(
-        `SELECT tx_id, status, amount_usd, payee FROM sandbox.ledger WHERE tenant_id = $1 AND operation_id = $2 LIMIT 1`, [tenantId, operationId]);
+      const r = await db.query<{ tx_id: string; settlement: string; created_at: unknown; amount_usd: number; payee: string }>(
+        `SELECT tx_id, settlement, created_at, amount_usd, payee FROM sandbox.ledger WHERE tenant_id = $1 AND operation_id = $2 LIMIT 1`, [tenantId, operationId]);
       const x = r.rows[0];
-      return x ? { tx_id: x.tx_id, status: x.status, amount_usd: x.amount_usd, payee: x.payee } : null;
+      if (!x) return null;
+      const status = effectiveLedgerStatus(x.settlement, toMs(x.created_at), Date.now());
+      return { tx_id: x.tx_id, status, amount_usd: x.amount_usd, payee: x.payee };
     },
     async mailByOperation(tenantId, operationId) {
       const r = await db.query<{ message_id: string; to_addr: string; body_digest: string }>(

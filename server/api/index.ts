@@ -11,6 +11,8 @@ import { ingestEvents, normaliseOtlp } from '../ingest/index.ts';
 import { decide, validatePolicy, type PolicyBody } from '../policy/index.ts';
 import type { PolicyDecision } from '../../contracts/decision.ts';
 import type { DecisionSnapshot } from '../../contracts/snapshot.ts';
+import { RUBRIC } from '../state/index.ts';
+import { computeMetrics } from './metrics.ts';
 
 type Role = 'ingest' | 'reader' | 'gateway' | 'admin';
 export interface ApiDeps {
@@ -132,10 +134,26 @@ export function createApi(d: ApiDeps): Server {
       return send(res, 200, { ok: true, errors: [], draft_version });
     }
 
+    if (m === 'GET' && p === '/v1/metrics') {
+      const a = await auth(req, ['reader', 'admin']);
+      return send(res, 200, await computeMetrics(d.db, a.tenant_id, url.searchParams.get('run_id')));
+    }
+
     if (m === 'POST' && p === '/v1/replays') {
       const a = await auth(req, ['reader', 'admin']);
-      const body = await readJson(req) as { kind?: string; decision_ids?: string[]; policy?: unknown };
-      if (body?.kind !== 'policy_only') throw new HttpError(501, 'not_implemented', 'only kind "policy_only" in Gate A');
+      const body = await readJson(req) as { kind?: string; decision_ids?: string[]; policy?: unknown; run_id?: string };
+      if (body?.kind === 'model_reeval') return send(res, 200, await modelReeval(a.tenant_id, body.decision_ids));
+      if (body?.kind === 'sandbox_reexec') {
+        if (a.role !== 'admin') throw new HttpError(403, 'forbidden', 'sandbox re-execution needs the admin role');
+        const runs = await repos.listRuns(d.db, a.tenant_id, 500) as Array<{ run_id: string; scenario: string | null }>;
+        const run = runs.find(r => r.run_id === body.run_id);
+        if (!run) throw new HttpError(404, 'not_found', 'run not found');
+        if (!run.scenario || !d.sandboxScenarios.includes(run.scenario)) throw new HttpError(400, 'not_reexecutable', 'only scripted sandbox runs can be re-executed');
+        // A NEW run: new run id, new operation ids and idempotency keys; the original run is untouched (RFC §10).
+        const started = await d.startSandboxRun(a.tenant_id, run.scenario);
+        return send(res, 202, { kind: 'sandbox_reexec', of_run_id: run.run_id, run_id: started.run_id });
+      }
+      if (body?.kind !== 'policy_only') throw new HttpError(400, 'bad_kind', 'kind must be policy_only, model_reeval or sandbox_reexec');
       const v = validatePolicy(body.policy);
       if (!v.ok) return send(res, 400, { ok: false, errors: v.errors });
       const ids = Array.isArray(body.decision_ids) ? body.decision_ids.slice(0, 500) : [];
@@ -177,6 +195,44 @@ export function createApi(d: ApiDeps): Server {
 
     if (m === 'GET' && d.webRoot && !p.startsWith('/v1/')) return serveStatic(res, d.webRoot, p);
     throw new HttpError(404, 'not_found', 'no such route');
+  }
+
+  /** Re-asks the judge on the stored snapshot (same judge view, same questions). New evaluation + new decision; originals untouched. */
+  async function modelReeval(tenantId: string, ids: string[] | undefined) {
+    const list = Array.isArray(ids) ? ids : [];
+    if (!list.length || list.length > 20) throw new HttpError(400, 'bad_batch', '1..20 decision_ids (each re-evaluation is a real, budgeted model call)');
+    if (!d.judge) throw new HttpError(409, 'judge_not_configured', 'no judge configured');
+    const policy = await d.activePolicy(tenantId);
+    const results = [];
+    let attempts = 0;
+    for (const id of list) {
+      const orig = await repos.getDecision(d.db, tenantId, id);
+      if (!orig) { results.push({ decision_id: id, error: 'not_found' }); continue; }
+      const snapshot = await repos.getSnapshot(d.db, tenantId, orig.snapshot_id) as DecisionSnapshot | null;
+      const prior = (await repos.listEvaluationsForEvent(d.db, tenantId, orig.event_id)).find(e => e.question_ids.length);
+      if (!snapshot || !prior) { results.push({ decision_id: id, error: 'no_judge_questions_for_this_decision' }); continue; }
+      const evaluationId = `eval-${randomUUID()}`;
+      const startedAt = new Date().toISOString();
+      const req = { model: d.judge.config.model, state: snapshot.judge_view.state, questions: Object.fromEntries(prior.question_ids.map(q => [q, RUBRIC.questions[q]])) };
+      const r = await d.judge.call(req, prior.required_question_ids, { tenantId, evaluationId, caller: 'model_reeval', deadlineMs: policy.judge_deadline_ms * 3, retry429: true });
+      attempts += r.attempts;
+      const evaluation: EvaluationRecord = {
+        evaluation_id: evaluationId, tenant_id: tenantId, event_id: orig.event_id, snapshot_id: snapshot.snapshot_id, kind: 'model_reeval',
+        rubric_id: RUBRIC.rubric_id, question_ids: prior.question_ids, required_question_ids: prior.required_question_ids,
+        judge_source: r.served_model ? judgeSourceOf(r.served_model) : null, served_model: r.served_model, request_hash: r.request_hash,
+        client_request_id: r.client_request_id, vendor_request_id: r.vendor_request_id, status: r.status, http_status: r.http_status, attempts: r.attempts,
+        judge_http_rtt_ms: r.judge_http_rtt_ms, vendor_latency_ms: r.vendor_latency_ms, usage: r.usage, billing: r.billing, signals: r.signals, errors: r.errors,
+        started_at: startedAt, finished_at: new Date().toISOString(),
+      };
+      const replay = decide({ snapshot, rules: orig.rule_results, evaluation, policy: { ...policy, policy_version: `${policy.policy_version}+model-reeval` },
+        provenance: { ...orig.provenance, judge_source: evaluation.judge_source }, decisionId: `dec-${randomUUID()}`, now: new Date().toISOString(),
+        timings: { ingest_to_signal_ms: null, snapshot_ms: null, rules_ms: null, judge_http_rtt_ms: r.judge_http_rtt_ms, policy_ms: null } });
+      await d.db.tx(async q => { await repos.insertEvaluation(q, evaluation); await repos.insertDecision(q, replay, orig.decision_id); });
+      results.push({ decision_id: id, before: { recommended: orig.recommended, evaluation_id: orig.evaluation_id ?? prior.evaluation_id },
+        after: { decision_id: replay.decision_id, recommended: replay.recommended, evaluation_id: evaluationId, status: evaluation.status, signals: evaluation.signals } });
+    }
+    // Reported from actual outbound attempts: a model_mismatch or not-sent call counts as 0.
+    return { kind: 'model_reeval', judge_calls: attempts, results };
   }
 
   async function stream(req: IncomingMessage, res: ServerResponse, url: URL) {

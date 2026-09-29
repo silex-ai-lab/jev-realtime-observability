@@ -232,6 +232,61 @@ export async function dumpAllTables(db: Db): Promise<Record<string, unknown[]>> 
   return dump;
 }
 
+export interface OutcomeRow {
+  tenant_id: string;
+  operation_id: string;
+  run_id?: string;
+  event_id?: string;
+  state: string;
+  body?: unknown;
+  created_at?: string;
+}
+
+export async function startSandboxRun(h: GateAHarness, scenario: string, tenant: TenantName = 'alpha'): Promise<string> {
+  const { response, body } = await h.json<{ run_id?: string }>('POST', '/v1/sandbox/runs', {
+    tenant,
+    role: 'admin',
+    body: { scenario },
+  });
+  assert.equal(response.status, 202, `${scenario}: ${JSON.stringify(body)}`);
+  assert.equal(typeof body.run_id, 'string', `${scenario}: missing run_id`);
+  return body.run_id as string;
+}
+
+export async function dumpDecisionPlane(db: Db): Promise<Record<string, unknown[]>> {
+  const dump = await dumpAllTables(db);
+  return {
+    snapshots: dump.snapshots ?? [],
+    evaluations: dump.evaluations ?? [],
+    decisions: dump.decisions ?? [],
+  };
+}
+
+export async function outcomeRowsForRun(db: Db, tenantId: string, runId: string): Promise<OutcomeRow[]> {
+  const result = await db.query<OutcomeRow>(
+    `SELECT DISTINCT o.tenant_id, o.operation_id, c.run_id, c.event_id, o.state, o.body, o.created_at
+     FROM outcomes o
+     LEFT JOIN outcome_checks c ON c.tenant_id = o.tenant_id AND c.operation_id = o.operation_id
+     WHERE o.tenant_id = $1 AND (c.run_id = $2 OR o.body->>'run_id' = $2)
+     ORDER BY o.created_at NULLS LAST, o.operation_id, o.state`,
+    [tenantId, runId],
+  );
+  return result.rows;
+}
+
+export async function waitForOutcomeState(
+  h: GateAHarness,
+  runId: string,
+  state: string,
+  tenantId = 't-alpha',
+  timeoutMs = 15_000,
+): Promise<OutcomeRow> {
+  return waitFor(async () => {
+    const rows = await outcomeRowsForRun(h.db, tenantId, runId);
+    return rows.find(row => row.state === state) ?? null;
+  }, `outcome ${state} for ${runId}`, timeoutMs);
+}
+
 export async function collectStream(h: GateAHarness, tenant: TenantName, timeoutMs = 1_000): Promise<StreamRecord[]> {
   const tokenResponse = await h.json<{ token: string }>('POST', '/v1/stream/tokens', { tenant, role: 'reader', body: {} });
   assert.equal(tokenResponse.response.status, 200, JSON.stringify(tokenResponse.body));

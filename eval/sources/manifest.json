@@ -1,0 +1,83 @@
+{
+  "note": "Each source is pinned to a commit. `files` are the data files the converters read; `sha256` is over the file at that commit. The licence is re-checked per file and per data-directory note during fetch (docs/CONTRACTS.md §8.4); no source below carries a data licence that differs from its repo licence, so all are redistributable.",
+  "sources": [
+    {
+      "source": "injecagent",
+      "repo": "https://github.com/uiuc-kang-lab/InjecAgent",
+      "commit": "f19c9f2c79a41046eb13c03c51a24c567a8ffa07",
+      "licence": "MIT",
+      "licence_file": "LICENCE",
+      "data_licence": "MIT",
+      "data_note": "data/ has no separate licence or terms note; the repo MIT licence governs the data",
+      "redistribute": true,
+      "files": [
+        { "path": "data/test_cases_dh_base.json", "sha256": "0a8186468d21389af432e8c7b399ae42264d1b93a07b65c7a489468508604305", "licence": "MIT" },
+        { "path": "data/test_cases_ds_base.json", "sha256": "4daab35c62a3845e8b9400f4dca58b9c9f37e57cd33b2337552557fbb26282e9", "licence": "MIT" },
+        { "path": "data/user_cases.jsonl", "sha256": "c840e2b00fdce68e7142d0970220522303d67b2530d6fb36ef1112448cdd8977", "licence": "MIT" },
+        { "path": "LICENCE", "sha256": "b48589499dbb84caa796b00b4ea652b0443e49660282c44d890fd473b8c0674e", "licence": "MIT" }
+      ]
+    },
+    {
+      "source": "agentdojo",
+      "repo": "https://github.com/ethz-spylab/agentdojo",
+      "commit": "089ed468cf3ed0322acc66b0211f26d9d90dbf60",
+      "pypi": "agentdojo==0.1.35",
+      "licence": "MIT",
+      "licence_file": "LICENSE",
+      "data_licence": "MIT",
+      "data_note": "ground-truth tool calls are dumped from the pinned PyPI package via eval/convert/agentdojo_dump.py; the repo has no separate data licence",
+      "redistribute": true,
+      "files": [
+        { "path": "LICENSE", "sha256": "4285a071f2d382338e52b4fb0a186d952984a34d43a33d8872e1a1d8cb43401e", "licence": "MIT" }
+      ]
+    },
+    {
+      "source": "asb",
+      "repo": "https://github.com/agiresearch/ASB",
+      "commit": "1f561dccf92d55302368fa67679b4ba9d9c8fdc4",
+      "licence": "MIT",
+      "licence_file": "LICENSE",
+      "data_licence": "MIT",
+      "data_note": "data/ has no separate licence or terms note; the repo MIT licence governs the data",
+      "redistribute": true,
+      "files": [
+        { "path": "data/agent_task.jsonl", "sha256": "d6c1d214811b5d908ae9c04ffbbde36ce35d39932766feb8bf24e202441c1dc8", "licence": "MIT" },
+        { "path": "data/all_attack_tools.jsonl", "sha256": "c960ab1e60dee2038d51bc64e8f119e565c037c95a8565f176899de8d819a4b2", "licence": "MIT" },
+        { "path": "data/all_normal_tools.jsonl", "sha256": "45b821931348993de3eda474a997d62cb5b9e7a3fe358e5c81a7ef0417ccb73f", "licence": "MIT" },
+        { "path": "LICENSE", "sha256": "dc40a1a6bdb44f24c1bbca4fe7fc45b8d3e5c8370f43c17a9f647e5632686918", "licence": "MIT" }
+      ]
+    },
+    {
+      "source": "toolemu",
+      "repo": "https://github.com/ryoungj/ToolEmu",
+      "commit": "ac4a7ab7ed8c7985d96231e214bd6b54304b7ddb",
+      "licence": "Apache-2.0",
+      "licence_file": "LICENSE",
+      "data_licence": "Apache-2.0",
+      "data_note": "assets/README.md is a data specification, not a licence; the repo Apache-2.0 governs the data. Note: setup.py's classifier says MIT, which contradicts the LICENSE file — the LICENSE file (Apache-2.0) is authoritative.",
+      "redistribute": true,
+      "files": [
+        { "path": "assets/all_cases.json", "sha256": "63f92818dfc2d4c5bf82de3f03d2fe10c166e697235d07c2f55142c8169460b4", "licence": "Apache-2.0" },
+        { "path": "LICENSE", "sha256": "be36ffc5b0eec4cfc8046e00372a9cf4cd48e73ba87b50315f5ee8a1775274b1", "licence": "Apache-2.0" }
+      ]
+    },
+    {
+      "source": "taubench",
+      "repo": "https://github.com/sierra-research/tau-bench",
+      "commit": "59a200c6d575d595120f1cb70fea53cef0632f6b",
+      "licence": "MIT",
+      "licence_file": "LICENSE",
+      "data_licence": "MIT",
+      "data_note": "tau_bench/envs/retail/data/readme.md is a mock-data generation note, not a licence; the repo MIT licence governs the tasks",
+      "redistribute": true,
+      "files": [
+        { "path": "tau_bench/envs/retail/tasks_train.py", "sha256": "30880ce4e8d524dd0fdd18c1d3a5713551fc8638e82673de3e0fd1ab70046c6f", "licence": "MIT" },
+        { "path": "tau_bench/envs/retail/tasks_dev.py", "sha256": "87dfe578d0271e7b0b5dfb40621a5c0dcc0e8452a75b8f3f8d1dcf0abac4ff14", "licence": "MIT" },
+        { "path": "tau_bench/envs/retail/tasks_test.py", "sha256": "6f09468923c6cfb6162e94fe659264d6aee70816c18d51278fb4a581db7765a4", "licence": "MIT" },
+        { "path": "tau_bench/envs/airline/tasks.py", "sha256": "5db940002a4b103eb7409f6425e91dd9090d35d7f9abbcdd3f10bc0358535c31", "licence": "MIT" },
+        { "path": "tau_bench/envs/airline/tasks_test.py", "sha256": "14cdb6b4fe810faac9a0cc8395d3c7b32c883a979d1cde8c8003ae25a93d2ff3", "licence": "MIT" },
+        { "path": "LICENSE", "sha256": "243d23d45b80122b5ac575586ccef352fdc9c45e6d7d2605449aca8a17478b42", "licence": "MIT" }
+      ]
+    }
+  ]
+}

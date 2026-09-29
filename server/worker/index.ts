@@ -10,6 +10,7 @@ import { decide, type PolicyBody } from '../policy/index.ts';
 import { judgeSourceOf, type EvaluationRecord } from '../../contracts/judge.ts';
 import type { Provenance } from '../../contracts/common.ts';
 import type { AuthorityReader } from '../../sandbox/index.ts';
+import { OUTCOME_TOOLS, type OutcomeVerifier } from '../outcomes/index.ts';
 
 export interface WorkerDeps {
   db: Db;
@@ -20,6 +21,8 @@ export interface WorkerDeps {
   leaseMs: number;
   concurrency: number;
   onChange: () => void;
+  /** Gate B: independent read-back of executed side-effect tools. */
+  verifier?: OutcomeVerifier | null;
 }
 
 export interface Worker {
@@ -124,6 +127,17 @@ export function createWorker(d: WorkerDeps): Worker {
         snapshot_ms: tSnap - t0, rules_ms: tRules - tSnap, judge_http_rtt_ms: judgeRtt, policy_ms: null,
       },
     });
+    // Claim vs authoritative outcome (RFC §8): code reports what the ledger said at claim time; the
+    // completion-claim signal itself is semantic and uncalibrated, so it is reported, never acted on.
+    if (ev.boundary === 'post_generation') {
+      const oc = await d.db.query<{ operation_id: string; tool: string; state: string }>(
+        `SELECT operation_id, tool, state FROM outcome_checks WHERE tenant_id = $1 AND run_id = $2 ORDER BY updated_at`, [tenantId, ev.run_id]);
+      const claim = evaluation?.signals.claim_asserts_completion?.raw_probability ?? null;
+      const states = oc.rows.map(r => `${r.tool} ${r.state}`).join(', ') || 'none tracked';
+      decision.reasons.push(`authoritative outcomes at claim time: ${states}`);
+      if (claim != null && claim >= 0.5 && !oc.rows.some(r => r.state === 'verified_success'))
+        decision.reasons.push(`completion claimed (uncalibrated signal ${claim.toFixed(3)}) without a verified success record at claim time`);
+    }
     decision.timings.policy_ms = performance.now() - tJudge;
     // Same process received the event, so wall-clock difference is on one clock (RFC §11.1 note).
     decision.timings.ingest_to_signal_ms = Date.now() - Date.parse(ev.received_at);
@@ -142,6 +156,15 @@ export function createWorker(d: WorkerDeps): Worker {
       await repos.appendOutbox(q, { tenant_id: tenantId, kind: 'decision', ref_id: decision.decision_id, run_id: ev.run_id, payload: { ...decision, run_id: ev.run_id, boundary: ev.boundary, tool: ev.operation?.tool ?? null } });
       for (const g of decision.coverage_gaps) await repos.appendOutbox(q, { tenant_id: tenantId, kind: 'coverage_gap', ref_id: eventId, run_id: ev.run_id, payload: { event_id: eventId, gap: g } });
       if (hardDecided && d.judge && a.judgeRequest) await repos.enqueueJob(q, tenantId, eventId, 'diagnostic', 10, new Date(Date.now() + policy.realtime_ttl_ms).toISOString());
+      // Start independent verification for executed side-effect tools (only an executed receipt has a side effect to verify).
+      const tool = ev.operation?.tool;
+      if (d.verifier && ev.boundary === 'post_tool' && tool && (OUTCOME_TOOLS as readonly string[]).includes(tool) && ev.attributes?.receipt_status === 'executed' && ev.operation) {
+        const args = ev.operation.args;
+        const expected: Record<string, string | number | boolean | null> = tool === 'payments.execute'
+          ? { invoice_id: String(args.invoice_id ?? ''), amount_usd: Number(args.amount_usd ?? NaN), payee: String(args.payee ?? '') }
+          : { to_domain: String(args.to ?? '').split('@').pop() ?? '' };
+        await d.verifier.track(q, { tenantId, runId: ev.run_id, eventId, tool, operationId: ev.operation.operation_id, expected });
+      }
       return true;
     });
     if (!committed) return;

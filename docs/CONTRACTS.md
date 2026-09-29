@@ -172,9 +172,9 @@ createOutcomeVerifier(db, authority, { deadlineMs: { 'payments.execute': 10_000,
 
 ### 8.5 API additions (T2)
 
-- `POST /v1/replays { kind: "model_reeval", decision_ids: [...≤ 20] }` re-asks the judge on the stored snapshot's judge view and question set.
+- `POST /v1/replays { kind: "model_reeval", decision_ids: [...≤ 20] }` (reader or admin; batch size is validated before anything else) re-asks the judge on the stored snapshot's judge view and question set.
   - It creates a new `EvaluationRecord` (kind `model_reeval`, ledger caller `model_reeval`) and a new decision with `replay_of`. The original is never changed.
-- `POST /v1/replays { kind: "sandbox_reexec", run_id }` starts a **new** run of the same scenario, with new operation IDs and idempotency keys. It returns `{ run_id }`.
+- `POST /v1/replays { kind: "sandbox_reexec", run_id }` (**admin only**, because it executes sandbox tools, like `POST /v1/sandbox/runs`) starts a **new** run of the same scenario, with new operation IDs and idempotency keys. It returns `{ run_id }`.
 - `GET /v1/metrics?run_id=…` returns:
   - `capture_coverage`: captured pre_tool operation IDs / `gateway_attempts`;
   - `semantic_coverage`;

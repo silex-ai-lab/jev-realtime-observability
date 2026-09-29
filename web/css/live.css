@@ -73,3 +73,8 @@ details > summary { cursor: pointer; font-size: 12px; font-weight: 600; color: v
   .row { grid-template-columns: 60px minmax(0, 1fr) 110px; } .row .bd { display: none; }
   .lv-connect input { min-width: 0; width: 100%; } .lv-link { margin-left: 0; }
 }
+
+.chip.oc-verified_success { background: var(--green-bg); color: var(--green); border-color: transparent; }
+.chip.oc-pending { background: var(--lav); color: var(--blue2); border-color: transparent; }
+.chip.oc-verified_failure, .chip.oc-mismatch { background: var(--red-bg); color: var(--red); border-color: transparent; }
+.chip.oc-unknown_after_deadline { background: var(--amber-bg); color: var(--amber); border-color: transparent; }

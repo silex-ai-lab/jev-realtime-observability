@@ -12,6 +12,7 @@ import { createWorker, type Worker } from './worker/index.ts';
 import { createApi } from './api/index.ts';
 import { DEFAULT_POLICY, validatePolicy, type PolicyBody } from './policy/index.ts';
 import { createAuthorityReader, createToolGateway, seedSandbox } from '../sandbox/index.ts';
+import { createOutcomeVerifier, type OutcomeVerifier } from './outcomes/index.ts';
 import { SCENARIOS, scenarioIds } from '../sandbox/scenarios/index.ts';
 import { runScripted } from '../sandbox/drivers/scripted.ts';
 import type { Provenance } from '../contracts/common.ts';
@@ -39,6 +40,8 @@ export interface App {
   db: Db;
   judge: JudgeClient | null;
   worker: { drain(): Promise<void>; stop(): Promise<void> };
+  /** Gate B: processes due outcome checks now; returns how many were processed. */
+  outcomes: { tick(): Promise<number> };
   /** Starts a scripted sandbox run and resolves when the driver finished (evaluation continues async). */
   runScenario(tenantId: string, scenario: string): Promise<{ run_id: string; errors: string[] }>;
   close(): Promise<void>;
@@ -89,8 +92,11 @@ export async function createApp(opts: AppOptions): Promise<App> {
 
   const authority = createAuthorityReader(db);
   const gateway = createToolGateway(db);
+  const verifier: OutcomeVerifier = createOutcomeVerifier(db, authority, {
+    deadlineMs: { 'payments.execute': 10_000, 'email.send': 5_000 }, backoffMs: [250, 500, 1000, 2000],
+  });
   const worker: Worker = createWorker({
-    db, judge, authority, policy: activePolicy, provenance,
+    db, judge, authority, policy: activePolicy, provenance, verifier,
     leaseMs: opts.worker.leaseMs ?? 30_000, concurrency: opts.worker.concurrency ?? 2, onChange: notify,
   });
 
@@ -121,15 +127,25 @@ export async function createApp(opts: AppOptions): Promise<App> {
   await new Promise<void>(res => server.listen(opts.port ?? 0, opts.host ?? '127.0.0.1', res));
   const addr = server.address() as AddressInfo;
   baseUrl = `http://${opts.host ?? '127.0.0.1'}:${addr.port}`;
-  if (opts.worker.autostart) worker.start();
+  let verifierTimer: NodeJS.Timeout | null = null;
+  if (opts.worker.autostart) {
+    worker.start();
+    let busy = false;
+    verifierTimer = setInterval(() => {
+      if (busy) return; busy = true;
+      verifier.tick().then(n => { if (n) notify(); }).catch(e => console.error('outcome verifier:', (e as Error).message)).finally(() => { busy = false; });
+    }, 250);
+  }
 
   return {
     url: baseUrl,
     db,
     judge,
     worker: { drain: () => worker.drain(), stop: () => worker.stop() },
+    outcomes: { tick: async () => { const n = await verifier.tick(); if (n) notify(); return n; } },
     runScenario,
     async close() {
+      if (verifierTimer) clearInterval(verifierTimer);
       await worker.stop();
       server.closeAllConnections();
       await new Promise<void>(res => server.close(() => res()));

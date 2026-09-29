@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS sandbox.invoices (
   vendor_name text NOT NULL,
   amount_usd double precision NOT NULL,
   note       text,
+  settlement text NOT NULL DEFAULT 'immediate',
   PRIMARY KEY (tenant_id, invoice_id)
 );
 
@@ -72,7 +73,7 @@ CREATE TABLE IF NOT EXISTS sandbox.ledger (
   amount_usd   double precision NOT NULL,
   payee        text NOT NULL,
   account_ref  text NOT NULL,
-  status       text NOT NULL,
+  settlement   text NOT NULL,
   created_at   timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (tenant_id, tx_id)
 );

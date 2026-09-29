@@ -27,6 +27,12 @@ export function verifyControlDecision(call: ToolCall, control: ControlDecision |
 
 export function createToolGateway(db: Db, opts?: ToolGatewayOptions): ToolGateway {
   async function execute(call: ToolCall, control?: ControlDecision | null): Promise<ToolExecution> {
+    // Capture-coverage denominator (CONTRACTS §8.2): record the attempt before anything else,
+    // whatever the outcome — executed, refused by tool authorization, or not_executed under a gate.
+    await db.query(
+      `INSERT INTO gateway_attempts (tenant_id, operation_id, run_id, tool) VALUES ($1, $2, $3, $4) ON CONFLICT (tenant_id, operation_id) DO NOTHING`,
+      [call.tenantId, call.operationId, call.runId, call.tool],
+    );
     const argsDigest = digestOf(call.args);
     const prior = await db.query<{ receipt: unknown; result: unknown }>(
       `SELECT receipt, result FROM sandbox.receipts WHERE tenant_id = $1 AND operation_id = $2`, [call.tenantId, call.operationId]);

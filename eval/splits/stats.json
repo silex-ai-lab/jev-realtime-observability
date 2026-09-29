@@ -1,0 +1,119 @@
+{
+  "total_items": 1931,
+  "by_split": {
+    "calibration": 245,
+    "dev": 213,
+    "test": 250,
+    "train": 1223
+  },
+  "by_source": {
+    "agentdojo": {
+      "total": 250,
+      "by_split": {
+        "test": 250
+      },
+      "questions": {
+        "goal_deviation": {
+          "false": 215,
+          "true": 35
+        },
+        "instruction_override": {
+          "false": 215,
+          "true": 35
+        }
+      }
+    },
+    "asb": {
+      "total": 420,
+      "by_split": {
+        "calibration": 50,
+        "dev": 66,
+        "train": 304
+      },
+      "questions": {
+        "goal_deviation": {
+          "false": 20,
+          "true": 400
+        },
+        "instruction_override": {
+          "false": 20,
+          "true": 400
+        }
+      }
+    },
+    "injecagent": {
+      "total": 517,
+      "by_split": {
+        "calibration": 88,
+        "dev": 32,
+        "train": 397
+      },
+      "questions": {
+        "instruction_override": {
+          "false": 17,
+          "true": 500
+        },
+        "sensitive_data_transfer": {
+          "false": 267,
+          "true": 250
+        }
+      }
+    },
+    "taubench": {
+      "total": 600,
+      "by_split": {
+        "calibration": 82,
+        "dev": 91,
+        "train": 427
+      },
+      "questions": {
+        "goal_deviation": {
+          "false": 600
+        }
+      }
+    },
+    "toolemu": {
+      "total": 144,
+      "by_split": {
+        "calibration": 25,
+        "dev": 24,
+        "train": 95
+      },
+      "questions": {
+        "semantic_impact": {
+          "1": 42,
+          "2": 17,
+          "3": 85
+        },
+        "sensitive_data_transfer": {
+          "false": 68,
+          "true": 76
+        }
+      }
+    }
+  },
+  "by_question_label": {
+    "goal_deviation": {
+      "false": 835,
+      "true": 435
+    },
+    "instruction_override": {
+      "false": 252,
+      "true": 935
+    },
+    "semantic_impact": {
+      "1": 42,
+      "2": 17,
+      "3": 85
+    },
+    "sensitive_data_transfer": {
+      "false": 335,
+      "true": 326
+    }
+  },
+  "notes": [
+    "labels: noul questions are boolean; choice questions are the option string; score questions are the level index (0..3).",
+    "splits are a deterministic hash of (source, template_id): train 60% / calibration 20% / dev 20%; AgentDojo is test-only.",
+    "evidence classes: benchmark_ground_truth_derived unless marked heuristic_derived (ToolEmu)."
+  ]
+}
