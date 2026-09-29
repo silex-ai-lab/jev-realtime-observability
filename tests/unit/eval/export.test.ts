@@ -202,7 +202,7 @@ test('export output: in-repo paths outside runs/exports/ are refused, and nested
   assert.equal(outputPathError('runs/exports/t-alpha'), null);
   assert.equal(outputPathError('runs/exports/nested/deeper/t-alpha'), null);
   assert.equal(outputPathError(tmpdir()), null, 'outside the repository is allowed');
-  for (const bad of ['runs/export-t-alpha', 'runs/other/t-alpha', '.', 'eval/splits', 'runs/exports/../x'])
+  for (const bad of ['runs/export-t-alpha', 'runs/other/t-alpha', '.', 'eval/splits', 'runs/exports/../x', '..tenant-export', 'runs/..x'])
     assert.match(outputPathError(bad) ?? '', /must be under runs\/exports/, bad);
   for (const f of ['runs/exports/t-alpha/train.jsonl', 'runs/exports/nested/deeper/test.jsonl', 'runs/exports/a/calibration.jsonl'])
     assert.equal(execFileSync('git', ['check-ignore', f]).toString().trim(), f);
@@ -212,4 +212,8 @@ test('export output: in-repo paths outside runs/exports/ are refused, and nested
   const r = (await import('node:child_process')).spawnSync(process.execPath, ['eval/export/labels-to-kev.ts', '--tenant', 't', '--out', 'runs/leak', '--data-dir', tmpdir()]);
   assert.equal(r.status, 2);
   assert.match(r.stderr.toString(), /must be under runs\/exports/);
+  // A directory whose name merely starts with two dots is inside the repository, and is refused too.
+  const dots = (await import('node:child_process')).spawnSync(process.execPath, ['eval/export/labels-to-kev.ts', '--tenant', 't', '--out', '..tenant-export', '--data-dir', tmpdir()]);
+  assert.equal(dots.status, 2);
+  assert.equal((await import('node:fs')).existsSync('..tenant-export'), false, 'nothing was written');
 });

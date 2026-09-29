@@ -190,3 +190,12 @@ Verdicts: coder-deepseek **IMPL-APPROVED** (3 non-blocking notes); reviewer-code
 | (DeepSeek 2) the exporter migrated a live Postgres | Migrates only a PGlite `--data-dir` |
 | (DeepSeek 1) push sampler predicates into SQL | Recorded as the follow-up in CONTRACTS §10.4 |
 | (DeepSeek 3) show score answers by level name | Not changed in this batch: the panel shows the judge's `score` number as returned, labelled uncalibrated; showing its `legend` label is a cosmetic follow-up |
+
+### Code round 2 (diff revision `91a8d7e6`) → changes
+
+Verdicts: coder-deepseek **IMPL-APPROVED** (2 non-blocking notes); reviewer-codex **IMPL-REJECTED** (1 blocking). Both judged the recovered T10 run record honest and sufficient and advised against repeating the run.
+
+| Defect (who) | Change |
+|---|---|
+| `outputPathError` treated an in-repo directory named `..tenant-export` as outside the repository (a string prefix, not a path component), so its JSONL would not be ignored (Codex 1) | Checks the component (`rel === '..'` or starts with `..` + separator); regressions for `..tenant-export` and `runs/..x`, and a CLI check that the refused run writes nothing |
+| (DeepSeek 1, repeated) score answers by legend label | Stays a cosmetic follow-up, as recorded in round 1 |
