@@ -21,13 +21,13 @@ mkdir -p "$OUT"
   echo "base=$BASE init_from=$INIT timeout=$FT_TIMEOUT device=mps args=--epochs 2 --lr 2e-5 --batch 1 --accum 8 --seed 20260928"
   echo "host=$(sysctl -n machdep.cpu.brand_string 2>/dev/null || uname -m) memory_gb=$(( $(sysctl -n hw.memsize 2>/dev/null || echo 0) / 1073741824 ))"
 } > "$OUT/RUN.txt"
-# GNU `timeout` is not on every Mac: fall back to coreutils' `gtimeout`, then to a perl alarm whose
-# SIGALRM exit (142) is mapped to timeout's 124, so a time-out is still reported as not completed.
+# GNU `timeout` is not on every Mac: fall back to coreutils' `gtimeout`, then to eval/finetune/timebox.pl,
+# which keeps timeout's exit codes (124 only for the deadline; 128+N for a signal death).
 to_seconds() { case "$1" in *h) echo $(( ${1%h} * 3600 ));; *m) echo $(( ${1%m} * 60 ));; *s) echo "${1%s}";; *) echo "$1";; esac; }
 run_boxed() {
   if command -v timeout >/dev/null; then timeout "$FT_TIMEOUT" "$@"
   elif command -v gtimeout >/dev/null; then gtimeout "$FT_TIMEOUT" "$@"
-  else perl -e '$SIG{ALRM} = sub { local $SIG{TERM} = "IGNORE"; kill "TERM", -$$; waitpid(-1, 0); exit 124 }; setpgrp(0, 0); alarm shift; my $p = fork // die; if (!$p) { exec @ARGV or die } waitpid($p, 0); exit($? >> 8)' "$(to_seconds "$FT_TIMEOUT")" "$@"
+  else perl "$REPO/eval/finetune/timebox.pl" "$(to_seconds "$FT_TIMEOUT")" "$@"
   fi
 }
 cd "$KEV_DIR"

@@ -9,7 +9,8 @@
 // first seen in training can never reappear in calibration or test. The test split keeps only
 // human_reviewed questions. Deterministic: same DB and --as-of give byte-identical output.
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { pathToFileURL } from 'node:url';
 import { openDb, migrate, type Db } from '../../server/storage/db.ts';
 import { canonicalJson, sha256 } from '../../contracts/canonical.ts';
@@ -168,6 +169,16 @@ export async function exportLabelsToKev(db: Db, opts: ExportOptions): Promise<Ex
   return { manifest, train, calibration, test };
 }
 
+const REPO = resolve(fileURLToPath(new URL('../..', import.meta.url)));
+/** Tenant JSONL must never land somewhere git would pick up: inside the repo only runs/exports/ is allowed
+ *  (ignored by .gitignore at any depth); outside the repo any directory is fine. Returns an error or null. */
+export function outputPathError(out: string): string | null {
+  const rel = relative(REPO, resolve(out));
+  if (rel.startsWith('..') || isAbsolute(rel)) return null;   // outside the repository
+  return rel === join('runs', 'exports') || rel.startsWith(join('runs', 'exports') + sep) ? null
+    : `inside the repository, --out must be under runs/exports/ (git-ignored); got ${rel || '.'}`;
+}
+
 function arg(k: string, d?: string): string | undefined { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : d; }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
@@ -179,9 +190,12 @@ if (isMain) {
   const url = process.env.DATABASE_URL;
   if (!tenant || !out) { console.error('usage: labels-to-kev.ts --tenant <id> --out <dir> [--as-of <iso>] [--data-dir <dir>]'); process.exit(2); }
   if (!url && !dataDir) { console.error('set DATABASE_URL or pass --data-dir'); process.exit(2); }
+  const outErr = outputPathError(out);
+  if (outErr) { console.error(outErr); process.exit(2); }
 
   const db = url ? await openDb({ url }) : await openDb({ dataDir });
-  await migrate(db);
+  // A live PostgreSQL is migrated by the server; this read-only tool only migrates a local PGlite copy.
+  if (!url) await migrate(db);
   try {
     const result = await exportLabelsToKev(db, { tenant, asOf });
     mkdirSync(out, { recursive: true });

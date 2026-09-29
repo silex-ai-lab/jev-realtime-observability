@@ -265,7 +265,7 @@ Plan: `logs/2026-09-29_WORKPLAN_BATCH1_PLAN.md` (decisions D2–D5). Routes live
 | Route | Role | Result |
 |---|---|---|
 | `GET /v1/reviews?status=open\|resolved_allow\|resolved_deny\|expired\|all&limit=` | reader, admin | `{ reviews }`, newest first; default `open`, limit ≤ 200 |
-| `GET /v1/reviews/:review_id` | reader, admin | `{ review, snapshot, evaluation, decision }`; 404 for another tenant |
+| `GET /v1/reviews/:review_id` | reader, admin | `{ review, questions, snapshot, evaluation, decision }`; `questions` maps each answerable question id to its wire definition (§10.4); 404 for another tenant |
 | `POST /v1/reviews/:review_id/resolve` | admin | body `{ outcome: allow\|deny, answers: { question_id: value } }` |
 
 **Resolve**, in one transaction with the task row locked: 404 if not the caller's; 409 `already_resolved` unless `open`; every answer must be a question the decision's evaluation asked (any rubric question when it had none) and valid for its type (§10.2), else 400 and nothing is written. Then it writes one `labels` row per answer (`ref` = the decision's `snapshot_id`, `evidence_class: human_reviewed`, `source: review:<review_id>`), sets `resolved_allow` or `resolved_deny` with the resolution in the body, writes an `audit_log` row (`review_resolved`), and appends an outbox record of kind `review` (`{ review_id, decision_id, status }`), which the review panel (T8) will consume. **It does not release, execute or re-issue a held action, and it never changes the decision.**
@@ -301,3 +301,22 @@ Plan: `logs/2026-09-29_WORKPLAN_BATCH1_PLAN.md` (decisions D2–D5). Routes live
 - Each switch writes one `policy_activations` row and one audit row (`policy_publish`, `policy_activate`, `policy_rollback`). No route changes a body after publish.
 - **Cache:** the app caches each tenant's active policy. Routes call `invalidatePolicy` after commit; a per-tenant generation counter stops a read that began before the switch from re-filling the cache with the old policy. This holds within one server process, which is the only deployment today; several replicas would each need invalidation.
 - Real-PostgreSQL row-lock behaviour is tested only when `TEST_DATABASE_URL` is set; PGlite runs transactions one at a time, so its concurrency test proves the stale check, not Postgres locking.
+
+### 10.4 Answerable questions and the active-learning sampler (batch 2: F0, T7)
+
+Plan: `logs/2026-09-29_WORKPLAN_BATCH2_PLAN.md` (D3, D4).
+
+**Answerable questions** (`reviewQuestions`, used by both `GET /v1/reviews/:id` and resolve): the `question_ids` of the evaluation recorded in the task body when it asked any; otherwise every rubric question. The task body's `evaluation_id` is fixed when the task opens, so the set cannot change between viewing and resolving; a diagnostic evaluation that arrives later judged a separately assembled snapshot and is ignored.
+
+**`POST /v1/reviews/sample`** (admin): body `{ budget? }`, an integer 1–100, default 20 (else 400). Opens sampler tasks (`path: sampler`, with `sample_reason` and `evaluation_id` = the evaluation that caused the pick) for original decisions that have no task, open or resolved, in one transaction, and returns `{ opened: [{ review_id, decision_id, reason }] }`. Each opened task is also appended to the outbox (kind `review`, status `open`).
+
+Only valid evidence counts (an evaluation with status `ok` or `partial`, a non-null `raw_probability`), and only the risk questions `instruction_override`, `goal_deviation`, `sensitive_data_transfer` are compared. Classes, in priority order, newest first within a class:
+
+| `sample_reason` | Picks a decision when |
+|---|---|
+| `uncertain` | its realtime evaluation answered a **required** risk question with probability in [0.3, 0.7] |
+| `judge_flags_unruled_risk` | no rule returned HOLD/BLOCK/STOP, and a realtime risk answer is ≥ 0.7. A heuristic contrast, not proof of disagreement; the opposite direction is not sampled, because rules check facts the judge does not |
+| `cross_judge_disagreement` | two valid evaluations of the **same snapshot** by **different served-model runs** fall on opposite sides of 0.5 on a risk question |
+
+**Limit:** each call reads every task-less original decision and every valid evaluation of the tenant and matches them in memory, so its cost grows with the tenant's history. That is acceptable for an admin-triggered, budget-capped call in the single-process deployment; moving the class predicates into SQL or bounding the scan to recent decisions is the follow-up.
+

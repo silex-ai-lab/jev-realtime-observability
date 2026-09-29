@@ -194,3 +194,22 @@ test('output shape matches eval/splits/kev-train.jsonl', async () => {
     }
   } finally { await db.close(); }
 });
+
+test('export output: in-repo paths outside runs/exports/ are refused, and nested exports there are git-ignored', async () => {
+  const { outputPathError } = await import('../../../eval/export/labels-to-kev.ts');
+  const { execFileSync } = await import('node:child_process');
+  const { tmpdir } = await import('node:os');
+  assert.equal(outputPathError('runs/exports/t-alpha'), null);
+  assert.equal(outputPathError('runs/exports/nested/deeper/t-alpha'), null);
+  assert.equal(outputPathError(tmpdir()), null, 'outside the repository is allowed');
+  for (const bad of ['runs/export-t-alpha', 'runs/other/t-alpha', '.', 'eval/splits', 'runs/exports/../x'])
+    assert.match(outputPathError(bad) ?? '', /must be under runs\/exports/, bad);
+  for (const f of ['runs/exports/t-alpha/train.jsonl', 'runs/exports/nested/deeper/test.jsonl', 'runs/exports/a/calibration.jsonl'])
+    assert.equal(execFileSync('git', ['check-ignore', f]).toString().trim(), f);
+  assert.throws(() => execFileSync('git', ['check-ignore', 'runs/exports/t-alpha/manifest.json'], { stdio: 'pipe' }), 'the manifest is not ignored');
+  assert.throws(() => execFileSync('git', ['check-ignore', 'runs/eval-2026-09-28-v2/predictions-kev-4b.jsonl'], { stdio: 'pipe' }), 'committed eval predictions stay tracked');
+  // The CLI enforces it.
+  const r = (await import('node:child_process')).spawnSync(process.execPath, ['eval/export/labels-to-kev.ts', '--tenant', 't', '--out', 'runs/leak', '--data-dir', tmpdir()]);
+  assert.equal(r.status, 2);
+  assert.match(r.stderr.toString(), /must be under runs\/exports/);
+});

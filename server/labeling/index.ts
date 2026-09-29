@@ -133,7 +133,11 @@ export async function sampleForReview(db: Db, tenantId: string, budget: number):
       const snap = await repos.getSnapshot(q, tenantId, p.dec.decision.snapshot_id);
       const reviewId = await openSampledReviewTask(q, p.dec.decision,
         { run_id: snap?.run_id ?? null, tool: snap?.candidate_action?.tool ?? null }, p.reason, p.evaluationId);
-      if (reviewId) opened.push({ review_id: reviewId, decision_id: p.dec.decision_id, reason: p.reason });
+      if (!reviewId) continue;
+      opened.push({ review_id: reviewId, decision_id: p.dec.decision_id, reason: p.reason });
+      // Every connected review panel refreshes on this (not only the one that pressed "Sample").
+      await repos.appendOutbox(q, { tenant_id: tenantId, kind: 'review', ref_id: reviewId, run_id: snap?.run_id ?? null,
+        payload: { review_id: reviewId, decision_id: p.dec.decision_id, status: 'open', sample_reason: p.reason } });
     }
     return opened;
   });

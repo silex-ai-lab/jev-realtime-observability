@@ -98,6 +98,10 @@ test('picks each class in priority order, with the sampling evaluation recorded'
       [['d-cross', 'cross_judge_disagreement', 'sampler'], ['d-unc', 'uncertain', 'sampler'], ['d-unruled', 'judge_flags_unruled_risk', 'sampler']]);
     assert.equal(bodies.find(b => b.decision_id === 'd-cross')!.evaluation_id, 'e-cross-reeval', 'class 3 uses the newer evaluation');
     assert.equal(bodies.find(b => b.decision_id === 'd-unc')!.evaluation_id, 'e-unc');
+    // Each opened task is announced on the outbox, so every connected review panel refreshes.
+    const out = await db.query<{ ref_id: string; payload: { status: string; sample_reason: string } }>(`SELECT ref_id, payload FROM outbox WHERE tenant_id = 't-alpha' AND kind = 'review'`);
+    assert.deepEqual(out.rows.map(r => r.ref_id).sort(), opened.map(o => o.review_id).sort());
+    assert.ok(out.rows.every(r => r.payload.status === 'open' && r.payload.sample_reason));
   } finally { await db.close(); }
 });
 
