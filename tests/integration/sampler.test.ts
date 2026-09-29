@@ -196,3 +196,35 @@ test('budget caps, second call opens nothing, replays and other tenants never sa
     assert.ok(!second.some(o => o.decision_id === 'd-beta'), 'other tenant never sampled');
   } finally { await db.close(); }
 });
+
+test('scale (N3): 5,000 task-less decisions with evaluations sample in under 1 s on PGlite', async () => {
+  const db = await freshDb();
+  try {
+    // 5,000 unremarkable realtime decisions (goal_deviation 0.1, no hard rule), seeded in bulk from one template each.
+    const dec = decBody({ decision_id: 'tpl', event_id: 'tpl', evaluation_id: 'tpl', snapshot_id: 'tpl', rule_results: [PASS] });
+    const ev = evalBody({ evaluation_id: 'tpl', event_id: 'tpl', snapshot_id: 'tpl', kind: 'realtime', question_ids: ['goal_deviation'], required_question_ids: ['goal_deviation'], signals: { goal_deviation: noul(0.1) }, served_run: 'kev-0.8b' });
+    await db.query(
+      `INSERT INTO evaluations (tenant_id, evaluation_id, event_id, snapshot_id, kind, status, judge_source, body, created_at)
+       SELECT 't-alpha', 'e-' || i, 'ev-' || i, 's-' || i, 'realtime', 'ok', NULL,
+              $1::jsonb || jsonb_build_object('evaluation_id', 'e-' || i, 'event_id', 'ev-' || i, 'snapshot_id', 's-' || i),
+              '2026-01-01T00:00:00Z'::timestamptz + i * interval '1 second'
+       FROM generate_series(1, 5000) AS i`, [JSON.stringify(ev)]);
+    await db.query(
+      `INSERT INTO decisions (tenant_id, decision_id, event_id, evaluation_id, policy_version, recommended, replay_of, body, created_at)
+       SELECT 't-alpha', 'd-' || i, 'ev-' || i, 'e-' || i, 'policy-a1', 'NO_CONFIGURED_RISK', NULL,
+              $1::jsonb || jsonb_build_object('decision_id', 'd-' || i, 'event_id', 'ev-' || i, 'evaluation_id', 'e-' || i, 'snapshot_id', 's-' || i),
+              '2026-01-01T00:00:00Z'::timestamptz + i * interval '1 second'
+       FROM generate_series(1, 5000) AS i`, [JSON.stringify(dec)]);
+    // The oldest decision is the only uncertain one; the second oldest has a disagreeing re-ask by another model.
+    await db.query(`UPDATE evaluations SET body = jsonb_set(body, '{signals,goal_deviation,raw_probability}', '0.5') WHERE evaluation_id = 'e-1'`);
+    await seedEvaluation(db, evalBody({ evaluation_id: 'e-2-reeval', event_id: 'ev-2', snapshot_id: 's-2', kind: 'model_reeval', question_ids: ['goal_deviation'], required_question_ids: ['goal_deviation'], signals: { goal_deviation: noul(0.9) }, served_run: 'kev-0.8b-ft' }), 'ok', T(59));
+    await seedSnapshot(db, 's-1', 'ev-1', 'run-1', 'payments.execute', T(0));
+    await seedSnapshot(db, 's-2', 'ev-2', 'run-2', 'payments.execute', T(0));
+
+    const t0 = performance.now();
+    const opened = await sampleForReview(db, 't-alpha', 20);
+    const elapsed = performance.now() - t0;
+    assert.deepEqual(opened.map(o => [o.decision_id, o.reason]), [['d-1', 'uncertain'], ['d-2', 'cross_judge_disagreement']]);
+    assert.ok(elapsed < 1000, `sampleForReview took ${Math.round(elapsed)} ms over 5,000 decisions`);
+  } finally { await db.close(); }
+});
