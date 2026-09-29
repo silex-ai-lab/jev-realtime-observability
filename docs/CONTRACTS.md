@@ -52,7 +52,14 @@ app.url; app.db; app.judge; app.worker.drain(): Promise<void>  // process until 
 await app.close();
 ```
 
-## 5. HTTP API (Gate A). All bodies JSON. Auth: `Authorization: Bearer <tenant key>`
+## 5. HTTP API (Gate A). All bodies JSON.
+
+**Authentication is optional** (`AppOptions.auth`, env `AUTH_MODE`):
+- **`none` is the default.** No key is needed, and every call acts as the first configured tenant with every role. `createApp` refuses a non-loopback host in this mode unless `allowUnauthenticatedRemote` is set.
+- **`keys`:** `Authorization: Bearer <tenant key>`; the roles below apply.
+- `GET /v1/auth` returns `{ mode }`; the page uses it to decide whether to show the key form.
+
+The Role column below applies to `keys` mode.
 
 | Method, path | Role | Behaviour |
 |---|---|---|

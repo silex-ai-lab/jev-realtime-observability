@@ -27,6 +27,7 @@
 
 <main>
   <section class="card lv-connect" id="connect">
+    <p class="lv-auth-off" id="auth-off" hidden><b>Login is off</b> (AUTH_MODE=none): anyone who can reach this address can view the stream and start sandbox runs. Keep the server on localhost, or set AUTH_MODE=keys. <span class="lv-meta" id="conn-status-none"></span></p>
     <form id="connect-form" autocomplete="off">
       <label>Reader key <input type="password" id="k-reader" required minlength="16"></label>
       <label>Admin key <small>(optional, to start sandbox runs)</small> <input type="password" id="k-admin" minlength="16"></label>

@@ -83,6 +83,9 @@ export async function startGateAHarness(opts: StartHarnessOptions = {}): Promise
     judge: opts.judge ?? null,
     ...(opts.gateJudge !== undefined ? { gateJudge: opts.gateJudge } : {}),
     sourceMode: opts.sourceMode ?? 'live_sandbox_shadow',
+    // The security suites test key-based auth and tenant isolation, so they opt into it explicitly
+    // (the product default is AUTH_MODE=none).
+    auth: 'keys',
     tenants: [...TENANTS],
     worker: opts.worker ?? { autostart: true, leaseMs: 50, realtimeTtlMs: 2_000 },
     port: opts.port ?? 0,

@@ -33,6 +33,13 @@ export interface AppOptions {
   worker: { autostart: boolean; leaseMs?: number; realtimeTtlMs?: number; concurrency?: number };
   port?: number;
   host?: string;
+  /**
+   * Authentication (default 'none'): 'keys' requires a tenant API key on every /v1 call; 'none' disables
+   * login and acts as the first tenant with every role. 'none' is refused on a non-loopback host unless
+   * allowUnauthenticatedRemote is set, because anyone reaching the port would have admin rights.
+   */
+  auth?: 'keys' | 'none';
+  allowUnauthenticatedRemote?: boolean;
   /** Serve web/ (default true). */
   web?: boolean;
   /** Sandbox fault injection (F1's 1 ms judge budget). Default true: this app only runs sandbox tools; FAULT_INJECTION=0 disables it. */
@@ -54,7 +61,13 @@ export interface App {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
+const LOOPBACK = new Set(['127.0.0.1', '::1', 'localhost']);
+
 export async function createApp(opts: AppOptions): Promise<App> {
+  const authMode = opts.auth ?? 'none';
+  if (authMode === 'none' && !LOOPBACK.has(opts.host ?? '127.0.0.1') && !opts.allowUnauthenticatedRemote)
+    throw new Error(`authentication is off (auth: 'none') but host is ${opts.host}: bind to 127.0.0.1, enable AUTH_MODE=keys, or set ALLOW_UNAUTHENTICATED_REMOTE=1 knowingly`);
+  if (!opts.tenants.length) throw new Error('at least one tenant is required');
   const db = opts.db ?? await openDb();
   await migrate(db, [{ set: 'core', dir: join(ROOT, 'server/storage/migrations') }]);
   const internalKeys = new Map<string, string>();
@@ -134,6 +147,8 @@ export async function createApp(opts: AppOptions): Promise<App> {
       return { run_id: runId };
     },
     sandboxScenarios: scenarioIds(),
+    authMode,
+    defaultTenant: opts.tenants[0].tenant_id,
     preflight: gateMode ? { db, judge: gateJudge, authority, policy: activePolicy, faultInjection: opts.faultInjection ?? true } : null,
   });
   await new Promise<void>(res => server.listen(opts.port ?? 0, opts.host ?? '127.0.0.1', res));

@@ -38,7 +38,8 @@ npm install
 cp deploy/env.example .env && set -a && . ./.env && set +a
 npm run server                    # http://127.0.0.1:8787 — live console at /, simulated demo at /demo/
 
-# 3. Open the console, paste READER_KEY (and ADMIN_KEY to start sandbox runs), press S1…S6 / F1.
+# 3. Open the console. Login is off by default (`AUTH_MODE=none`, localhost only), so it connects by itself. Press S1…S9 / F1.
+   For a shared or remote deployment, set `AUTH_MODE=keys` and paste READER_KEY (and ADMIN_KEY to start runs).
 ```
 
 ## Using the console

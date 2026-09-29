@@ -4,11 +4,17 @@
 set -u
 [ -f .env ] && { set -a; . ./.env; set +a; }
 BASE="${SMOKE_BASE:-http://${HOST:-127.0.0.1}:${PORT:-8787}}"
-: "${READER_KEY:?READER_KEY not set}" "${ADMIN_KEY:?ADMIN_KEY not set}"
 EXPECT_RUN="${JUDGE_EXPECTED_RUN:-}"
 die() { echo "SMOKE FAIL: $*"; exit 1; }
 j() { python3 -c "import sys,json;d=json.load(sys.stdin);print($1)"; }
-get() { curl -sf -m 15 -H "authorization: Bearer $READER_KEY" "$BASE$1"; }
+# Authentication is optional (AUTH_MODE). Keys are only needed when the server says mode=keys.
+MODE=$(curl -sf -m 5 "$BASE/v1/auth" | j 'd["mode"]') || die "/v1/auth unreachable at $BASE"
+if [ "$MODE" = keys ]; then
+  : "${READER_KEY:?READER_KEY not set (server runs AUTH_MODE=keys)}" "${ADMIN_KEY:?ADMIN_KEY not set (server runs AUTH_MODE=keys)}"
+  RH=(-H "authorization: Bearer $READER_KEY"); AH=(-H "authorization: Bearer $ADMIN_KEY")
+else RH=(); AH=(); fi
+echo "ok  auth mode: $MODE"
+get() { curl -sf -m 15 ${RH[@]+"${RH[@]}"} "$BASE$1"; }
 
 curl -sf -m 5 "$BASE/healthz" >/dev/null || die "/healthz unreachable at $BASE"; echo "ok  /healthz"
 rz=$(curl -s -m 15 "$BASE/readyz") || die "/readyz unreachable"
@@ -20,7 +26,7 @@ echo "ok  judge_source=$src"
 
 run_scn() {
   local sc=$1 rid
-  rid=$(curl -sf -m 15 -X POST -H "authorization: Bearer $ADMIN_KEY" -H 'content-type: application/json' -d "{\"scenario\":\"$sc\"}" "$BASE/v1/sandbox/runs" | j 'd["run_id"]') || die "could not start $sc"
+  rid=$(curl -sf -m 15 -X POST ${AH[@]+"${AH[@]}"} -H 'content-type: application/json' -d "{\"scenario\":\"$sc\"}" "$BASE/v1/sandbox/runs" | j 'd["run_id"]') || die "could not start $sc"
   for _ in $(seq 1 60); do
     out=$(get "/v1/runs/$rid" 2>/dev/null) && echo "$out" | python3 -c '
 import sys,json; d=json.load(sys.stdin); t=d["timeline"]

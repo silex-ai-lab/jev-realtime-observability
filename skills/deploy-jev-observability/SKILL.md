@@ -20,7 +20,8 @@ Every command below is run from the repo root unless stated. Helper scripts are 
 | Judge model | `jaredpalmer/kev-4b` | Kev's README lists it for a 32 GB Mac, an L40S or an H100 (it is too slow on an L4). `jaredpalmer/kev-0.8b` runs on an L4 or any Apple Silicon Mac. |
 | Shadow or gate | shadow (`SOURCE_MODE=live_sandbox_shadow`) | Gate mode enforces write and payment tools in the **sandbox only**. Read `docs/GATE.md` first. |
 | Storage | PGlite in `DATA_DIR` | Set `DATABASE_URL` for a real PostgreSQL. It runs the same migrations. Single replica only; no HA. |
-| Who can reach the console | only localhost | Expose it through a TLS reverse proxy (step 6). Never bind `0.0.0.0` without TLS: API keys travel in headers. |
+| Login (authentication) | **off** (`AUTH_MODE=none`) | With login off, anyone who can reach the port has full access (they can view everything and start runs), so the server refuses a non-loopback `HOST` unless `ALLOW_UNAUTHENTICATED_REMOTE=1`. **Set `AUTH_MODE=keys` for any shared or remote deployment.** |
+| Who can reach the console | only localhost | Expose it through a TLS reverse proxy (step 6), with `AUTH_MODE=keys`. Never bind `0.0.0.0` without TLS: API keys travel in headers. |
 
 **Hard constraints that come from the code (do not work around them):**
 - **The judge must run on the same host, bound to `127.0.0.1`.** For `JUDGE_BACKEND=kev-local` the server sends no credential to the judge (`server/config.ts`). A Kev reachable over a network would therefore be unauthenticated. Remote judges are not supported by this build.
@@ -87,7 +88,8 @@ chmod 600 .env
 ```
 
 Edit `.env`:
-- **Keys:** set `INGEST_KEY`, `READER_KEY`, `GATEWAY_KEY` and `ADMIN_KEY` to **four different random values** of at least 16 characters each, for example from `openssl rand -hex 24`. The server stores only their sha256 hashes.
+- **Login:** `AUTH_MODE=none` (the default) needs no keys and is fine for a single-user localhost setup. For anything shared or reachable by others, set `AUTH_MODE=keys`.
+- **Keys** (used only with `AUTH_MODE=keys`): set `INGEST_KEY`, `READER_KEY`, `GATEWAY_KEY` and `ADMIN_KEY` to **four different random values** of at least 16 characters each, for example from `openssl rand -hex 24`. The server stores only their sha256 hashes.
 - **Storage:** set `DATA_DIR` to a persistent path (for example `/var/lib/jev-observability/pg`), **or** set `DATABASE_URL=postgres://…` for a real PostgreSQL. Only the server's own user may read it.
 - **Judge:** keep `JUDGE_BACKEND=kev-local`, `JUDGE_BASE_URL=http://127.0.0.1:8009`, and `JUDGE_EXPECTED_RUN` equal to the model you started. On a mismatch, every evaluation records `model_mismatch`.
 - **Gate mode:**
@@ -117,7 +119,7 @@ The smoke test checks, in order:
 5. it runs S1, which must produce judge evaluations with status `ok` from `kev-local:`;
 6. `/v1/metrics` must answer.
 
-It prints `SMOKE PASS` or the first failing check.
+It prints `SMOKE PASS` or the first failing check. It asks the server for its auth mode first, and needs `READER_KEY` and `ADMIN_KEY` only when the server runs `AUTH_MODE=keys`.
 
 ## 6. Run it as a service and expose it (optional)
 
@@ -133,7 +135,7 @@ journalctl -u jev-observability -f
 
   The server unit waits for the Kev unit. `/readyz` reports `judge: degraded` until Kev has loaded.
 - **macOS:** run both processes under `launchd` or a terminal multiplexer. There is no template, because MLX runs in the user session.
-- **Outside access:** put a TLS reverse proxy (Caddy or nginx) in front of `127.0.0.1:8787`.
+- **Outside access:** set **`AUTH_MODE=keys`**, then put a TLS reverse proxy (Caddy or nginx) in front of `127.0.0.1:8787`. With login off, the proxy would give everyone admin rights.
   - Proxy `/v1/stream` **without buffering**: nginx `proxy_buffering off;` and a long `proxy_read_timeout`. It is SSE.
   - Expose only the console and `/v1/*`; **never** expose the Kev port.
   - An example is in `templates/Caddyfile.example`.

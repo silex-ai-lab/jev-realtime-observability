@@ -9,6 +9,8 @@ const pct = (a, b) => (b ? `${((a / b) * 100).toFixed(1)}%` : '—');
 const nearestRank = (xs, q) => { if (!xs.length) return null; const s = [...xs].sort((a, b) => a - b); return s[Math.max(0, Math.ceil(q * s.length) - 1)]; };
 
 const keys = { reader: null, admin: null };
+let authMode = 'keys';
+let connected = false;
 const rows = new Map();        // event_id → { event, evaluations: [], decisions: [], outcomes: [], el }
 let serverMetrics = null;
 let cursor = '0', es = null, selected = null, lastAt = null, judgeInfo = null, activePolicy = null;
@@ -16,7 +18,8 @@ const counts = { expired: 0, gaps: 0 };
 
 async function api(path, { method = 'GET', body, role = 'reader' } = {}) {
   const key = keys[role] ?? keys.reader;
-  const r = await fetch(path, { method, headers: { authorization: `Bearer ${key}`, ...(body ? { 'content-type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  const headers = { ...(key ? { authorization: `Bearer ${key}` } : {}), ...(body ? { 'content-type': 'application/json' } : {}) };
+  const r = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j?.error?.message ?? `HTTP ${r.status}`);
   return j;
@@ -28,6 +31,10 @@ $('#connect-form').addEventListener('submit', async e => {
   keys.reader = $('#k-reader').value.trim();
   keys.admin = $('#k-admin').value.trim() || null;
   $('#k-reader').value = ''; $('#k-admin').value = '';
+  await connect();
+});
+
+async function connect() {
   try {
     judgeInfo = await api('/v1/judge');
     activePolicy = (await api('/v1/policies/active')).policy;
@@ -35,8 +42,21 @@ $('#connect-form').addEventListener('submit', async e => {
     $('#conn-status').textContent = `connected · judge ${judgeInfo.configured ? judgeInfo.backend : 'not configured'}`;
     renderScenarioButtons();
     await openStream();
+    connected = true;
   } catch (err) { $('#conn-status').textContent = `connection failed: ${err.message}`; }
-});
+}
+
+// Authentication is optional (AUTH_MODE). With it off, there is nothing to type: connect straight away.
+(async () => {
+  try { authMode = (await (await fetch('/v1/auth')).json()).mode ?? 'keys'; } catch { authMode = 'keys'; }
+  document.body.dataset.authMode = authMode;
+  if (authMode === 'none') {
+    $('#connect-form').hidden = true;
+    $('#auth-off').hidden = false;
+    await connect();
+    $('#conn-status-none').textContent = $('#conn-status').textContent;
+  }
+})();
 
 async function openStream() {
   es?.close();
@@ -154,13 +174,14 @@ function renderKpis() {
   $('#kpis').innerHTML = tiles.map(([id, k, v, s]) => `<div class="kpi" data-kpi="${id}"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join('')
     + na.map(([id, k, v, s]) => `<div class="kpi na" data-kpi="${id}" data-baseline-status="not_measured"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join('');
 }
-setInterval(async () => { if (!keys.reader) return; try { serverMetrics = await api('/v1/metrics'); renderKpis(); } catch { /* keep last */ } }, 3000);
+setInterval(async () => { if (!connected) return; try { serverMetrics = await api('/v1/metrics'); renderKpis(); } catch { /* keep last */ } }, 3000);
 setInterval(() => { $('#lag').textContent = lastAt ? `last record ${Math.round((Date.now() - lastAt) / 1000)} s ago` : ''; }, 1000);
 
 // ---- scenarios --------------------------------------------------------------------------
 function renderScenarioButtons() {
   const ids = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'F1'];
-  $('#scenario-buttons').innerHTML = ids.map(id => `<button class="btn" data-scenario="${id}" ${keys.admin ? '' : 'disabled title="needs an admin key"'}>${id}</button>`).join(' ');
+  const canRun = authMode === 'none' || Boolean(keys.admin);
+  $('#scenario-buttons').innerHTML = ids.map(id => `<button class="btn" data-scenario="${id}" ${canRun ? '' : 'disabled title="needs an admin key"'}>${id}</button>`).join(' ');
   for (const b of document.querySelectorAll('[data-scenario]')) b.addEventListener('click', async () => {
     try { const r = await api('/v1/sandbox/runs', { method: 'POST', body: { scenario: b.dataset.scenario }, role: 'admin' }); $('#run-status').textContent = `started ${r.run_id}`; }
     catch (e) { $('#run-status').textContent = `run failed: ${e.message}`; }

@@ -23,7 +23,13 @@ Other pages on the same server:
 - `/demo/`: the older **simulated** demo. It has no real judge; see §10.
 - `/healthz` and `/readyz`: health checks. `/readyz` must say `"db":"ok","judge":"ok"`.
 
-**You need two keys.** The operator finds them in the server's `.env`:
+**Login is optional, and off by default** (`AUTH_MODE=none`).
+- **With login off,** the page connects by itself. You don't need any key, and an amber bar says *Login is off*. Everyone who can reach the address can view and start runs, which is why the server only listens on localhost in this mode.
+- **With `AUTH_MODE=keys`,** you need the keys below.
+
+![Console with login off: the amber bar and the connected status](manual/00-login-off.png)
+
+**Keys (only with `AUTH_MODE=keys`).** The operator finds them in the server's `.env`:
 
 ```bash
 grep -E '^(READER|ADMIN)_KEY=' .env
@@ -32,7 +38,7 @@ grep -E '^(READER|ADMIN)_KEY=' .env
 - **Reader key** (required): lets you watch the stream and inspect decisions.
 - **Admin key** (optional): also lets you start sandbox scenario runs. Keep it to operators.
 
-## 2. Connect
+## 2. Connect (only with `AUTH_MODE=keys`)
 
 ![Connect form](manual/01-connect.png)
 
@@ -198,7 +204,7 @@ This is the original click-through demo. Its judge, latencies and tenant are **s
 ## 11. Five-minute test of a deployment
 
 1. Open `/readyz`. It must show `"db":"ok","judge":"ok"`.
-2. Open `/` and connect with the reader and admin keys. The header should show `judge kev-local:…` (or `typesafe:…` if hosted Jev is configured).
+2. Open `/`. With login off it connects by itself; with `AUTH_MODE=keys`, connect with the reader and admin keys. The header should show `judge kev-local:…` (or `typesafe:…` if hosted Jev is configured).
 3. Press **S3**. The `pre_tool payments.execute` row must turn **BLOCK · rule**; open it and check that `amount_limit` shows BLOCK.
 4. Press **S1**. All rows should show `no configured risk`. Open the payment's `pre_tool` row: *Realtime judge evaluation* must be `status ok` with answer cards. Its `post_tool` row gets `outcome: verified success` within a few seconds.
 5. Press **F1**. The payment must be **HOLD · judge_unavailable**.

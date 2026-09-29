@@ -1,5 +1,6 @@
 // Environment configuration for server/main.ts. Secrets come only from the environment and are
 // never printed. See deploy/env.example.
+import { randomBytes } from 'node:crypto';
 import type { AppOptions } from './app.ts';
 import type { JudgeConfig } from './judges/index.ts';
 
@@ -29,8 +30,18 @@ export function gateJudgeFromEnv(): JudgeConfig | null | undefined {
 }
 
 export function appOptionsFromEnv(): AppOptions {
-  const need = (k: string) => { const v = env(k); if (!v || v.length < 16) throw new Error(`${k} must be set (≥16 chars)`); return v; };
+  // AUTH_MODE: 'none' (default) = no login, 'keys' = API keys required. Keys are only required in 'keys' mode;
+  // in 'none' mode unused random internal keys are generated so tenant setup stays uniform.
+  const auth = env('AUTH_MODE', 'none') === 'keys' ? 'keys' : 'none';
+  const need = (k: string) => {
+    const v = env(k);
+    if (auth === 'none') return v && v.length >= 16 ? v : randomBytes(24).toString('hex');
+    if (!v || v.length < 16) throw new Error(`${k} must be set (≥16 chars) when AUTH_MODE=keys`);
+    return v;
+  };
   return {
+    auth,
+    allowUnauthenticatedRemote: env('ALLOW_UNAUTHENTICATED_REMOTE') === '1',
     judge: judgeFromEnv(),
     gateJudge: gateJudgeFromEnv(),
     sourceMode: env('SOURCE_MODE', 'live_sandbox_shadow') === 'live_sandbox_gate' ? 'live_sandbox_gate' : 'live_sandbox_shadow',

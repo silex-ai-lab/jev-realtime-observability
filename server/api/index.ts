@@ -26,6 +26,13 @@ export interface ApiDeps {
   subscribe: (fn: () => void) => () => void;
   startSandboxRun: (tenantId: string, scenario: string) => Promise<{ run_id: string }>;
   sandboxScenarios: string[];
+  /**
+   * 'keys' (opt-in): every /v1 call needs a tenant API key with the right role.
+   * 'none' (default): no login; every call acts as `defaultTenant` with every role. Only safe on a
+   * loopback address; createApp refuses a non-loopback host in this mode unless explicitly allowed.
+   */
+  authMode: 'keys' | 'none';
+  defaultTenant: string;
   /** Gate C: synchronous preflight dependencies (null when the app runs in shadow mode). */
   preflight: PreflightDeps | null;
 }
@@ -54,6 +61,7 @@ export function createApi(d: ApiDeps): Server {
   const sandboxRate = new Map<string, number[]>();
 
   async function auth(req: IncomingMessage, roles: Role[]): Promise<{ tenant_id: string; role: Role }> {
+    if (d.authMode === 'none') return { tenant_id: d.defaultTenant, role: roles[0] };
     const h = req.headers.authorization ?? '';
     const m = /^Bearer (.+)$/.exec(h);
     if (!m) throw new HttpError(401, 'unauthenticated', 'missing bearer key');
@@ -68,6 +76,7 @@ export function createApi(d: ApiDeps): Server {
     const p = url.pathname, m = req.method ?? 'GET';
 
     if (m === 'GET' && p === '/healthz') return send(res, 200, { ok: true });
+    if (m === 'GET' && p === '/v1/auth') return send(res, 200, { mode: d.authMode });
     if (m === 'GET' && p === '/readyz') {
       let db = 'ok'; try { await d.db.query('SELECT 1'); } catch { db = 'error'; }
       let judge = 'not_configured';

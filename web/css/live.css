@@ -82,3 +82,8 @@ details > summary { cursor: pointer; font-size: 12px; font-weight: 600; color: v
 /* status column: chips may wrap instead of being clipped */
 .row > span:last-child { display: flex; flex-wrap: wrap; gap: 2px 4px; align-items: center; min-width: 0; }
 .row > span:last-child .chip { white-space: normal; }
+
+.lv-auth-off { margin: 0; padding: 10px 14px; font-size: 13px; background: var(--amber-bg); color: #6d470d; border-radius: 14px; }
+
+/* the hidden attribute must win over component display rules (e.g. the key form when login is off) */
+[hidden] { display: none !important; }
