@@ -68,6 +68,8 @@ export interface StartHarnessOptions {
   worker?: AppOptions['worker'];
   port?: number;
   sourceMode?: AppOptions['sourceMode'];
+  /** Sandbox fault injection (F1). Defaults true because the sandbox tests exercise F1 on purpose. */
+  faultInjection?: boolean;
 }
 
 export async function startGateAHarness(opts: StartHarnessOptions = {}): Promise<GateAHarness> {
@@ -88,6 +90,7 @@ export async function startGateAHarness(opts: StartHarnessOptions = {}): Promise
     auth: 'keys',
     tenants: [...TENANTS],
     worker: opts.worker ?? { autostart: true, leaseMs: 50, realtimeTtlMs: 2_000 },
+    faultInjection: opts.faultInjection ?? true,
     port: opts.port ?? 0,
   };
   const app = await createApp(appOptions);

@@ -48,7 +48,7 @@ export function appOptionsFromEnv(): AppOptions {
     tenants: [{ tenant_id: env('TENANT_ID', 't-demo')!, name: env('TENANT_NAME', 'Demo tenant (fictional)')!,
       keys: { ingest: need('INGEST_KEY'), reader: need('READER_KEY'), gateway: need('GATEWAY_KEY'), admin: need('ADMIN_KEY') } }],
     worker: { autostart: true, concurrency: Number(env('WORKER_CONCURRENCY', '2')) },
-    faultInjection: env('FAULT_INJECTION', '1') !== '0',
+    faultInjection: env('FAULT_INJECTION') === '1',
     port: Number(env('PORT', '8787')),
     host: env('HOST', '127.0.0.1'),
   };

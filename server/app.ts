@@ -13,6 +13,7 @@ import { createApi } from './api/index.ts';
 import { DEFAULT_POLICY, validatePolicy, type PolicyBody } from './policy/index.ts';
 import { createAuthorityReader, createToolGateway, seedSandbox } from '../sandbox/index.ts';
 import { createOutcomeVerifier, type OutcomeVerifier } from './outcomes/index.ts';
+import { ensureActivePolicy } from './storage/policies.ts';
 import { createControlVerifier } from '../sandbox/control.ts';
 import { SCENARIOS, scenarioIds } from '../sandbox/scenarios/index.ts';
 import { runScripted } from '../sandbox/drivers/scripted.ts';
@@ -42,7 +43,7 @@ export interface AppOptions {
   allowUnauthenticatedRemote?: boolean;
   /** Serve web/ (default true). */
   web?: boolean;
-  /** Sandbox fault injection (F1's 1 ms judge budget). Default true: this app only runs sandbox tools; FAULT_INJECTION=0 disables it. */
+  /** Sandbox fault injection (F1's 1 ms judge budget). Default false: the fault drill is off unless the deployment enables it (FAULT_INJECTION=1). */
   faultInjection?: boolean;
   /** Mirror sandbox runs as OTLP spans (default true). */
   mirrorOtlp?: boolean;
@@ -62,6 +63,12 @@ export interface App {
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const LOOPBACK = new Set(['127.0.0.1', '::1', 'localhost']);
+
+// Test hook: pause a policy cache fill between the DB read and the cache store. No-op unless a test
+// installs it (policy-lifecycle.test.ts uses it to prove a delayed read cannot repopulate the cache
+// with a stale policy after a concurrent switch).
+let policyCacheFillHook: ((tenantId: string) => Promise<void>) | null = null;
+export function setPolicyCacheFillHook(fn: ((tenantId: string) => Promise<void>) | null): void { policyCacheFillHook = fn; }
 
 export async function createApp(opts: AppOptions): Promise<App> {
   const authMode = opts.auth ?? 'none';
@@ -93,14 +100,22 @@ export async function createApp(opts: AppOptions): Promise<App> {
   if (judge) await judge.describe().catch(() => null);   // identity for provenance; failure leaves it null (readyz degraded)
 
   const policies = new Map<string, PolicyBody>();
+  const policyGenerations = new Map<string, number>();
+
+  const invalidatePolicy = (tenantId: string): void => {
+    policyGenerations.set(tenantId, (policyGenerations.get(tenantId) ?? 0) + 1);
+    policies.delete(tenantId);
+  };
+
   const activePolicy = async (tenantId: string): Promise<PolicyBody> => {
     const cached = policies.get(tenantId);
     if (cached) return cached;
-    const row = await repos.getActivePolicy(db, tenantId);
-    const v = row ? validatePolicy(row.body) : { ok: true as const, policy: DEFAULT_POLICY };
+    const gen = policyGenerations.get(tenantId) ?? 0;
+    const row = await db.tx(q => ensureActivePolicy(q, tenantId));
+    const v = validatePolicy(row.body);
     const p = v.ok ? v.policy : DEFAULT_POLICY;
-    if (!row) await db.tx(q => repos.insertPolicyVersion(q, { policy_version: p.policy_version, tenant_id: tenantId, base_version: null, status: 'active', body: p, actor: 'bootstrap' })).catch(() => undefined);
-    policies.set(tenantId, p);
+    if (policyCacheFillHook) await policyCacheFillHook(tenantId);
+    if ((policyGenerations.get(tenantId) ?? 0) === gen) policies.set(tenantId, p);
     return p;
   };
   const provenance = (judgeSource: string | null): Provenance => ({
@@ -120,7 +135,7 @@ export async function createApp(opts: AppOptions): Promise<App> {
     deadlineMs: { 'payments.execute': 10_000, 'email.send': 5_000 }, backoffMs: [250, 500, 1000, 2000],
   });
   const worker: Worker = createWorker({
-    db, judge, authority, policy: activePolicy, provenance, verifier, faultInjection: opts.faultInjection ?? true,
+    db, judge, authority, policy: activePolicy, provenance, verifier, faultInjection: opts.faultInjection ?? false,
     leaseMs: opts.worker.leaseMs ?? 30_000, concurrency: opts.worker.concurrency ?? 2, onChange: notify,
   });
 
@@ -136,7 +151,7 @@ export async function createApp(opts: AppOptions): Promise<App> {
     db, judge, realtimeTtlMs: opts.worker.realtimeTtlMs ?? DEFAULT_POLICY.realtime_ttl_ms,
     webRoot: opts.web === false ? null : join(ROOT, 'web'),
     activePolicy,
-    invalidatePolicy: tenantId => { policies.delete(tenantId); },
+    invalidatePolicy,
     notify: () => { notify(); worker.wake(); },
     subscribe: fn => { bus.on('change', fn); return () => bus.off('change', fn); },
     startSandboxRun: async (tenantId, scenario) => {
@@ -150,7 +165,7 @@ export async function createApp(opts: AppOptions): Promise<App> {
     sandboxScenarios: scenarioIds(),
     authMode,
     defaultTenant: opts.tenants[0].tenant_id,
-    preflight: gateMode ? { db, judge: gateJudge, authority, policy: activePolicy, faultInjection: opts.faultInjection ?? true } : null,
+    preflight: gateMode ? { db, judge: gateJudge, authority, policy: activePolicy, faultInjection: opts.faultInjection ?? false } : null,
   });
   await new Promise<void>(res => server.listen(opts.port ?? 0, opts.host ?? '127.0.0.1', res));
   const addr = server.address() as AddressInfo;

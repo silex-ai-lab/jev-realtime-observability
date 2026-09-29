@@ -103,6 +103,7 @@ The **Sandbox run** row has one button per scenario. It needs the admin key. Pre
 **F1: the judge call aborted, so the payment is held.**
 - In *shadow* mode, that hold is advice only: the payment still executes, and its `post_tool` row shows `outcome: verified success`.
 - In gate mode (§9), the same hold stops the payment.
+- F1's fault drill is **off by default**: set `FAULT_INJECTION=1` (in `.env`) to make the judge budget 1 ms and really abort the call; without it, F1 behaves like a normal S1-style payment.
 
 ![F1 judge timeout](manual/06-f1-judge-timeout.png)
 

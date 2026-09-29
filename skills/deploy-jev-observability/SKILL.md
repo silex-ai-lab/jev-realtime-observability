@@ -94,7 +94,7 @@ Edit `.env`:
 - **Judge:** keep `JUDGE_BACKEND=kev-local`, `JUDGE_BASE_URL=http://127.0.0.1:8009`, and `JUDGE_EXPECTED_RUN` equal to the model you started. On a mismatch, every evaluation records `model_mismatch`.
 - **Gate mode:**
   - set `SOURCE_MODE=live_sandbox_gate`, `GATE_JUDGE_BASE_URL=http://127.0.0.1:8010` and `GATE_JUDGE_EXPECTED_RUN=jaredpalmer/kev-0.8b`;
-  - set `FAULT_INJECTION=0` unless you want F1's fault drill.
+  - `FAULT_INJECTION` is off by default; set `FAULT_INJECTION=1` only if you want F1's fault drill.
 - **Leave `HOST=127.0.0.1`.** Step 6 handles outside access.
 
 Never commit `.env`; it is git-ignored.
