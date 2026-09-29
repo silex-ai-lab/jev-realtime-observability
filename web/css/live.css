@@ -87,3 +87,19 @@ details > summary { cursor: pointer; font-size: 12px; font-weight: 600; color: v
 
 /* the hidden attribute must win over component display rules (e.g. the key form when login is off) */
 [hidden] { display: none !important; }
+
+/* review queue (T8) */
+.lv-rv-note { margin: 0; padding: 8px 14px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.lv-rv-grid { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); }
+.lv-rv-list { max-height: 60vh; overflow: auto; border-right: 1px solid var(--line); }
+.lv-rv-detail { padding: 14px; max-height: 60vh; overflow: auto; }
+.rv-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; padding: 8px 14px; border-bottom: 1px solid var(--soft); cursor: pointer; font-size: 13px; }
+.rv-row:hover { background: #fafbfc; } .rv-row[aria-selected="true"] { background: var(--lav); }
+.rv-row .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rv-q { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-top: 6px; }
+.rv-q .h { display: flex; gap: 6px; flex-wrap: wrap; align-items: baseline; font-size: 12px; }
+.rv-q .ins { font-size: 12px; color: var(--muted); margin: 4px 0; }
+.rv-q select { font: inherit; font-size: 13px; border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; max-width: 100%; }
+.rv-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+.btn.allow { border-color: var(--green); color: var(--green); } .btn.deny { border-color: var(--red); color: var(--red); }
+@media (max-width: 900px) { .lv-rv-grid { grid-template-columns: minmax(0, 1fr); } .lv-rv-list { border-right: 0; border-bottom: 1px solid var(--line); max-height: 40vh; } }

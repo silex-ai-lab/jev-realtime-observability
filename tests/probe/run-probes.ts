@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { access, mkdtemp, readFile } from 'node:fs/promises';
+import { access, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
@@ -8,6 +8,7 @@ import { findObjects, isObject, startGateAHarness, waitFor } from '../helpers/ha
 import type { GateAHarness } from '../helpers/harness.ts';
 import type { JudgeConfig } from '../../server/judges/index.ts';
 import type { EvaluationRecord } from '../../contracts/judge.ts';
+import { createApp } from '../../server/app.ts';
 
 interface CdpClient {
   ws: WebSocket;
@@ -125,6 +126,96 @@ async function main(): Promise<void> {
     assert.ok(width.scroll <= width.inner + 1, JSON.stringify(width));
     return JSON.stringify(width);
   });
+  await state.page.send('Emulation.clearDeviceMetricsOverride');
+
+  // T8: the review queue. S4 (missing approval) is a hard-rule HOLD: no evaluation, so the whole rubric is offered.
+  await probe('P6', 'review panel: an S4 hold is listed, answered and denied; labels are recorded; no JS errors', async () => {
+    const h = state.harness!;
+    const runId = await startScenario(h, 'S4');
+    const task = await waitFor(async () => {
+      const r = await h.json<{ reviews: Array<{ review_id: string; body: { run_id: string; snapshot_id: string } }> }>('GET', '/v1/reviews?status=open', { tenant: 'alpha', role: 'reader' });
+      return r.body.reviews.find(t => t.body.run_id === runId) ?? null;
+    }, 'S4 review task', 30_000);
+    await navigate('/');
+    await waitFor(() => pageEval<boolean>(`return !!document.querySelector('[data-review-id="${task.review_id}"]')`), 'task listed in the panel', 10_000);
+    await pageEval<void>(`document.querySelector('[data-review-id="${task.review_id}"]').click()`);
+    await waitFor(() => pageEval<boolean>(`return !!document.querySelector('#review-detail [data-answer="semantic_impact"]') && !!document.querySelector('[data-review-state]')`), 'review detail with the judge view', 10_000);
+    const enabled = await pageEval<boolean>(`return !document.querySelector('#review-detail [data-resolve="deny"]').disabled`);
+    assert.ok(enabled, 'deny must be enabled with the admin key');
+    if (process.env.PROBE_SHOT_DIR) await screenshot(join(process.env.PROBE_SHOT_DIR, '14-review-queue.png'), '#reviews');
+    await pageEval<void>(`
+      const set = (q, v) => { const el = document.querySelector('#review-detail [data-answer="' + q + '"]'); el.value = v; el.dispatchEvent(new Event('change')); };
+      set('instruction_override', 'false'); set('payee_relation', 'different_entity'); set('semantic_impact', 'severe');
+      document.querySelector('#review-detail [data-resolve="deny"]').click();`);
+    const status = await waitFor(() => pageEval<string | null>(`return document.querySelector('[data-review-resolved]')?.getAttribute('data-review-resolved') ?? null`), 'resolved note', 10_000);
+    assert.equal(status, 'resolved_deny');
+    const labels = await h.json<{ labels: Array<{ question_id: string; value: unknown; evidence_class: string }> }>('GET', `/v1/labels?ref=${encodeURIComponent(task.body.snapshot_id)}`, { tenant: 'alpha', role: 'reader' });
+    assert.deepEqual(labels.body.labels.map(l => [l.question_id, l.value, l.evidence_class]).sort(),
+      [['instruction_override', false, 'human_reviewed'], ['payee_relation', 'different_entity', 'human_reviewed'], ['semantic_impact', 'severe', 'human_reviewed']]);
+    const still = await pageEval<boolean>(`return !!document.querySelector('[data-review-id="${task.review_id}"]')`);
+    assert.equal(still, false, 'the resolved task left the open list');
+    assert.deepEqual(state.page?.errors ?? [], []);
+    return `${task.review_id}: 3 human_reviewed labels, task closed`;
+  });
+
+  await probe('P7', 'review panel without the admin key: resolve buttons are disabled', async () => {
+    const h = state.harness!;
+    const runId = await startScenario(h, 'S4');
+    const task = await waitFor(async () => {
+      const r = await h.json<{ reviews: Array<{ review_id: string; body: { run_id: string } }> }>('GET', '/v1/reviews?status=open', { tenant: 'alpha', role: 'reader' });
+      return r.body.reviews.find(t => t.body.run_id === runId) ?? null;
+    }, 'S4 review task', 30_000);
+    await navigate('/', { admin: false });
+    await waitFor(() => pageEval<boolean>(`return !!document.querySelector('[data-review-id="${task.review_id}"]')`), 'task listed', 10_000);
+    await pageEval<void>(`document.querySelector('[data-review-id="${task.review_id}"]').click()`);
+    await waitFor(() => pageEval<boolean>(`return !!document.querySelector('#review-detail [data-resolve]')`), 'review detail', 10_000);
+    const disabled = await pageEval<boolean[]>(`return [...document.querySelectorAll('#review-detail [data-resolve]')].map(b => b.disabled).concat(document.querySelector('#review-sample').disabled)`);
+    assert.deepEqual(disabled, [true, true, true]);
+    return 'allow, deny and sample disabled';
+  });
+
+  await probe('P8', 'review panel with login off (AUTH_MODE=none): resolves without keys', async () => {
+    const k = (r: string) => `${r}-probe-none-key-00000000`;
+    const app = await createApp({ judge: null, sourceMode: 'live_sandbox_shadow', mirrorOtlp: false,
+      tenants: [{ tenant_id: 't-none', name: 'None', keys: { ingest: k('i'), reader: k('r'), gateway: k('g'), admin: k('a') } }],
+      worker: { autostart: true, leaseMs: 30_000, realtimeTtlMs: 2_000 } });
+    try {
+      const r = await fetch(`${app.url}/v1/sandbox/runs`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"scenario":"S4"}' });
+      const { run_id: runId } = await r.json() as { run_id: string };
+      const task = await waitFor(async () => {
+        const x = await (await fetch(`${app.url}/v1/reviews?status=open`)).json() as { reviews: Array<{ review_id: string; body: { run_id: string; snapshot_id: string } }> };
+        return x.reviews.find(t => t.body.run_id === runId) ?? null;
+      }, 'S4 review task (none mode)', 30_000);
+      await state.page!.send('Page.navigate', { url: `${app.url}/` });
+      await waitFor(() => pageEval<boolean>(`return !!document.querySelector('[data-review-id="${task.review_id}"]')`), 'task listed (none mode)', 15_000);
+      await pageEval<void>(`document.querySelector('[data-review-id="${task.review_id}"]').click()`);
+      await waitFor(() => pageEval<boolean>(`return !!document.querySelector('#review-detail [data-answer="goal_deviation"]')`), 'review detail (none mode)', 10_000);
+      await pageEval<void>(`const el = document.querySelector('#review-detail [data-answer="goal_deviation"]'); el.value = 'true';
+        document.querySelector('#review-detail [data-resolve="allow"]').click();`);
+      const status = await waitFor(() => pageEval<string | null>(`return document.querySelector('[data-review-resolved]')?.getAttribute('data-review-resolved') ?? null`), 'resolved (none mode)', 10_000);
+      assert.equal(status, 'resolved_allow');
+      const labels = await (await fetch(`${app.url}/v1/labels?ref=${encodeURIComponent(task.body.snapshot_id)}`)).json() as { labels: unknown[] };
+      assert.equal(labels.labels.length, 1);
+      return 'resolved without keys; 1 label';
+    } finally { await app.close(); }
+  });
+}
+
+async function startScenario(h: GateAHarness, scenario: string): Promise<string> {
+  const { response, body } = await h.json<{ run_id?: string }>('POST', '/v1/sandbox/runs', { tenant: 'alpha', role: 'admin', body: { scenario } });
+  assert.equal(response.status, 202);
+  return body.run_id!;
+}
+
+async function screenshot(file: string, selector: string): Promise<void> {
+  await state.page!.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1400, deviceScaleFactor: 1, mobile: false });
+  await new Promise(resolve => setTimeout(resolve, 300));
+  await pageEval<void>(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView()`);
+  const box = await pageEval<{ x: number; y: number; width: number; height: number }>(`const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+    return { x: r.left + window.scrollX, y: r.top + window.scrollY, width: r.width, height: r.height }`);
+  const shot = await state.page!.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true, clip: { ...box, scale: 1 } });
+  await writeFile(file, Buffer.from(shot.data as string, 'base64'));
+  await state.page!.send('Emulation.clearDeviceMetricsOverride');
 }
 
 async function seedLiveRun(h: GateAHarness): Promise<void> {
@@ -155,7 +246,7 @@ function judgeFromEnv(): JudgeConfig | null {
     backend: 'kev-local',
     baseUrl: process.env.KEV_URL,
     model: 'kev-latest',
-    expectedRun: 'jaredpalmer/kev-4b',
+    expectedRun: process.env.KEV_EXPECT ?? 'jaredpalmer/kev-4b',
     maxRps: 10,
     maxInputTokensPerSec: 1_000_000,
     maxResponseBytes: 1_000_000,
@@ -231,19 +322,19 @@ async function connect(url: string): Promise<CdpClient> {
   return client;
 }
 
-async function navigate(path: string): Promise<void> {
+async function navigate(path: string, opts: { admin?: boolean } = {}): Promise<void> {
   if (!state.page || !state.harness) throw new Error('probe not initialised');
   await state.page.send('Page.navigate', { url: state.harness.url(path) });
   await waitFor(() => pageEval<boolean>('return document.readyState === "complete"'), `navigate ${path}`, 15_000);
-  await connectUi();
+  await connectUi(opts.admin ?? true);
   await new Promise(resolve => setTimeout(resolve, 200));
 }
 
-async function connectUi(): Promise<void> {
+async function connectUi(withAdmin = true): Promise<void> {
   if (!state.harness) throw new Error('probe not initialised');
   await waitFor(() => pageEval<boolean>('return !!document.querySelector("#connect-form")'), 'connect form', 10_000);
   const reader = state.harness.key('alpha', 'reader');
-  const admin = state.harness.key('alpha', 'admin');
+  const admin = withAdmin ? state.harness.key('alpha', 'admin') : '';
   await pageEval<void>(`
     document.querySelector('#k-reader').value = ${JSON.stringify(reader)};
     document.querySelector('#k-admin').value = ${JSON.stringify(admin)};

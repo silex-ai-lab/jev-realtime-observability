@@ -196,13 +196,25 @@ The operator starts the server with `SOURCE_MODE=live_sandbox_gate` (see the dep
 
 Only code rules, missing evidence and an unavailable judge block anything. Judge signals are uncalibrated and never block, so S2 and S7 are allowed in gate mode too.
 
-## 10. The simulated demo (`/demo/`)
+## 10. The review queue
+
+Below the stream, **Review queue** lists decisions waiting for a person:
+- every `HOLD` or `REVIEW` decision, and in gate mode a held `UNKNOWN` preflight, opens one task automatically;
+- **Sample for review** (admin) opens up to 20 more for the decisions the judge is least sure about, or where it saw a risk the rules did not, or where two different judge models disagreed on the same frozen input. The row says why it was picked.
+
+Select a task to see the decision, its reasons and hard rules, **what the judge saw** (the frozen snapshot text), and one input per question. A task whose decision had a judge evaluation offers that evaluation's questions and shows the judge's answer next to each (uncalibrated). A hard-rule decision, like S4's, had no evaluation, so every rubric question is offered; skip the ones that do not apply.
+
+Answer what you can, then press **Allow** or **Deny**. This records one `human_reviewed` label per answer, for training and evaluation, and closes the task. **It does not release or execute the held action, and it never changes the decision.** With `AUTH_MODE=keys` the buttons need the admin key; with login off they work directly.
+
+![Review queue](manual/14-review-queue.png)
+
+## 11. The simulated demo (`/demo/`)
 
 ![Simulated demo](manual/13-simulated-demo.png)
 
 This is the original click-through demo. Its judge, latencies and tenant are **simulated** in the browser, and the page says so in its banner. Use it to explain the idea; use the live console (`/`) to test the real system.
 
-## 11. Five-minute test of a deployment
+## 12. Five-minute test of a deployment
 
 1. Open `/readyz`. It must show `"db":"ok","judge":"ok"`.
 2. Open `/`. With login off it connects by itself; with `AUTH_MODE=keys`, connect with the reader and admin keys. The header should show `judge kev-local:…` (or `typesafe:…` if hosted Jev is configured).
@@ -219,7 +231,7 @@ The same checks run automatically:
 bash skills/deploy-jev-observability/scripts/smoke.sh      # prints SMOKE PASS
 ```
 
-## 12. Troubleshooting
+## 13. Troubleshooting
 
 | You see | Do this |
 |---|---|

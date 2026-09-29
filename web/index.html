@@ -54,6 +54,16 @@
       <div id="inspector" data-inspector><p class="lv-empty">Select a row.</p></div>
     </aside>
   </div>
+
+  <section class="card lv-reviews" id="reviews" data-reviews>
+    <header><h2>Review queue</h2><span class="lv-meta" id="review-count"></span>
+      <button class="btn" type="button" id="review-sample" data-review-sample title="Open review tasks for the most informative decisions (admin)">Sample for review</button></header>
+    <p class="lv-rv-note">Held and review decisions wait here for a person. Answering records <b>labels</b> for training and evaluation. It <b>does not release</b> or execute a held action, and it never changes the decision.</p>
+    <div class="lv-rv-grid">
+      <div class="lv-rv-list" id="review-list" data-review-list><p class="lv-empty">No open reviews.</p></div>
+      <div class="lv-rv-detail" id="review-detail" data-review-detail><p class="lv-empty">Select a review.</p></div>
+    </div>
+  </section>
 </main>
 <script type="module" src="js/live.js"></script>
 </body>
