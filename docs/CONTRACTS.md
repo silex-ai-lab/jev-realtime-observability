@@ -281,3 +281,23 @@ Plan: `logs/2026-09-29_WORKPLAN_BATCH1_PLAN.md` (decisions D2–D5). Routes live
 - `value` by question type (`rubrics/jev-questions.v1.json`): `noul` → boolean; `choice` → one of its `criteria` keys; `score` → one of its `criteria` levels (a string). Anything else, or an unknown question, → 400.
 - `evidence_class` ∈ `benchmark_ground_truth_derived`, `heuristic_derived`, `human_reviewed`.
 - With `AUTH_MODE=none` the caller acts as admin (loopback only).
+
+### 10.3 Policy lifecycle (T9)
+
+**States:** `draft → published → active → retired`. Migration `0005_policy_lifecycle.sql` makes the key `(tenant_id, policy_version)` (it was global, so only one tenant could store the bootstrap `policy-a1`), allows at most one `active` row per tenant (partial unique index), and adds `policy_activations (id bigserial, tenant_id, from_version, to_version, actor, at)`.
+
+**Bootstrap:** `ensureActivePolicy` (`server/storage/policies.ts`) inserts `DEFAULT_POLICY` as the tenant's active row when it has none. It is the only source of that row. Reads take a plain SELECT; the per-tenant advisory lock (`pg_advisory_xact_lock(hashtext('policy/' || tenant_id))`) is taken only to bootstrap or to switch.
+
+| Route | Role | Result |
+|---|---|---|
+| `POST /v1/policies/drafts` | admin | unchanged (§5), and bootstraps the active row first |
+| `POST /v1/policies/:version/publish` | admin | a `draft` of the caller's tenant → `published`; 409 `not_draft` otherwise; 400 if the stored body no longer validates |
+| `POST /v1/policies/:version/activate` | admin | body `{ expected_active_version }`; target `published` or `retired` → `active`, old active → `retired` |
+| `POST /v1/policies/rollback` | admin | body `{ expected_active_version }`; re-activates the `from_version` of the newest activation (by `id`) that switched to the current active version |
+
+- `:version` is one URL-encoded path segment, decoded once (`encodeURIComponent` the stored name); a malformed escape → 400. Any stored name, including `+draft-…` and names with spaces or slashes, is addressable.
+- Activate and rollback take the tenant lock, then compare the active version with `expected_active_version`: a mismatch → 409 `stale_active_version`. Two switches with the same expected version serialise; one succeeds, the other gets 409.
+- Other errors: 404 for a version of another tenant or none; 409 `bad_target` (activate a draft or the active one), 409 `nothing_to_roll_back`.
+- Each switch writes one `policy_activations` row and one audit row (`policy_publish`, `policy_activate`, `policy_rollback`). No route changes a body after publish.
+- **Cache:** the app caches each tenant's active policy. Routes call `invalidatePolicy` after commit; a per-tenant generation counter stops a read that began before the switch from re-filling the cache with the old policy. This holds within one server process, which is the only deployment today; several replicas would each need invalidation.
+- Real-PostgreSQL row-lock behaviour is tested only when `TEST_DATABASE_URL` is set; PGlite runs transactions one at a time, so its concurrency test proves the stale check, not Postgres locking.
