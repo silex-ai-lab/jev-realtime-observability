@@ -46,6 +46,8 @@ npm run server                    # http://127.0.0.1:8787 — live console at /,
 
 [`docs/USER_MANUAL.md`](docs/USER_MANUAL.md) covers the whole page: connecting, the provenance header, the KPI tiles, every scenario and what it should show, the decision inspector, outcome read-back, replay and re-ask, gate mode, and a five-minute test of a deployment.
 
+[`docs/judge/`](docs/judge/) (in Chinese) explains why Kev is the default judge, what Kev was trained on, and the plan for fine-tuning on this deployment's own labelled data.
+
 ## Deploying on another host
 
 Follow the [`deploy-jev-observability`](skills/deploy-jev-observability/SKILL.md) skill. It covers:
