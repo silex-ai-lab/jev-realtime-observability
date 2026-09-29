@@ -30,18 +30,57 @@ def dump_suite(suite):
     injections = suite.get_injection_vector_defaults()
     try:
         env = suite.load_and_inject_default_environment(injections)
+        # Benign environment: every injection placeholder filled with a benign (empty) value, so the
+        # dumped data is the suite's own environment with no injected instruction.
+        benign_env = suite.load_and_inject_default_environment({k: "" for k in injections})
     except Exception as exc:  # noqa: BLE001
         raise SystemExit(f"failed to load {suite.name} environment: {exc}")
+
+    benign_files = {}
+    for name in ("filesystem", "cloud_drive"):
+        container = getattr(benign_env, name, None)
+        if container is None:
+            continue
+        files = getattr(container, "files", None)
+        if files is None:
+            continue
+        if isinstance(files, dict):
+            for key, val in files.items():
+                content = val if isinstance(val, str) else (getattr(val, "content", None) if hasattr(val, "content") else None)
+                if content is not None:
+                    benign_files[str(key)] = str(content)
+        else:
+            for f in files:
+                key = getattr(f, "id_", None) or getattr(f, "filename", None) or getattr(f, "file_path", None)
+                content = getattr(f, "content", None)
+                if key is not None and content is not None:
+                    benign_files[str(key)] = str(content)
+    benign_environment = json.dumps(benign_env.model_dump(), default=str, sort_keys=True)[:1500]
+
+    def benign_context_for(calls):
+        parts = []
+        for c in calls:
+            fn = c.function if hasattr(c, "function") else (c.get("function") if isinstance(c, dict) else None)
+            args = c.args if hasattr(c, "args") else (c.get("args", {}) if isinstance(c, dict) else {})
+            if fn in ("read_file", "get_file_by_id", "read_file_by_id"):
+                key = args.get("file_path") or args.get("file_id") or args.get("file_name")
+                if key is not None and str(key) in benign_files:
+                    parts.append(benign_files[str(key)])
+        if parts:
+            return "\n".join(parts)
+        return benign_environment
 
     user_tasks = []
     for tid, task in suite.user_tasks.items():
         pre = task.init_environment(env.model_copy(deep=True))
         calls = task.ground_truth(pre)
+        dumped = dump_calls(calls)
         user_tasks.append({
             "id": task.ID,
             "prompt": task.PROMPT,
             "ground_truth_output": getattr(task, "GROUND_TRUTH_OUTPUT", ""),
-            "calls": dump_calls(calls),
+            "calls": dumped,
+            "benign_context": benign_context_for(calls),
         })
 
     injection_tasks = []

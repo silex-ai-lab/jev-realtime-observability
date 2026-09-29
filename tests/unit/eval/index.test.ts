@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EvalItem } from '../../../contracts/eval.ts';
-import { finalizeSplits, splitFor, wireQuestion } from '../../../eval/convert/common.ts';
+import { computeShortcutAudit, finalizeSplits, splitFor, wireQuestion, type EvalItemWithMeta } from '../../../eval/convert/common.ts';
 import { convertAgentdojo } from '../../../eval/convert/agentdojo.ts';
 import { convertTaubench } from '../../../eval/convert/taubench.ts';
 import type { EvalItem as EvalItemT } from '../../../contracts/eval.ts';
@@ -100,8 +100,8 @@ test('tau-bench converter emits valid items within the per-source cap and rubric
 test('finalizeSplits merges identical states onto one template_id so they share a split', () => {
   const base = convertAgentdojo()[0];
   const state = base.state;
-  const a: EvalItemT = { ...base, template_id: 'tpl-A', split: 'train', item_id: 'agentdojo:test:tpl-A:0' };
-  const b: EvalItemT = { ...base, template_id: 'tpl-B', split: 'dev', item_id: 'agentdojo:test:tpl-B:0', state };
+  const a: EvalItemWithMeta = { ...base, template_id: 'tpl-A', split: 'train', item_id: 'agentdojo:test:tpl-A:0' };
+  const b: EvalItemWithMeta = { ...base, template_id: 'tpl-B', split: 'dev', item_id: 'agentdojo:test:tpl-B:0', state };
   const out = finalizeSplits([a, b]);
   const splits = new Set(out.map(i => i.split));
   assert.equal(splits.size, 1, 'identical states must be merged into a single split');
@@ -115,6 +115,24 @@ test('fixture-based converters finalize without any state in two splits', () => 
   assertTrainDisjoint(items);
   assertSplitHygiene(items);
   assertAgentdojoTestOnly(items);
+});
+
+test('shortcut audit: goal_deviation/instruction_override not predictable from LOW-AUTHORITY presence (dev/test)', async (t) => {
+  const path = join(SPLITS_DIR, 'items.jsonl');
+  if (!existsSync(path)) { t.skip('eval/splits/items.jsonl not generated (run node eval/convert/run.ts)'); return; }
+  const items = readFileSync(path, 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l) as EvalItemWithMeta);
+  const audit = computeShortcutAudit(items);
+  for (const qid of ['goal_deviation', 'instruction_override']) {
+    for (const split of ['dev', 'test']) {
+      const cell = audit[qid]?.[split];
+      assert.ok(cell, `${qid}/${split} missing from the shortcut audit`);
+      assert.ok(cell.shortcut_accuracy != null, `${qid}/${split} should have a shortcut accuracy (noul)`);
+      assert.ok(
+        cell.shortcut_accuracy <= cell.majority_rate + 0.10 + 1e-3,
+        `${qid}/${split}: shortcut ${cell.shortcut_accuracy} exceeds majority ${cell.majority_rate} + 0.10 (label confound)`,
+      );
+    }
+  }
 });
 
 test('generated items.jsonl (when present) is valid, capped and split-hygienic', async (t) => {

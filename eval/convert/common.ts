@@ -77,19 +77,30 @@ export interface ProvenanceInput {
   repo: string; commit: string; file: string; locator: string; licence: string;
 }
 
+/** Whether an item's low-authority text is recorded verbatim in the source, constructed here, or absent. */
+export type LowAuthorityProvenance = 'recorded' | 'constructed' | 'none';
+export interface EvalItemWithMeta extends EvalItem { low_authority_provenance: LowAuthorityProvenance }
+
 export function makeItem(p: {
   source: EvalSource; family: string; templateId: string; n: number; split: Split; boundary: EvalItem['boundary'];
-  state: string; questions: LabelledQuestion[]; provenance: ProvenanceInput;
-}): EvalItem {
+  state: string; questions: LabelledQuestion[]; provenance: ProvenanceInput; lowAuthorityProvenance: LowAuthorityProvenance;
+}): EvalItemWithMeta {
   return {
     item_id: itemId(p.source, p.family, p.templateId, p.n),
     source: p.source, family: p.family, template_id: p.templateId, split: p.split,
     boundary: p.boundary, state: p.state, questions: p.questions, provenance: p.provenance,
+    low_authority_provenance: p.lowAuthorityProvenance,
   };
 }
 
 export const BENCHMARK_GT = 'benchmark_ground_truth_derived' as const;
 export const HEURISTIC = 'heuristic_derived' as const;
+
+/** Evidence class for a question whose label may depend on constructed benign filler content. */
+export function evidenceFor(questionId: string, la: LowAuthorityProvenance): EvidenceClass {
+  if (questionId === 'instruction_override' && la === 'constructed') return HEURISTIC;
+  return BENCHMARK_GT;
+}
 
 /**
  * Enforces the split invariant that identical judge-view states must never land in two splits
@@ -100,11 +111,11 @@ export const HEURISTIC = 'heuristic_derived' as const;
  * and every item's split and item_id are recomputed from that template_id. Splitting stays a pure
  * function of (source, template_id), so a template still never spans two splits.
  */
-export function finalizeSplits(items: EvalItem[]): EvalItem[] {
+export function finalizeSplits(items: EvalItemWithMeta[]): EvalItemWithMeta[] {
   const sorted = [...items].sort((a, b) => a.item_id.localeCompare(b.item_id));
   const canonical = new Map<string, string>();   // `${source}\u0000${state}` -> canonical template_id
   const counters = new Map<string, number>();    // `${source}\u0000${family}\u0000${template}` -> n
-  const out: EvalItem[] = [];
+  const out: EvalItemWithMeta[] = [];
   for (const item of sorted) {
     const key = `${item.source}\u0000${item.state}`;
     const canon = canonical.get(key);
@@ -121,4 +132,62 @@ export function finalizeSplits(items: EvalItem[]): EvalItem[] {
     });
   }
   return out.sort((a, b) => a.item_id.localeCompare(b.item_id));
+}
+
+/** True when the judge-view state carries a non-empty LOW-AUTHORITY CONTENT section. */
+export function lowAuthorityPresent(state: string): boolean {
+  return state.includes('LOW-AUTHORITY CONTENT');
+}
+
+export interface ShortcutCell {
+  n: number;
+  majority_rate: number;              // fraction of the most common label value
+  shortcut_accuracy: number | null;   // accuracy of "label = LOW-AUTHORITY present" (noul only)
+  shortcut_margin: number | null;     // shortcut_accuracy - majority_rate
+}
+
+const round4 = (x: number): number => Math.round(x * 10000) / 10000;
+
+/**
+ * The label-confound audit (planner defect 2): for each question and split, how well the trivial
+ * predictor "label = (the state has a LOW-AUTHORITY section)" does, versus the majority class.
+ * A shortcut_accuracy far above majority_rate means the label leaks from the presence of injected
+ * text alone. Only noul questions have a boolean label, so shortcut_accuracy is null elsewhere.
+ */
+export function computeShortcutAudit(items: EvalItemWithMeta[]): Record<string, Record<string, ShortcutCell>> {
+  const groups = new Map<string, { labels: Array<boolean | string | number>; hasLA: boolean[] }>();
+  for (const item of items) {
+    const la = lowAuthorityPresent(item.state);
+    for (const q of item.questions) {
+      const key = `${q.question_id}\u0000${item.split}`;
+      let g = groups.get(key);
+      if (!g) { g = { labels: [], hasLA: [] }; groups.set(key, g); }
+      g.labels.push(q.label);
+      g.hasLA.push(la);
+    }
+  }
+  const out: Record<string, Record<string, ShortcutCell>> = {};
+  for (const [key, g] of [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    const [qid, split] = key.split('\u0000');
+    const n = g.labels.length;
+    const counts = new Map<string, number>();
+    for (const l of g.labels) counts.set(String(l), (counts.get(String(l)) ?? 0) + 1);
+    const majorityRate = Math.max(...counts.values()) / n;
+    const allBool = g.labels.every(l => typeof l === 'boolean');
+    let shortcutAccuracy: number | null = null;
+    let margin: number | null = null;
+    if (allBool) {
+      let correct = 0;
+      for (let i = 0; i < n; i++) if (g.labels[i] === g.hasLA[i]) correct++;
+      shortcutAccuracy = correct / n;
+      margin = shortcutAccuracy - majorityRate;
+    }
+    (out[qid] ??= {})[split] = {
+      n,
+      majority_rate: round4(majorityRate),
+      shortcut_accuracy: shortcutAccuracy == null ? null : round4(shortcutAccuracy),
+      shortcut_margin: margin == null ? null : round4(margin),
+    };
+  }
+  return out;
 }

@@ -23,7 +23,7 @@ mkdir -p "$OUT"
 cd "$KEV_DIR"
 START=$(date +%s)
 timeout "$FT_TIMEOUT" uv run python -m kev.train --data "$DATA" --base "$BASE" --init_from "$INIT" \
-  --epochs 2 --lr 2e-5 --batch 1 --accum 8 --device mps --save_every_steps 200 --seed 20260928 --out "$OUT" > "$OUT/train.log" 2>&1
+  --epochs 2 --lr 2e-5 --batch 1 --accum 8 --device mps --seed 20260928 --out "$OUT/model" > "$OUT/train.log" 2>&1
 CODE=$?
 {
   echo "finished_at=$(date -u +%FT%TZ) wall_s=$(( $(date +%s) - START )) exit=$CODE"

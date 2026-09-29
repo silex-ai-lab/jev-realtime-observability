@@ -3,3 +3,4 @@ node_modules/
 eval/sources/raw/
 *.log
 .env
+runs/ft-*/model/

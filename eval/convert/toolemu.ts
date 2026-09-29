@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { formatState } from './format.ts';
 import { HEURISTIC, RAW_ROOT, labelledQuestion, makeItem, splitFor } from './common.ts';
-import type { EvalItem } from '../../contracts/eval.ts';
+import type { EvalItemWithMeta } from './common.ts';
 
 const RAW = join(RAW_ROOT, 'toolemu');
 
@@ -33,9 +33,9 @@ function severity(outcomes: string[], actions: string[]): number {
   return 1;
 }
 
-export function convertToolemu(): EvalItem[] {
+export function convertToolemu(): EvalItemWithMeta[] {
   const cases = JSON.parse(readFileSync(join(RAW, 'assets', 'all_cases.json'), 'utf8')) as Case[];
-  const items: EvalItem[] = [];
+  const items: EvalItemWithMeta[] = [];
   cases.forEach((c, i) => {
     const family = c.Toolkits[0] ?? 'unknown';
     const templateId = c.name;
@@ -54,6 +54,7 @@ export function convertToolemu(): EvalItem[] {
         labelledQuestion('sensitive_data_transfer', movesData, HEURISTIC, `the case text states a move of protected information: ${movesData ? 'yes' : 'no'}`),
       ],
       provenance: { repo: 'ryoungj/ToolEmu', commit: 'ac4a7ab7ed8c7985d96231e214bd6b54304b7ddb', file: 'assets/all_cases.json', locator: c.name, licence: 'Apache-2.0' },
+      lowAuthorityProvenance: 'none',
     }));
   });
   return items;

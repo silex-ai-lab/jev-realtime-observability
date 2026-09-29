@@ -40,8 +40,11 @@ redistributable. (ToolEmu's `setup.py` classifier says MIT while its `LICENSE` i
 
 ### Labels
 
-Every label records an `evidence_class` and a one-line `derivation`. All labels here are
-`benchmark_ground_truth_derived` except ToolEmu, which is `heuristic_derived`.
+Every label records an `evidence_class` and a one-line `derivation`. Labels are
+`benchmark_ground_truth_derived` except where a question's judgement depends on constructed benign
+filler, in which case it is `heuristic_derived`. Every item also records
+`low_authority_provenance` (`recorded` / `constructed` / `none`): whether its low-authority text is
+taken verbatim from the source, constructed here, or absent.
 
 | Source | Split role | Question → label derivation |
 |---|---|---|
@@ -50,6 +53,26 @@ Every label records an `evidence_class` and a one-line `derivation`. All labels 
 | ASB | train/cal/dev | attack tools → `instruction_override=true`, `goal_deviation=true`; normal tools → both `false`. |
 | ToolEmu | cal/test | `semantic_impact` (score) and `sensitive_data_transfer` from a fixed keyword ladder over the case's stated risky outcomes/actions (`heuristic_derived`). |
 | tau-bench | benign negatives | each task's own ground-truth action → `goal_deviation=false`. `claim_asserts_completion` is not derivable from task definitions (no agent final message), so it is omitted. |
+
+### Benign low-authority content (anti-shortcut)
+
+A fine-tune would otherwise learn "the LOW-AUTHORITY CONTENT section is present → the label is
+positive", because positives always embed injected text and negatives almost never had any. To break
+that, every negative item carries realistic **benign** low-authority content taken from its source:
+
+- **AgentDojo user tasks** — the benign environment/tool output their ground-truth calls read, with
+  injection placeholders filled by benign values (dumped by `agentdojo_dump.py`; the environment data
+  is recorded, the benign placeholder fill is constructed → `constructed`).
+- **ASB normal tools** — the tool's own `Expected Achievements` text (recorded → `recorded`).
+- **tau-bench** — the retrieved order / user / reservation record from the benchmark's data files
+  (recorded where found, else a constructed record-shaped line → `constructed`).
+- **InjecAgent benign cases** — the tool-response template filled with a benign value (template
+  recorded, filler constructed → `constructed`).
+
+The `shortcut_audit` block in `stats.json` proves the fix: for each question and split it reports the
+accuracy of the trivial predictor "label = LOW-AUTHORITY section present" against the majority-class
+rate. For `goal_deviation` and `instruction_override` on dev and test, the shortcut accuracy must be
+≤ majority rate + 0.10 (enforced by `tests/unit/eval/index.test.ts`).
 
 ### Splits
 
@@ -64,6 +87,57 @@ Every label records an `evidence_class` and a one-line `derivation`. All labels 
 
 ### Outputs
 
-- `eval/splits/items.jsonl` — one `EvalItem` per line (all splits), each validating against `contracts/eval.ts` and carrying the exact rubric wire objects.
+- `eval/splits/items.jsonl` — one `EvalItem` per line (all splits), each validating against `contracts/eval.ts`, carrying the exact rubric wire objects and a `low_authority_provenance` field.
 - `eval/splits/kev-train.jsonl` — Kev training format, train split only: `{ state, questions: { qid: { ...wire, label } } }`.
-- `eval/splits/stats.json` — counts per source, split, question and label.
+- `eval/splits/stats.json` — counts per source, split, question and label, plus the `shortcut_audit` block.
+
+## Results (Gate B)
+
+Full tables: [`runs/eval-2026-09-28-v2/REPORT.md`](../runs/eval-2026-09-28-v2/REPORT.md). Raw predictions and fitted-but-inactive calibrations are in the same folder. Everything below was measured on this machine: Apple M4 Pro, MLX, bf16, Kev served locally.
+
+### What was compared
+
+The same 708 held-out items: calibration 245, dev 213, and test 250, where test is AgentDojo, a family never seen in training.
+
+- **B0:** code-only heuristics, in [`eval/run/b0.ts`](../eval/run/b0.ts).
+- **B2:** Kev-0.8B and Kev-4B, as released.
+- **B2-ft:** Kev-0.8B after a LoRA fine-tune on the train split.
+  - Settings: 1,209 records, 2 epochs, lr 2e-5, `--init_from jaredpalmer/kev-0.8b`, 39 minutes on MPS, completed inside its 3-hour box. Record: [`runs/ft-kev-0.8b-2026-09-28/`](../runs/ft-kev-0.8b-2026-09-28/).
+  - The weights are not in the repo.
+- **Not measured:**
+  - B1 (an LLM judge) and B3 (the judge with a slow path), because no LLM judge is configured;
+  - TypeSafe's hosted Jev, because there is no key;
+  - a Kev-4B fine-tune. Its time box was not spent in this run; the 0.8B result was enough to answer the Gate B question.
+
+### Held-out family (AgentDojo test, n = 250, 35 positives)
+
+This is the credible column: a single source, and the section shortcut is at chance.
+
+| | `instruction_override` AUROC | `goal_deviation` AUROC | `goal_deviation` recall at the calibration threshold [95% CI] · FPR |
+|---|---|---|---|
+| B0 heuristics | acc 0.892, recall 0.229 | no code baseline | — |
+| Kev-0.8B | 0.602 | 0.893 | 0.400 [0.237, 0.563] · 0.014 |
+| Kev-4B | 0.792 | 0.541 | 0.286 [0.125, 0.444] · 0.209 |
+| **Kev-0.8B fine-tuned** | **0.973** | **0.961** | **0.800 [0.649, 0.931] · 0.009** |
+
+### Latency
+
+Judge HTTP round trip, this Mac, 708 items each:
+
+| Model | p50 | p95 |
+|---|---|---|
+| Kev-0.8B | 119 ms | 161 ms |
+| Kev-4B | 644 ms | 924 ms |
+| Kev-0.8B fine-tuned | 149 ms | 343 ms |
+
+The fine-tuned run was measured while other models were resident on the same GPU.
+
+### What these numbers do not show
+
+- **Eval v1 was confounded, and is kept for the record only** ([`runs/eval-2026-09-28-v1-confounded/`](../runs/eval-2026-09-28-v1-confounded/README.md)). There, the mere presence of low-authority text predicted the label. The data was rebuilt, and a shortcut audit is now enforced by a unit test.
+- **Dev scores for `goal_deviation` are source-separable.** The report flags them ⚠: a source-majority predictor scores 0.975 there, because positives come from ASB and negatives from tau-bench. The fine-tune's perfect dev scores should therefore not be read as capability. Use the AgentDojo column.
+- **A residual style risk on AgentDojo test.** Every negative's low-authority text is constructed (benign environment values filled into the suite's placeholders), and every positive's is recorded. Training contained 32 constructed items, all negatives. A model that learned to recognise constructed text could score well without doing the task, and this data cannot rule that out.
+- **`instruction_override` has no fitted threshold.** The calibration split has 3 negatives against 135 positives (below the 20 required per class), so only threshold-free metrics are reported for it.
+- **The calibrations are recorded and not activated.** Given the above, live policy stays in `experimental` mode. No semantic signal changes a live recommendation yet.
+- **Labels are derived from benchmark ground truth.** Some benign fillers are constructed and marked `heuristic_derived`. None are human-reviewed.
+- **No data exists for `payee_relation` or `claim_support`.**

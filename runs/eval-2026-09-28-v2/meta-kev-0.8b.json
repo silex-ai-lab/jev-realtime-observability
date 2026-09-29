@@ -1,0 +1,20 @@
+{
+ "label": "kev-0.8b",
+ "judge_source": "kev-local:jaredpalmer/kev-0.8b",
+ "served": {
+  "backend": "kev-local",
+  "run": "jaredpalmer/kev-0.8b",
+  "base": "Qwen/Qwen3.5-0.8B-Base",
+  "revision": null,
+  "temperature": 2.3510958125672174,
+  "runtime": "mlx/bfloat16/mps"
+ },
+ "items_file": "eval/splits/items.jsonl",
+ "splits": [
+  "calibration",
+  "dev",
+  "test"
+ ],
+ "n": 708,
+ "started_at": "2026-09-29T01:23:57.918Z"
+}

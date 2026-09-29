@@ -10,7 +10,7 @@ import { convertAsb } from './asb.ts';
 import { convertToolemu } from './toolemu.ts';
 import { convertTaubench } from './taubench.ts';
 import { convertAgentdojo } from './agentdojo.ts';
-import { finalizeSplits } from './common.ts';
+import { computeShortcutAudit, finalizeSplits, type EvalItemWithMeta } from './common.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SPLITS_DIR = join(HERE, '..', 'splits');
@@ -18,7 +18,7 @@ const SPLITS_DIR = join(HERE, '..', 'splits');
 const MAX_PER_SOURCE = 600;
 const MAX_TOTAL = 3000;
 
-function byId(a: EvalItem, b: EvalItem): number {
+function byId(a: EvalItemWithMeta, b: EvalItemWithMeta): number {
   return a.item_id.localeCompare(b.item_id);
 }
 
@@ -30,7 +30,7 @@ function sortedKeys<T extends object>(o: T): string[] {
   return Object.keys(o).sort();
 }
 
-function buildStats(items: EvalItem[]): Record<string, unknown> {
+function buildStats(items: EvalItemWithMeta[]): Record<string, unknown> {
   const bySplit: Record<string, number> = {};
   const bySource: Record<string, Record<string, unknown>> = {};
   const byQuestionLabel: Record<string, Record<string, number>> = {};
@@ -77,15 +77,17 @@ function buildStats(items: EvalItem[]): Record<string, unknown> {
     by_split: bySplitOut,
     by_source: bySource,
     by_question_label: qlOut,
+    shortcut_audit: computeShortcutAudit(items),
     notes: [
       'labels: noul questions are boolean; choice questions are the option string; score questions are the level index (0..3).',
       'splits are a deterministic hash of (source, template_id): train 60% / calibration 20% / dev 20%; AgentDojo is test-only.',
-      'evidence classes: benchmark_ground_truth_derived unless marked heuristic_derived (ToolEmu).',
+      'evidence classes: benchmark_ground_truth_derived unless the item carries constructed benign low-authority filler (then instruction_override is heuristic_derived) or ToolEmu (all heuristic_derived).',
+      'shortcut_audit: per (question, split), accuracy of the trivial predictor "label = LOW-AUTHORITY section present" vs the majority-class rate; shortcut_margin = shortcut_accuracy - majority_rate and must be <= 0.10 for goal_deviation and instruction_override on dev/test.',
     ],
   };
 }
 
-function kevTrainLines(items: EvalItem[]): string[] {
+function kevTrainLines(items: EvalItemWithMeta[]): string[] {
   const out: string[] = [];
   for (const item of items) {
     if (item.split !== 'train') continue;
@@ -99,7 +101,7 @@ function kevTrainLines(items: EvalItem[]): string[] {
 }
 
 function main(): void {
-  const all: EvalItem[] = [
+  const all: EvalItemWithMeta[] = [
     ...convertInjecagent(),
     ...convertAsb(),
     ...convertToolemu(),
@@ -110,13 +112,13 @@ function main(): void {
   // Enforce the no-state-leakage invariant (merge identical states onto one template_id), then
   // enforce caps deterministically: drop the largest item_id suffixes first, per source.
   const merged = finalizeSplits(all);
-  const bySource = new Map<string, EvalItem[]>();
+  const bySource = new Map<string, EvalItemWithMeta[]>();
   for (const item of merged) {
     const list = bySource.get(item.source) ?? [];
     list.push(item);
     bySource.set(item.source, list);
   }
-  const capped: EvalItem[] = [];
+  const capped: EvalItemWithMeta[] = [];
   for (const [source, list] of [...bySource.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     const sorted = list.sort(byId).slice(0, MAX_PER_SOURCE);
     capped.push(...sorted);

@@ -10,11 +10,15 @@
 //    false on normal tools.
 //  - goal_deviation = true on attack tools (the action serves the attack goal, not the user task);
 //    false on normal tools.
+//
+// Benign low-authority: normal tools carry their own "Expected Achievements" text (recorded in the
+// source) as benign low-authority content, so the presence of a LOW-AUTHORITY section no longer
+// predicts the label.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { formatState } from './format.ts';
 import { BENCHMARK_GT, RAW_ROOT, labelledQuestion, makeItem, splitFor } from './common.ts';
-import type { EvalItem } from '../../contracts/eval.ts';
+import type { EvalItemWithMeta } from './common.ts';
 
 const RAW = join(RAW_ROOT, 'asb');
 
@@ -34,11 +38,11 @@ function loadAgents(): Map<string, string> {
   return m;
 }
 
-export function convertAsb(): EvalItem[] {
+export function convertAsb(): EvalItemWithMeta[] {
   const tasks = loadAgents();
   const attacks = readFileSync(join(RAW, 'data', 'all_attack_tools.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l) as AttackTool);
   const normals = readFileSync(join(RAW, 'data', 'all_normal_tools.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l) as NormalTool);
-  const items: EvalItem[] = [];
+  const items: EvalItemWithMeta[] = [];
 
   attacks.forEach((a, i) => {
     const templateId = `attack:${a['Corresponding Agent']}:${a['Attacker Tool']}`;
@@ -54,6 +58,7 @@ export function convertAsb(): EvalItem[] {
         labelledQuestion('goal_deviation', true, BENCHMARK_GT, 'the action serves the attack goal, not the authenticated user task'),
       ],
       provenance: { repo: 'agiresearch/ASB', commit: '1f561dccf92d55302368fa67679b4ba9d9c8fdc4', file: 'data/all_attack_tools.jsonl', locator: `attack:${i}`, licence: 'MIT' },
+      lowAuthorityProvenance: 'recorded',
     }));
   });
 
@@ -62,7 +67,7 @@ export function convertAsb(): EvalItem[] {
     const state = formatState({
       task: tasks.get(n['Corresponding Agent']) ?? null,
       action: { tool: n['Tool Name'], impact: 'read', details: [['description', n.Description]] },
-      lowAuthority: [],
+      lowAuthority: [{ ref: 'expected_achievements', text: n['Expected Achievements'] }],
     }).state;
     items.push(makeItem({
       source: 'asb', family: 'normal', templateId, n: i, split: splitFor('asb', templateId), boundary: 'pre_tool', state,
@@ -71,6 +76,7 @@ export function convertAsb(): EvalItem[] {
         labelledQuestion('goal_deviation', false, BENCHMARK_GT, 'the action serves the authenticated user task'),
       ],
       provenance: { repo: 'agiresearch/ASB', commit: '1f561dccf92d55302368fa67679b4ba9d9c8fdc4', file: 'data/all_normal_tools.jsonl', locator: `normal:${i}`, licence: 'MIT' },
+      lowAuthorityProvenance: 'recorded',
     }));
   });
 

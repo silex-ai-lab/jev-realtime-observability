@@ -111,9 +111,104 @@
       "true": 326
     }
   },
+  "shortcut_audit": {
+    "goal_deviation": {
+      "calibration": {
+        "n": 132,
+        "majority_rate": 0.6364,
+        "shortcut_accuracy": 0.3636,
+        "shortcut_margin": -0.2727
+      },
+      "dev": {
+        "n": 157,
+        "majority_rate": 0.6051,
+        "shortcut_accuracy": 0.3949,
+        "shortcut_margin": -0.2102
+      },
+      "test": {
+        "n": 250,
+        "majority_rate": 0.86,
+        "shortcut_accuracy": 0.14,
+        "shortcut_margin": -0.72
+      },
+      "train": {
+        "n": 731,
+        "majority_rate": 0.6033,
+        "shortcut_accuracy": 0.3967,
+        "shortcut_margin": -0.2066
+      }
+    },
+    "instruction_override": {
+      "calibration": {
+        "n": 138,
+        "majority_rate": 0.9783,
+        "shortcut_accuracy": 0.9783,
+        "shortcut_margin": 0
+      },
+      "dev": {
+        "n": 98,
+        "majority_rate": 0.9286,
+        "shortcut_accuracy": 0.9286,
+        "shortcut_margin": 0
+      },
+      "test": {
+        "n": 250,
+        "majority_rate": 0.86,
+        "shortcut_accuracy": 0.14,
+        "shortcut_margin": -0.72
+      },
+      "train": {
+        "n": 701,
+        "majority_rate": 0.9615,
+        "shortcut_accuracy": 0.9615,
+        "shortcut_margin": 0
+      }
+    },
+    "semantic_impact": {
+      "calibration": {
+        "n": 25,
+        "majority_rate": 0.64,
+        "shortcut_accuracy": null,
+        "shortcut_margin": null
+      },
+      "dev": {
+        "n": 24,
+        "majority_rate": 0.6667,
+        "shortcut_accuracy": null,
+        "shortcut_margin": null
+      },
+      "train": {
+        "n": 95,
+        "majority_rate": 0.5579,
+        "shortcut_accuracy": null,
+        "shortcut_margin": null
+      }
+    },
+    "sensitive_data_transfer": {
+      "calibration": {
+        "n": 113,
+        "majority_rate": 0.5044,
+        "shortcut_accuracy": 0.5044,
+        "shortcut_margin": 0
+      },
+      "dev": {
+        "n": 56,
+        "majority_rate": 0.5179,
+        "shortcut_accuracy": 0.4464,
+        "shortcut_margin": -0.0714
+      },
+      "train": {
+        "n": 492,
+        "majority_rate": 0.5061,
+        "shortcut_accuracy": 0.4797,
+        "shortcut_margin": -0.0264
+      }
+    }
+  },
   "notes": [
     "labels: noul questions are boolean; choice questions are the option string; score questions are the level index (0..3).",
     "splits are a deterministic hash of (source, template_id): train 60% / calibration 20% / dev 20%; AgentDojo is test-only.",
-    "evidence classes: benchmark_ground_truth_derived unless marked heuristic_derived (ToolEmu)."
+    "evidence classes: benchmark_ground_truth_derived unless the item carries constructed benign low-authority filler (then instruction_override is heuristic_derived) or ToolEmu (all heuristic_derived).",
+    "shortcut_audit: per (question, split), accuracy of the trivial predictor \"label = LOW-AUTHORITY section present\" vs the majority-class rate; shortcut_margin = shortcut_accuracy - majority_rate and must be <= 0.10 for goal_deviation and instruction_override on dev/test."
   ]
 }
