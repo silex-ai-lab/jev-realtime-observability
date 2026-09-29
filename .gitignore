@@ -5,3 +5,7 @@ eval/sources/raw/
 .env
 runs/ft-*/model/
 !runs/ft-*/train.log
+# Batch 2 T6: label-export JSONL holds tenant data; the manifest is committed.
+runs/*/train.jsonl
+runs/*/calibration.jsonl
+runs/*/test.jsonl

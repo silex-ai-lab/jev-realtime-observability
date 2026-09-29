@@ -145,3 +145,23 @@ Held-out items: calibration 245, dev 213, test 250 (test = AgentDojo, never seen
 - **The calibrations are recorded and not activated.** Given the above, live policy stays in `experimental` mode. No semantic signal changes a live recommendation yet.
 - **Labels are derived from benchmark ground truth.** Some benign fillers are constructed and marked `heuristic_derived`. None are human-reviewed.
 - **No data exists for `payee_relation` or `claim_support`.**
+
+## Exporting labels
+
+The review queue's human labels (batch 1 T4/T5) can be turned into Kev training JSONL for a
+proprietary-data fine-tune, without touching the open-data pipeline above:
+
+```sh
+node eval/export/labels-to-kev.ts --tenant t-alpha --out runs/export-t-alpha [--as-of <iso>] [--data-dir .data/pg]
+```
+
+It reads the database (`DATABASE_URL`, or a PGlite `--data-dir`) and writes `train.jsonl`,
+`calibration.jsonl`, `test.jsonl` and `manifest.json` under `--out`. One record per snapshot that has
+at least one label, in the same shape as `eval/splits/kev-train.jsonl` (`{ state, questions: { qid: { ...wire, label } } }`).
+The splits are time-based (70 % train / 10 % calibration / 20 % test by snapshot `created_at`), cut on
+state groups so a judge-view state first seen in training never reappears in a held-out split; the test
+split keeps only `human_reviewed` questions. The JSONL files hold tenant data and are git-ignored; the
+manifest (counts, drops, and per-file sha256) is committed. A rerun on the same database and `--as-of`
+is byte-identical. The exported data is a *candidate* training set only — the fine-tune plan
+(`docs/judge/2026-09-29_PROPRIETARY_DATA_AND_FINETUNE_PLAN.md`) gates its use on tenant consent,
+desensitisation, retention limits, and never shipping keys or `.env` content.
