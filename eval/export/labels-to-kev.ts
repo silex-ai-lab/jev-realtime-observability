@@ -174,7 +174,9 @@ const REPO = resolve(fileURLToPath(new URL('../..', import.meta.url)));
  *  (ignored by .gitignore at any depth); outside the repo any directory is fine. Returns an error or null. */
 export function outputPathError(out: string): string | null {
   const rel = relative(REPO, resolve(out));
-  if (rel === '..' || rel.startsWith('..' + sep) || isAbsolute(rel)) return null;   // outside the repository (a parent path component, not a name like '..x')
+  // Outside the repository: a parent path component (not a name like '..x'), or, on Windows only, an absolute
+  // result because `out` is on another drive (on POSIX `relative()` never returns an absolute path).
+  if (rel === '..' || rel.startsWith('..' + sep) || isAbsolute(rel)) return null;
   return rel === join('runs', 'exports') || rel.startsWith(join('runs', 'exports') + sep) ? null
     : `inside the repository, --out must be under runs/exports/ (git-ignored); got ${rel || '.'}`;
 }

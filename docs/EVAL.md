@@ -164,7 +164,15 @@ The splits are time-based (70 % train / 10 % calibration / 20 % test by snapshot
 state groups so a judge-view state first seen in training never reappears in a held-out split; the test
 split keeps only `human_reviewed` questions. The JSONL files hold tenant data: inside the repository the exporter
 only writes under `runs/exports/`, where every JSONL is git-ignored at any depth (any other in-repo `--out` is
-refused; a directory outside the repository is allowed). The manifest (counts, drops, per-file sha256) is not
+refused; a directory outside the repository is allowed). To keep the files outside the repository altogether, pass a
+relative path that leaves it or an absolute path:
+
+```sh
+node eval/export/labels-to-kev.ts --tenant t-alpha --out ../exports/t-alpha
+node eval/export/labels-to-kev.ts --tenant t-alpha --out /secure/exports/t-alpha
+```
+
+The manifest (counts, drops, per-file sha256) is not
 ignored and may be committed. A rerun on the same database and `--as-of`
 is byte-identical. The exported data is a *candidate* training set only — the fine-tune plan
 (`docs/judge/2026-09-29_PROPRIETARY_DATA_AND_FINETUNE_PLAN.md`) gates its use on tenant consent,
