@@ -5,6 +5,7 @@ Agent skills for operating this project. Each folder is one skill: a `SKILL.md` 
 | Skill | Use it to |
 |---|---|
 | [`deploy-jev-observability`](deploy-jev-observability/SKILL.md) | Deploy the server, live console and local Kev judge on a new host (Linux with an NVIDIA GPU, or an Apple Silicon Mac); check the host; run the smoke test; set up gate mode, PostgreSQL, systemd and a TLS proxy |
+| [`jev-work-plan`](jev-work-plan/SKILL.md) | Resume the dated work plan (`plans/YYYY-MM-DD.md`) on any machine: check the machine, pick the next open task, and write status back to git so another machine can continue |
 
 ## Using a skill
 
@@ -22,4 +23,13 @@ ln -s "$PWD/skills/deploy-jev-observability" ~/.claude/skills/deploy-jev-observa
 ```bash
 bash skills/deploy-jev-observability/scripts/check-host.sh   # before installing
 bash skills/deploy-jev-observability/scripts/smoke.sh        # after the server is up (reads ./.env)
+```
+
+To resume the work plan on another machine:
+
+```bash
+git clone https://github.com/silex-ai-lab/jev-realtime-observability.git && cd jev-realtime-observability
+npm ci
+ln -s "$PWD/skills/jev-work-plan" ~/.claude/skills/jev-work-plan      # then ask: "resume the jev work plan"
+bash skills/jev-work-plan/scripts/resume-check.sh                      # or check by hand
 ```
