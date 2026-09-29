@@ -2,7 +2,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Queryable } from './db.ts';
 import type { PolicyDecision } from '../../contracts/decision.ts';
-import type { EvidenceClass, Label, ReviewStatus, ReviewTask } from '../../contracts/labels.ts';
+import type { EvidenceClass, Label, ReviewStatus, ReviewTask, SampleReason } from '../../contracts/labels.ts';
 
 /** Which original decisions open a review task (plan D2): HOLD and REVIEW always; UNKNOWN only on the
  *  preflight path, where the action is actually held. Replays never call this. */
@@ -17,6 +17,21 @@ export async function openReviewTask(q: Queryable, d: PolicyDecision, ctx: { pat
   const reviewId = `rev-${randomUUID()}`;
   const body: ReviewTask['body'] = { path: ctx.path, event_id: d.event_id, run_id: ctx.run_id, snapshot_id: d.snapshot_id, evaluation_id: d.evaluation_id,
     recommended: d.recommended, decided_by: d.decided_by, tool: ctx.tool, reasons: d.reasons };
+  const r = await q.query<{ review_id: string }>(
+    `INSERT INTO review_tasks (tenant_id, review_id, decision_id, status, body) VALUES ($1, $2, $3, 'open', $4)
+     ON CONFLICT (tenant_id, decision_id) DO NOTHING RETURNING review_id`,
+    [d.tenant_id, reviewId, d.decision_id, JSON.stringify(body)]);
+  return r.rows[0]?.review_id ?? null;
+}
+
+/** Opens a sampler task (T7) for any original decision, recording why and which evaluation caused it, so the
+ *  panel and resolve use that evaluation's questions. Idempotent per decision like openReviewTask: returns null
+ *  when the decision already has a task, open or resolved. */
+export async function openSampledReviewTask(q: Queryable, d: PolicyDecision, ctx: { run_id: string | null; tool: string | null },
+  reason: SampleReason, evaluationId: string): Promise<string | null> {
+  const reviewId = `rev-${randomUUID()}`;
+  const body: ReviewTask['body'] = { path: 'sampler', event_id: d.event_id, run_id: ctx.run_id, snapshot_id: d.snapshot_id, evaluation_id: evaluationId,
+    recommended: d.recommended, decided_by: d.decided_by, tool: ctx.tool, reasons: d.reasons, sample_reason: reason };
   const r = await q.query<{ review_id: string }>(
     `INSERT INTO review_tasks (tenant_id, review_id, decision_id, status, body) VALUES ($1, $2, $3, 'open', $4)
      ON CONFLICT (tenant_id, decision_id) DO NOTHING RETURNING review_id`,

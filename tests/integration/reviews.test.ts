@@ -4,7 +4,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { startGateAHarness, type GateAHarness } from '../helpers/harness.ts';
 import * as repos from '../../server/storage/repos.ts';
-import { openReviewTask } from '../../server/storage/reviews.ts';
+import { openReviewTask, openSampledReviewTask } from '../../server/storage/reviews.ts';
+import { RUBRIC } from '../../server/state/index.ts';
+import type { EvaluationRecord } from '../../contracts/judge.ts';
 import type { PolicyDecision } from '../../contracts/decision.ts';
 import type { ReviewTask } from '../../contracts/labels.ts';
 
@@ -116,5 +118,64 @@ test('resolve: validates answers, writes labels + audit, closes the task, 409 on
 
     const again = await h.request('POST', path, { role: 'admin', body: { outcome: 'allow', answers: {} } });
     assert.equal(again.status, 409);
+  } finally { await h.close(); }
+});
+
+test('question set (batch 2 D4): S4 gets the whole rubric with wire definitions, stable when a diagnostic arrives later', async () => {
+  const h = await startGateAHarness({ worker });
+  try {
+    await h.app.runScenario('t-alpha', 'S4');
+    await h.app.worker.drain();
+    const [task] = await openTasks(h);
+    assert.equal(task.body.evaluation_id, null, 'S4 is a hard-rule HOLD with no evaluation');
+    const got = await h.json<{ questions: Record<string, { type: string; instructions: string }>; snapshot: { judge_view: { state: string } } }>('GET', `/v1/reviews/${task.review_id}`);
+    assert.deepEqual(Object.keys(got.body.questions).sort(), Object.keys(RUBRIC.questions).sort());
+    assert.equal(got.body.questions.payee_relation.type, 'choice');
+    assert.ok(got.body.questions.semantic_impact.instructions.length > 0);
+    assert.ok(got.body.snapshot.judge_view.state.length > 0, 'the frozen judge view is returned');
+
+    // A diagnostic evaluation with a narrower question set arrives after the GET; resolve must still accept the
+    // questions the GET offered.
+    const decision = (await repos.getDecision(h.db, 't-alpha', task.decision_id))!;
+    await h.db.tx(q => repos.insertEvaluation(q, { evaluation_id: `eval-diag-${task.review_id}`, tenant_id: 't-alpha', event_id: decision.event_id,
+      snapshot_id: `snap-diag-${task.review_id}`, kind: 'diagnostic', rubric_id: RUBRIC.rubric_id, question_ids: ['goal_deviation'], required_question_ids: [],
+      judge_source: null, served_model: null, request_hash: '', client_request_id: `diag-${task.review_id}`, vendor_request_id: null, status: 'ok', http_status: 200,
+      attempts: 1, judge_http_rtt_ms: 1, vendor_latency_ms: null, usage: null, billing: 'none', signals: {}, errors: [],
+      started_at: new Date().toISOString(), finished_at: new Date().toISOString() } as EvaluationRecord));
+    const ok = await h.json<{ labels: Array<{ question_id: string; value: unknown }> }>('POST', `/v1/reviews/${task.review_id}/resolve`,
+      { role: 'admin', body: { outcome: 'deny', answers: { instruction_override: false, payee_relation: 'different_entity', semantic_impact: 'severe' } } });
+    assert.equal(ok.response.status, 200, JSON.stringify(ok.body));
+    assert.deepEqual(ok.body.labels.map(l => [l.question_id, l.value]).sort(),
+      [['instruction_override', false], ['payee_relation', 'different_entity'], ['semantic_impact', 'severe']]);
+  } finally { await h.close(); }
+});
+
+test('sampler seam (batch 2 F0): a sampled task uses its evaluation\'s questions; POST /v1/reviews/sample is admin-only and validates budget', async () => {
+  const h = await startGateAHarness({ worker });
+  try {
+    const run = await h.app.runScenario('t-alpha', 'S1');
+    await h.app.worker.drain();
+    const decisions = await decisionsOf(h, run.run_id);
+    const d = decisions.find(x => x.evaluation_id);
+    assert.ok(d, 'S1 has a decision with an evaluation');
+    const ev = (await repos.getEvaluation(h.db, 't-alpha', d.evaluation_id!))!;
+    assert.ok(ev.question_ids.length > 0 && ev.question_ids.length < Object.keys(RUBRIC.questions).length);
+    await h.db.query(`DELETE FROM review_tasks WHERE tenant_id = 't-alpha' AND decision_id = $1`, [d.decision_id]);
+    const id = await h.db.tx(q => openSampledReviewTask(q, d, { run_id: run.run_id, tool: null }, 'uncertain', ev.evaluation_id));
+    assert.ok(id);
+    assert.equal(await h.db.tx(q => openSampledReviewTask(q, d, { run_id: run.run_id, tool: null }, 'uncertain', ev.evaluation_id)), null, 'idempotent per decision');
+    const got = await h.json<{ review: ReviewTask; questions: Record<string, unknown> }>('GET', `/v1/reviews/${id}`);
+    assert.equal(got.body.review.body.path, 'sampler');
+    assert.equal(got.body.review.body.sample_reason, 'uncertain');
+    assert.deepEqual(Object.keys(got.body.questions).sort(), [...ev.question_ids].sort());
+    const outside = Object.keys(RUBRIC.questions).find(q => !ev.question_ids.includes(q))!;
+    const r = await h.request('POST', `/v1/reviews/${id}/resolve`, { role: 'admin', body: { outcome: 'allow', answers: { [outside]: RUBRIC.questions[outside].type === 'noul' ? true : 'x' } } });
+    assert.equal(r.status, 400);
+
+    assert.equal((await h.request('POST', '/v1/reviews/sample', { body: {} })).status, 403);
+    for (const budget of [0, 101, 1.5, '5']) assert.equal((await h.request('POST', '/v1/reviews/sample', { role: 'admin', body: { budget } })).status, 400);
+    const s = await h.json<{ opened: unknown[] }>('POST', '/v1/reviews/sample', { role: 'admin', body: {} });
+    assert.equal(s.response.status, 200);
+    assert.ok(Array.isArray(s.body.opened));
   } finally { await h.close(); }
 });

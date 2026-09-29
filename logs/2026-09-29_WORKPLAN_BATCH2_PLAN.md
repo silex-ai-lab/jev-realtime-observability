@@ -4,7 +4,7 @@ Fleet run (`herdr-agent-fleet`) over tasks T6, T7, T8 and T10 of
 `skills/jev-work-plan/plans/2026-09-29.md`, on top of batch 1
 (`logs/2026-09-29_WORKPLAN_BATCH1_PLAN.md`, merged at `44cc93b`).
 
-**Plan version:** v3 · **Repo HEAD at planning:** `44cc93b` · **Review base (`BASE`):** set at Step 5.
+**Plan version:** v3 · **Repo HEAD at planning:** `44cc93b` · **Review base (`BASE`):** `7c9dae4` (the plan commit).
 
 ## Roster
 

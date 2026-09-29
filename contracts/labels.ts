@@ -26,12 +26,16 @@ export const ReviewResolve = z.object({
 }).strict();
 export type ReviewResolve = z.infer<typeof ReviewResolve>;
 
+export type SampleReason = 'uncertain' | 'judge_flags_unruled_risk' | 'cross_judge_disagreement';
+
 export type ReviewStatus = 'open' | 'resolved_allow' | 'resolved_deny' | 'expired';
 export interface ReviewTask {
   review_id: string; tenant_id: string; decision_id: string; status: ReviewStatus; created_at: string;
   body: {
-    path: 'worker' | 'preflight'; event_id: string; run_id: string | null; snapshot_id: string; evaluation_id: string | null;
+    path: 'worker' | 'preflight' | 'sampler'; event_id: string; run_id: string | null; snapshot_id: string; evaluation_id: string | null;
     recommended: string; decided_by: string; tool: string | null; reasons: string[];
+    /** Sampler tasks only (T7): why the active-learning sampler picked this decision. */
+    sample_reason?: SampleReason;
     resolution?: { outcome: 'allow' | 'deny'; actor: string; at: string; label_ids: string[] };
   };
 }

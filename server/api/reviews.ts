@@ -4,7 +4,10 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import * as repos from '../storage/repos.ts';
 import * as reviews from '../storage/reviews.ts';
 import { RUBRIC } from '../state/index.ts';
-import { LabelInput, ReviewResolve, labelValueError, type ReviewStatus } from '../../contracts/labels.ts';
+import { sampleForReview } from '../labeling/index.ts';
+import type { Queryable } from '../storage/db.ts';
+import type { WireQuestion } from '../../contracts/judge.ts';
+import { LabelInput, ReviewResolve, labelValueError, type ReviewStatus, type ReviewTask } from '../../contracts/labels.ts';
 import { HttpError, readJson, send, type AuthFn } from './http.ts';
 import type { ApiDeps } from './index.ts';
 
@@ -17,6 +20,15 @@ function checkValue(questionId: string, value: unknown): void {
   if (!q) throw new HttpError(400, 'unknown_question', `unknown question ${questionId}`);
   const err = labelValueError(q, value);
   if (err) throw new HttpError(400, 'bad_value', `${questionId}: ${err}`);
+}
+
+/** The questions a review task may answer (plan batch 2 D4): those of the evaluation fixed in the task body when it
+ *  asked any, else the whole rubric. The body's evaluation never changes, so the set is the same at GET and resolve;
+ *  a diagnostic evaluation that arrives later judged a different snapshot and is ignored. */
+async function reviewQuestions(q: Queryable, tenantId: string, t: ReviewTask): Promise<Record<string, WireQuestion>> {
+  const ev = t.body.evaluation_id ? await repos.getEvaluation(q, tenantId, t.body.evaluation_id) : null;
+  const ids = ev && ev.question_ids.length ? ev.question_ids : Object.keys(RUBRIC.questions);
+  return Object.fromEntries(ids.filter(id => Object.hasOwn(RUBRIC.questions, id)).map(id => [id, RUBRIC.questions[id]]));
 }
 
 /** Returns true when the request was one of this module's routes. */
@@ -36,9 +48,20 @@ export async function handle(d: ApiDeps, auth: AuthFn, req: IncomingMessage, res
     const a = await auth(req, ['reader', 'admin']);
     const t = await reviews.getReviewTask(d.db, a.tenant_id, one[1]);
     if (!t) throw new HttpError(404, 'not_found', 'review not found');
-    send(res, 200, { review: t, snapshot: await repos.getSnapshot(d.db, a.tenant_id, t.body.snapshot_id),
+    send(res, 200, { review: t, questions: await reviewQuestions(d.db, a.tenant_id, t), snapshot: await repos.getSnapshot(d.db, a.tenant_id, t.body.snapshot_id),
       evaluation: t.body.evaluation_id ? await repos.getEvaluation(d.db, a.tenant_id, t.body.evaluation_id) : null,
       decision: await repos.getDecision(d.db, a.tenant_id, t.decision_id) });
+    return true;
+  }
+  if (m === 'POST' && p === '/v1/reviews/sample') {
+    const a = await auth(req, ['admin']);
+    const body = await readJson(req);
+    const raw = body && typeof body === 'object' ? (body as { budget?: unknown }).budget : undefined;
+    if (raw !== undefined && (typeof raw !== 'number' || !Number.isInteger(raw) || raw < 1 || raw > 100))
+      throw new HttpError(400, 'bad_budget', 'budget must be an integer from 1 to 100');
+    const opened = await sampleForReview(d.db, a.tenant_id, (raw as number | undefined) ?? 20);
+    if (opened.length) d.notify();
+    send(res, 200, { opened });
     return true;
   }
   const resolve = resolveMatch.exec(p);
@@ -51,9 +74,7 @@ export async function handle(d: ApiDeps, auth: AuthFn, req: IncomingMessage, res
       const t = await reviews.getReviewTask(q, a.tenant_id, resolve[1], true);
       if (!t) throw new HttpError(404, 'not_found', 'review not found');
       if (t.status !== 'open') throw new HttpError(409, 'already_resolved', `review is ${t.status}`);
-      // Answers must be questions this decision's judge was asked (any rubric question when it had no evaluation).
-      const ev = t.body.evaluation_id ? await repos.getEvaluation(q, a.tenant_id, t.body.evaluation_id) : null;
-      const allowed = new Set(ev && ev.question_ids.length ? ev.question_ids : Object.keys(RUBRIC.questions));
+      const allowed = new Set(Object.keys(await reviewQuestions(q, a.tenant_id, t)));
       for (const [qid, v] of Object.entries(answers)) {
         if (!allowed.has(qid)) throw new HttpError(400, 'unknown_question', `${qid} was not asked for this decision`);
         checkValue(qid, v);
