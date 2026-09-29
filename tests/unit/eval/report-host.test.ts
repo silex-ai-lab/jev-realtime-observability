@@ -12,10 +12,13 @@ const withoutTimestamp = (s: string) => s.split('\n').filter(l => !l.startsWith(
 const report = (out: string, labels: string, extra: string[] = []) =>
   execFileSync(process.execPath, ['eval/run/report.ts', '--out', out, '--labels', labels, ...extra], { stdio: 'pipe' });
 
+// N2 (plan 2026-09-30) added the Kev-4B fine-tune to the same report, with this note.
+const V2_NOTE = 'Kev-4B fine-tune (work plan 2026-09-30 N2): the 2026-09-28 recipe with Kev-4B as init, trained on an Apple M4 Pro (48 GB) and served alone for this eval. Thresholds are fitted on the calibration split and recorded, not enabled.';
+
 test('the 2026-09-28 report regenerates identically except its timestamp line', () => {
   const dir = mkdtempSync(join(tmpdir(), 'jev-report-'));
   cpSync(V2, dir, { recursive: true });
-  report(dir, 'kev-0.8b,kev-0.8b-ft,kev-4b');
+  report(dir, 'kev-0.8b,kev-0.8b-ft,kev-4b,kev-4b-ft', ['--note', V2_NOTE]);
   assert.equal(withoutTimestamp(readFileSync(join(dir, 'REPORT.md'), 'utf8')), withoutTimestamp(readFileSync(join(V2, 'REPORT.md'), 'utf8')));
 });
 

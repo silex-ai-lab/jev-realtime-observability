@@ -1,0 +1,8 @@
+started_at=2026-09-29T20:59:31Z
+kev_commit=3e1cd3bb588a388a06827443380befece23e68c7
+data=eval/splits/kev-train.jsonl sha256=21b5902ebe1ac6837d15b54d070a18afe16cdf7fc464cd607532c36d1edf107d records=    1223
+base=Qwen/Qwen3.5-4B-Base init_from=jaredpalmer/kev-4b timeout=3h device=mps args=--epochs 2 --lr 2e-5 --batch 1 --accum 8 --seed 20260928
+host=Apple M4 Pro memory_gb=48
+finished_at=2026-09-29T23:43:58Z wall_s=9867 exit=0
+records_used=1183 records_dropped=40
+result=completed

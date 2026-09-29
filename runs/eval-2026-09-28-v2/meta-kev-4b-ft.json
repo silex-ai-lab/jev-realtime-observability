@@ -1,0 +1,24 @@
+{
+ "label": "kev-4b-ft",
+ "judge_source": "kev-local:runs/ft-kev-4b-2026-09-29/model",
+ "served": {
+  "backend": "kev-local",
+  "run": "runs/ft-kev-4b-2026-09-29/model",
+  "base": "Qwen/Qwen3.5-4B-Base",
+  "revision": null,
+  "temperature": 1,
+  "runtime": "mlx/bfloat16/mps"
+ },
+ "host": {
+  "cpu": "Apple M4 Pro",
+  "runtime": "mlx/bfloat16/mps"
+ },
+ "items_file": "eval/splits/items.jsonl",
+ "splits": [
+  "calibration",
+  "dev",
+  "test"
+ ],
+ "n": 708,
+ "started_at": "2026-09-29T23:45:17.782Z"
+}
