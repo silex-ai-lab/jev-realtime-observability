@@ -2,6 +2,19 @@
 
 Newest first. The plan and its review record live in this folder.
 
+## 2026-09-29 — Gate B: outcome verification, open-data evaluation, fine-tune
+
+[Plan and review record](2026-09-28_BUILD_PLAN.md) · [Evaluation data and results](../docs/EVAL.md).
+
+- **Independent read-back** of executed payments and emails. HTTP 200 is not treated as done. Pending payments become `unknown_after_deadline`, and a completion claim with no verified success is flagged.
+- **Replays:** model re-evaluation (budgeted and ledgered) and sandbox re-execution (new ids). `/v1/metrics` reports capture coverage against the gateway's attempt log.
+- **Open-data evaluation:**
+  - 1,931 items from InjecAgent, ASB, ToolEmu and tau-bench, with AgentDojo held out;
+  - licences checked per note, fail-closed; splits free of leakage;
+  - a shortcut audit and a source-separability check in every report.
+- **A LoRA fine-tune of Kev-0.8B** ran locally in 39 minutes. On the held-out AgentDojo family its AUROC rose from 0.602 to 0.973 (`instruction_override`) and from 0.893 to 0.961 (`goal_deviation`), with a documented residual style risk. A first, confounded evaluation is kept as a record. Live policy stays uncalibrated, on purpose.
+- **Review:** three-seat, 3 code rounds, unanimous on `be2f5c4`.
+
 ## 2026-09-28 — Gate A: the real shadow loop
 
 [Plan v0.3 and the full review record](2026-09-28_BUILD_PLAN.md) · source RFC: [`2026-09-28_RFC_v0.1_source_gpt.md`](2026-09-28_RFC_v0.1_source_gpt.md).
