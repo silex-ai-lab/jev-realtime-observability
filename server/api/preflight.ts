@@ -4,6 +4,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { Db } from '../storage/db.ts';
 import * as repos from '../storage/repos.ts';
+import { openReviewTask } from '../storage/reviews.ts';
 import type { JudgeClient } from '../judges/index.ts';
 import { evaluateRules } from '../rules/index.ts';
 import { assembleSnapshot, RUBRIC } from '../state/index.ts';
@@ -117,6 +118,7 @@ export async function preflight(d: PreflightDeps, tenantId: string, body: unknow
     await repos.insertSnapshot(q, a.snapshot);
     if (evaluation) await repos.insertEvaluation(q, evaluation);
     await repos.insertDecision(q, decision, null);
+    await openReviewTask(q, decision, { path: 'preflight', run_id: r.run_id, tool: r.operation.tool });
     await q.query(`INSERT INTO control_decisions (tenant_id, control_id, operation_id, nonce, body) VALUES ($1, $2, $3, $4, $5)`,
       [tenantId, control.control_id, control.operation_id, control.nonce, JSON.stringify(control)]);
     if (evaluation) await repos.appendOutbox(q, { tenant_id: tenantId, kind: 'evaluation', ref_id: evaluation.evaluation_id, run_id: r.run_id,

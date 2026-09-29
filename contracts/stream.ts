@@ -2,7 +2,7 @@
 import { z } from 'zod';
 
 export const StreamKind = z.enum([
-  'event', 'evaluation', 'decision', 'coverage_gap', 'evaluation_expired', 'outcome', 'receipt', 'run',
+  'event', 'evaluation', 'decision', 'coverage_gap', 'evaluation_expired', 'outcome', 'receipt', 'run', 'review',
 ]);
 export type StreamKind = z.infer<typeof StreamKind>;
 

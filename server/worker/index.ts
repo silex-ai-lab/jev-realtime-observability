@@ -3,6 +3,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Db } from '../storage/db.ts';
 import * as repos from '../storage/repos.ts';
+import { openReviewTask } from '../storage/reviews.ts';
 import type { JudgeClient, JudgeCallResult } from '../judges/index.ts';
 import { evaluateRules } from '../rules/index.ts';
 import { assembleSnapshot, RUBRIC } from '../state/index.ts';
@@ -153,6 +154,7 @@ export function createWorker(d: WorkerDeps): Worker {
       await repos.insertSnapshot(q, a.snapshot);
       if (evaluation) await repos.insertEvaluation(q, evaluation);
       await repos.insertDecision(q, decision, null);
+      await openReviewTask(q, decision, { path: 'worker', run_id: ev.run_id, tool: ev.operation?.tool ?? null });
       await repos.completeJob(q, jobId);
       if (evaluation) await repos.appendOutbox(q, { tenant_id: tenantId, kind: 'evaluation', ref_id: evaluation.evaluation_id, run_id: ev.run_id, payload: evaluationPayload(evaluation) });
       await repos.appendOutbox(q, { tenant_id: tenantId, kind: 'decision', ref_id: decision.decision_id, run_id: ev.run_id, payload: { ...decision, run_id: ev.run_id, boundary: ev.boundary, tool: ev.operation?.tool ?? null } });
