@@ -19,11 +19,21 @@ export function judgeFromEnv(): JudgeConfig | null {
     maxInputTokensPerSec: Number(env('JUDGE_MAX_TPS', '40000')), maxResponseBytes: 262_144 };
 }
 
+/** Gate C: a separate judge for /v1/preflight. It must have its own accelerator: sharing one GPU with the
+ *  shadow judge makes preflight exceed its 400 ms judge budget and fail closed (docs/GATE.md). */
+export function gateJudgeFromEnv(): JudgeConfig | null | undefined {
+  const url = env('GATE_JUDGE_BASE_URL');
+  if (!url) return undefined;   // undefined = reuse the main judge
+  return { backend: 'kev-local', baseUrl: url, model: env('GATE_JUDGE_MODEL', 'kev-latest')!, expectedRun: env('GATE_JUDGE_EXPECTED_RUN', 'jaredpalmer/kev-0.8b'),
+    maxRps: Number(env('JUDGE_MAX_RPS', '10')), maxInputTokensPerSec: Number(env('JUDGE_MAX_TPS', '40000')), maxResponseBytes: 262_144 };
+}
+
 export function appOptionsFromEnv(): AppOptions {
   const need = (k: string) => { const v = env(k); if (!v || v.length < 16) throw new Error(`${k} must be set (≥16 chars)`); return v; };
   return {
     judge: judgeFromEnv(),
-    sourceMode: 'live_sandbox_shadow',
+    gateJudge: gateJudgeFromEnv(),
+    sourceMode: env('SOURCE_MODE', 'live_sandbox_shadow') === 'live_sandbox_gate' ? 'live_sandbox_gate' : 'live_sandbox_shadow',
     tenants: [{ tenant_id: env('TENANT_ID', 't-demo')!, name: env('TENANT_NAME', 'Demo tenant (fictional)')!,
       keys: { ingest: need('INGEST_KEY'), reader: need('READER_KEY'), gateway: need('GATEWAY_KEY'), admin: need('ADMIN_KEY') } }],
     worker: { autostart: true, concurrency: Number(env('WORKER_CONCURRENCY', '2')) },

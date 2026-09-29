@@ -38,9 +38,15 @@ export interface ToolExecution {
 
 export interface ToolGatewayOptions {
   /**
-   * Gate C only. When set, execute() requires a ControlDecision bound to this call
-   * (tenant, run, tool, operation_id, args digest, unexpired, unconsumed nonce, not revoked);
-   * otherwise it returns receipt status 'not_executed' and performs no side effect.
+   * Gate C only. When true, a ControlDecision is mandatory for GATED_TOOLS
+   * (payments.execute, email.send); read tools execute as in shadow mode. Without it the
+   * Gateway A/B shadow behaviour is unchanged (a bare requireControl still gates every tool).
+   */
+  gate?: boolean;
+  /**
+   * The verifier used for gated calls. In gate mode this is createControlVerifier(db): it loads
+   * the ControlDecision from control_decisions by control_id and never trusts a caller-supplied
+   * body. On failure execute() returns receipt status 'not_executed' and performs no side effect.
    */
   requireControl?: (call: ToolCall, control: ControlDecision | null) => Promise<{ ok: boolean; reason: string }>;
 }

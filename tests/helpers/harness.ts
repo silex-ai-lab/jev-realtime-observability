@@ -62,10 +62,12 @@ export interface RequestOptions {
 
 export interface StartHarnessOptions {
   judge?: JudgeConfig | null;
+  gateJudge?: JudgeConfig | null;
   db?: Db;
   dataDir?: string;
   worker?: AppOptions['worker'];
   port?: number;
+  sourceMode?: AppOptions['sourceMode'];
 }
 
 export async function startGateAHarness(opts: StartHarnessOptions = {}): Promise<GateAHarness> {
@@ -76,14 +78,16 @@ export async function startGateAHarness(opts: StartHarnessOptions = {}): Promise
     db = await openDb({ dataDir });
     await migrate(db);
   }
-  const app = await createApp({
+  const appOptions: AppOptions & { gateJudge?: JudgeConfig | null } = {
     ...(db ? { db } : {}),
     judge: opts.judge ?? null,
-    sourceMode: 'live_sandbox_shadow',
+    ...(opts.gateJudge !== undefined ? { gateJudge: opts.gateJudge } : {}),
+    sourceMode: opts.sourceMode ?? 'live_sandbox_shadow',
     tenants: [...TENANTS],
     worker: opts.worker ?? { autostart: true, leaseMs: 50, realtimeTtlMs: 2_000 },
     port: opts.port ?? 0,
-  });
+  };
+  const app = await createApp(appOptions);
   return harnessFromApp(app, dataDir);
 }
 

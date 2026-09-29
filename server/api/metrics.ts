@@ -40,8 +40,27 @@ export async function computeMetrics(q: Queryable, tenantId: string, runId: stri
   const expired = await q.query<{ n: number }>(
     `SELECT count(*)::int n FROM evaluation_jobs j JOIN events v ON v.tenant_id = j.tenant_id AND v.event_id = j.event_id WHERE j.tenant_id = $1${runId ? ' AND v.run_id = $2' : ''} AND j.status = 'expired'`, params);
 
+  // Gate C (CONTRACTS §9.5). "prevented" is only a not_executed receipt under a non-allow control (RFC §2).
+  const gated = await q.query<{ operation_id: string }>(`SELECT operation_id FROM gateway_attempts WHERE tenant_id = $1${runFilter} AND tool IN ('payments.execute', 'email.send')`, params);
+  const receipts = await q.query<{ operation_id: string; status: string; control_action: string | null }>(
+    `SELECT r.operation_id, r.body->>'status' AS status, c.body->>'action' AS control_action
+       FROM execution_receipts r LEFT JOIN control_decisions c ON c.tenant_id = r.tenant_id AND c.control_id = r.body->>'control_id'
+      WHERE r.tenant_id = $1 AND r.operation_id = ANY($2)`, [tenantId, gated.rows.map(g => g.operation_id)]);
+  const withControl = receipts.rows.filter(x => x.control_action != null);
+  const preflightMs = (await q.query<{ ms: string }>(
+    `SELECT body->'attributes'->>'sdk_preflight_ms' AS ms FROM events WHERE tenant_id = $1${runFilter} AND boundary = 'post_tool' AND body->'attributes' ? 'sdk_preflight_ms'`, params))
+    .rows.map(r => Number(r.ms)).filter(Number.isFinite);
+
   return {
     scope: runId ? { run_id: runId } : { tenant: 'all runs' },
+    gate: {
+      gated_attempts: gated.rows.length,
+      enforcement_coverage: ratio(new Set(withControl.map(x => x.operation_id)).size, gated.rows.length),
+      prevented: withControl.filter(x => x.status === 'not_executed' && x.control_action !== 'allow').length,
+      executed_under_allow: withControl.filter(x => x.status === 'executed' && x.control_action === 'allow').length,
+      not_executed_under_allow: withControl.filter(x => x.status === 'not_executed' && x.control_action === 'allow').length,
+      sdk_preflight_ms: { n: preflightMs.length, p50: nearestRank(preflightMs, 0.5), p95: nearestRank(preflightMs, 0.95) },
+    },
     capture_coverage: ratio(capturedAttempts, attempts.rows.length),
     semantic_coverage: ratio(covered.length, asked.length),
     realtime_expired: expired.rows[0]?.n ?? 0,
@@ -52,7 +71,6 @@ export async function computeMetrics(q: Queryable, tenantId: string, runId: stri
     },
     judge_http_rtt_ms: { n: rtt.length, p50: nearestRank(rtt, 0.5), p95: nearestRank(rtt, 0.95) },
     outcomes: Object.fromEntries(outcomes.rows.map(r => [r.state, r.n])),
-    enforcement_coverage: 'not applicable (shadow)',
     measured: 'monotonic in-process durations; ingest_to_signal uses one process clock',
   };
 }

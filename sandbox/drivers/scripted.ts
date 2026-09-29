@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { createCapture } from '../../sdk/index.ts';
 import type { AuthorityReader, ToolGateway } from '../index.ts';
 import type { Scenario } from '../scenarios/index.ts';
+import { GATED_TOOLS } from '../control.ts';
 
 export interface DriverDeps {
   baseUrl: string;
@@ -12,6 +13,8 @@ export interface DriverDeps {
   gateway: ToolGateway;
   authority: AuthorityReader;
   mirrorOtlp: boolean;
+  /** Gate C: ask /v1/preflight before gated tools and pass the control to the gateway. */
+  gate?: boolean;
 }
 
 export async function runScripted(d: DriverDeps, sc: Scenario, runId = `run-${sc.id.toLowerCase()}-${randomUUID().slice(0, 8)}`): Promise<{ run_id: string; errors: string[] }> {
@@ -35,11 +38,20 @@ export async function runScripted(d: DriverDeps, sc: Scenario, runId = `run-${sc
       if (s.kind === 'say') { await cap.emit('post_generation', { text: s.text, attributes: { ...faultAttrs } }); continue; }
       const op = cap.operation(s.tool, s.args);
       const callId = `call-${randomUUID().slice(0, 12)}`;
-      await cap.emit('pre_tool', { operation: op, tool_call_id: callId, attributes: { ...faultAttrs } });
-      const exec = await d.gateway.execute({ tenantId: d.tenantId, runId, tool: op.tool, operationId: op.operation_id, args: op.args });
+      const gated = Boolean(d.gate) && (GATED_TOOLS as readonly string[]).includes(op.tool);
+      let control = null, gateAttrs: Record<string, string | number> = {};
+      if (gated) {
+        // The preflight records the pre_tool event itself and returns a control bound to exactly this call.
+        const pf = await cap.preflight(op);
+        control = pf.response.control;
+        gateAttrs = { control_id: control.control_id, control_action: control.action, sdk_preflight_ms: Math.round(pf.sdk_preflight_ms) };
+      } else {
+        await cap.emit('pre_tool', { operation: op, tool_call_id: callId, attributes: { ...faultAttrs } });
+      }
+      const exec = await d.gateway.execute({ tenantId: d.tenantId, runId, tool: op.tool, operationId: op.operation_id, args: op.args }, control);
       await cap.emit('post_tool', { operation: op, tool_call_id: callId,
         result: { status: exec.result.status, http_status: exec.result.http_status, body: exec.result.body },
-        attributes: { receipt_status: exec.receipt.status, ...faultAttrs } });
+        attributes: { receipt_status: exec.receipt.status, ...gateAttrs, ...faultAttrs } });
     }
     await cap.emit('run_finished', { attributes: { status: 'finished' } });
   } catch (e) {

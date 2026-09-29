@@ -13,6 +13,7 @@ import type { PolicyDecision } from '../../contracts/decision.ts';
 import type { DecisionSnapshot } from '../../contracts/snapshot.ts';
 import { RUBRIC } from '../state/index.ts';
 import { computeMetrics } from './metrics.ts';
+import { preflight, PreflightError, type PreflightDeps } from './preflight.ts';
 
 type Role = 'ingest' | 'reader' | 'gateway' | 'admin';
 export interface ApiDeps {
@@ -25,6 +26,8 @@ export interface ApiDeps {
   subscribe: (fn: () => void) => () => void;
   startSandboxRun: (tenantId: string, scenario: string) => Promise<{ run_id: string }>;
   sandboxScenarios: string[];
+  /** Gate C: synchronous preflight dependencies (null when the app runs in shadow mode). */
+  preflight: PreflightDeps | null;
 }
 
 const MAX_BODY = 1 << 20;
@@ -132,6 +135,21 @@ export function createApi(d: ApiDeps): Server {
         await repos.audit(q, a.tenant_id, 'admin-key', 'policy_draft', { draft_version });
       });
       return send(res, 200, { ok: true, errors: [], draft_version });
+    }
+
+    if (m === 'POST' && p === '/v1/preflight') {
+      const a = await auth(req, ['ingest']);
+      if (!d.preflight) throw new HttpError(409, 'not_gate_mode', 'this deployment runs in shadow mode; preflight is disabled');
+      try { return send(res, 200, await preflight(d.preflight, a.tenant_id, await readJson(req))); }
+      catch (e) { if (e instanceof PreflightError) throw new HttpError(e.status, 'preflight_rejected', e.message); throw e; }
+    }
+    const revokeMatch = /^\/v1\/controls\/([A-Za-z0-9._:~\-]+)\/revoke$/.exec(p);
+    if (m === 'POST' && revokeMatch) {
+      const a = await auth(req, ['admin']);
+      const r = await d.db.query<{ control_id: string }>(`UPDATE control_decisions SET revoked_at = now() WHERE tenant_id = $1 AND control_id = $2 AND revoked_at IS NULL RETURNING control_id`, [a.tenant_id, revokeMatch[1]]);
+      if (!r.rows.length) throw new HttpError(404, 'not_found', 'control not found or already revoked');
+      await repos.audit(d.db, a.tenant_id, 'admin-key', 'control_revoked', { control_id: revokeMatch[1] });
+      return send(res, 200, { control_id: revokeMatch[1], revoked: true });
     }
 
     if (m === 'GET' && p === '/v1/metrics') {

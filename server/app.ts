@@ -13,6 +13,7 @@ import { createApi } from './api/index.ts';
 import { DEFAULT_POLICY, validatePolicy, type PolicyBody } from './policy/index.ts';
 import { createAuthorityReader, createToolGateway, seedSandbox } from '../sandbox/index.ts';
 import { createOutcomeVerifier, type OutcomeVerifier } from './outcomes/index.ts';
+import { createControlVerifier } from '../sandbox/control.ts';
 import { SCENARIOS, scenarioIds } from '../sandbox/scenarios/index.ts';
 import { runScripted } from '../sandbox/drivers/scripted.ts';
 import type { Provenance } from '../contracts/common.ts';
@@ -25,6 +26,8 @@ export interface TenantSetup {
 export interface AppOptions {
   db?: Db;
   judge: JudgeConfig | null;
+  /** Gate C: the judge used by /v1/preflight (default: judge). It must fit the 400 ms judge budget. */
+  gateJudge?: JudgeConfig | null;
   sourceMode: 'live_sandbox_shadow' | 'live_sandbox_gate';
   tenants: TenantSetup[];
   worker: { autostart: boolean; leaseMs?: number; realtimeTtlMs?: number; concurrency?: number };
@@ -91,7 +94,13 @@ export async function createApp(opts: AppOptions): Promise<App> {
   });
 
   const authority = createAuthorityReader(db);
-  const gateway = createToolGateway(db);
+  const gateMode = opts.sourceMode === 'live_sandbox_gate';
+  // Gate mode: a control is mandatory for gated tools, and the gateway verifies it itself (CONTRACTS §9.2).
+  const gateway = gateMode ? createToolGateway(db, { gate: true, requireControl: createControlVerifier(db) }) : createToolGateway(db);
+  const gateJudge = gateMode
+    ? (opts.gateJudge === undefined ? judge : opts.gateJudge ? createJudgeClient(opts.gateJudge, { ledger: row => repos.insertJudgeCall(db, row) }) : null)
+    : null;
+  if (gateJudge && gateJudge !== judge) await gateJudge.describe().catch(() => null);
   const verifier: OutcomeVerifier = createOutcomeVerifier(db, authority, {
     deadlineMs: { 'payments.execute': 10_000, 'email.send': 5_000 }, backoffMs: [250, 500, 1000, 2000],
   });
@@ -105,7 +114,7 @@ export async function createApp(opts: AppOptions): Promise<App> {
     const sc = SCENARIOS.find(s => s.id === scenario);
     const key = internalKeys.get(tenantId);
     if (!sc || !key) throw new Error('unknown scenario or tenant');
-    return runScripted({ baseUrl, ingestKey: key, tenantId, gateway, authority, mirrorOtlp: opts.mirrorOtlp ?? true }, sc);
+    return runScripted({ baseUrl, ingestKey: key, tenantId, gateway, authority, mirrorOtlp: opts.mirrorOtlp ?? true, gate: gateMode }, sc);
   };
 
   const server = createApi({
@@ -118,11 +127,12 @@ export async function createApp(opts: AppOptions): Promise<App> {
       const sc = SCENARIOS.find(s => s.id === scenario)!;
       const runId = `run-${sc.id.toLowerCase()}-${randomBytes(4).toString('hex')}`;
       const key = internalKeys.get(tenantId)!;
-      void runScripted({ baseUrl, ingestKey: key, tenantId, gateway, authority, mirrorOtlp: opts.mirrorOtlp ?? true }, sc, runId)
+      void runScripted({ baseUrl, ingestKey: key, tenantId, gateway, authority, mirrorOtlp: opts.mirrorOtlp ?? true, gate: gateMode }, sc, runId)
         .catch(e => console.error('sandbox run failed:', (e as Error).message));
       return { run_id: runId };
     },
     sandboxScenarios: scenarioIds(),
+    preflight: gateMode ? { db, judge: gateJudge, authority, policy: activePolicy } : null,
   });
   await new Promise<void>(res => server.listen(opts.port ?? 0, opts.host ?? '127.0.0.1', res));
   const addr = server.address() as AddressInfo;

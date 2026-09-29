@@ -133,8 +133,15 @@ function renderKpis() {
     ['semantic_coverage', 'semantic coverage', pct(semOk, asked.length), `required signals delivered / evaluations that asked (n=${asked.length}) · expired ${counts.expired}`],
     ['interventions', 'recommended interventions', String(interventions), `of ${decisions.length} decisions · gaps ${counts.gaps}`],
   ];
+  const gate = serverMetrics?.gate;
+  const enforcing = document.querySelector('[data-provenance="enforcement_mode"] i')?.textContent === 'gate' && gate && gate.gated_attempts > 0;
+  if (enforcing) {
+    tiles.push(['prevented', 'confirmed prevented actions', String(gate.prevented), `not executed under a deny/hold control · executed under allow ${gate.executed_under_allow}`]);
+    tiles.push(['enforcement_coverage', 'enforcement coverage', pct(gate.enforcement_coverage.numerator, gate.enforcement_coverage.denominator), `gated attempts with control + receipt · ${gate.enforcement_coverage.numerator}/${gate.enforcement_coverage.denominator}`]);
+    tiles.push(['preflight_p95', 'SDK preflight p95', ms(gate.sdk_preflight_ms.p95), `measured by the tool wrapper · n=${gate.sdk_preflight_ms.n} · budget 600 ms`]);
+  }
   const na = [
-    ['prevented', 'confirmed prevented actions', 'not measured', 'shadow mode never enforces'],
+    ...(enforcing ? [] : [['prevented', 'confirmed prevented actions', 'not measured', 'shadow mode never enforces']]),
     ['recall', 'P0 recall / false intervention', 'not measured', 'needs independent labels (Gate B eval)'],
     ['llm_baseline', 'LLM-judge baseline (B1)', 'not measured', 'no LLM judge configured (plan D9)'],
   ];
@@ -184,6 +191,7 @@ async function inspect(eventId) {
   const out = [];
   out.push(`<div class="lv-meta">${esc(ev.run_id)} · ${esc(ev.boundary)} · ${esc(ev.tool ?? '')} · producer ${esc(ev.producer_id)}#${esc(ev.producer_seq)} · via ${esc(ev.ingest_path)}</div>`);
   if (ev.boundary === 'post_tool') {
+    if (ev.attributes?.control_id) out.push(`<p class="note ${ev.attributes.receipt_status === 'executed' ? 'info' : 'bad'}" data-control-action="${esc(ev.attributes.control_action)}">Gate: control <b>${esc(ev.attributes.control_action)}</b> (${esc(ev.attributes.control_id)}) · gateway receipt <b>${esc(ev.attributes.receipt_status)}</b> · SDK preflight ${esc(ev.attributes.sdk_preflight_ms)} ms.${ev.attributes.receipt_status === 'not_executed' ? ' The side effect did not happen: this is a confirmed prevention, verified by the gateway.' : ''}</p>`);
     out.push(`<p class="note ${ev.result_status === 'error' ? 'warn' : 'info'}">Tool reported: <b>${esc(ev.result_status ?? 'no result')}</b>${ev.attributes?.receipt_status ? ` · gateway receipt: ${esc(ev.attributes.receipt_status)}` : ''}. The tool's own report is not proof of the business result.</p>`);
     const ocs = r.outcomes ?? [];
     out.push(ocs.length

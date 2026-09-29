@@ -9,6 +9,7 @@ import type { Tracer } from '@opentelemetry/api';
 import { SCHEMA_VERSION, type Boundary } from '../contracts/common.ts';
 import type { BoundaryEvent, BoundaryEventInput, SourceExcerpt } from '../contracts/events.ts';
 import { digestOf } from '../contracts/canonical.ts';
+import type { PreflightResponse } from '../contracts/preflight.ts';
 
 export interface CaptureOptions {
   baseUrl: string;
@@ -23,6 +24,8 @@ export interface Capture {
   readonly traceId: string;
   emit(boundary: Boundary, fields: Partial<Omit<BoundaryEventInput, 'schema_version' | 'boundary' | 'run_id' | 'trace_id' | 'producer_id' | 'producer_seq'>>): Promise<BoundaryEvent>;
   operation(tool: string, args: Record<string, unknown>): { tool: string; operation_id: string; args: Record<string, unknown>; args_digest: string };
+  /** Gate C: synchronous pre-tool control. Records the pre_tool event and returns a bound ControlDecision. */
+  preflight(op: { tool: string; operation_id: string; args: Record<string, unknown>; args_digest: string }, sources?: SourceExcerpt[]): Promise<{ response: PreflightResponse; sdk_preflight_ms: number }>;
   close(): Promise<void>;
 }
 
@@ -76,6 +79,16 @@ export function createCapture(o: CaptureOptions): Capture {
       await post(ev);
       mirror(ev);
       return ev;
+    },
+    async preflight(op, sources = []) {
+      const t0 = performance.now();
+      const id = `ev-${randomUUID()}`;
+      const r = await fetch(`${o.baseUrl}/v1/preflight`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${o.apiKey}` },
+        body: JSON.stringify({ schema_version: SCHEMA_VERSION, event_id: id, run_id: o.runId, trace_id: traceId, producer_id: o.producerId, producer_seq: seq++,
+          actor: { kind: 'agent', id: o.producerId }, operation: op, sources }) });
+      if (r.status !== 200) throw new Error(`preflight rejected: HTTP ${r.status}`);
+      const response = await r.json() as PreflightResponse;
+      return { response, sdk_preflight_ms: performance.now() - t0 };
     },
     operation(tool, args) {
       return { tool, operation_id: `op-${randomUUID()}`, args, args_digest: digestOf(args) };
