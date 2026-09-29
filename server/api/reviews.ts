@@ -3,7 +3,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import * as repos from '../storage/repos.ts';
 import * as reviews from '../storage/reviews.ts';
-import { RUBRIC } from '../state/index.ts';
+import { MANIFEST, RUBRIC } from '../state/index.ts';
 import { sampleForReview } from '../labeling/index.ts';
 import type { Queryable } from '../storage/db.ts';
 import type { WireQuestion } from '../../contracts/judge.ts';
@@ -23,11 +23,16 @@ function checkValue(questionId: string, value: unknown): void {
 }
 
 /** The questions a review task may answer (plan batch 2 D4): those of the evaluation fixed in the task body when it
- *  asked any, else the whole rubric. The body's evaluation never changes, so the set is the same at GET and resolve;
- *  a diagnostic evaluation that arrives later judged a different snapshot and is ignored. */
+ *  asked any, else the rubric questions whose manifest boundaries include the frozen snapshot's boundary (the whole
+ *  rubric if the snapshot is missing). The body's evaluation and the snapshot never change, so the set is the same at
+ *  GET and resolve; a diagnostic evaluation that arrives later judged a different snapshot and is ignored. */
 async function reviewQuestions(q: Queryable, tenantId: string, t: ReviewTask): Promise<Record<string, WireQuestion>> {
   const ev = t.body.evaluation_id ? await repos.getEvaluation(q, tenantId, t.body.evaluation_id) : null;
-  const ids = ev && ev.question_ids.length ? ev.question_ids : Object.keys(RUBRIC.questions);
+  let ids = ev && ev.question_ids.length ? ev.question_ids : null;
+  if (!ids) {
+    const snap = await repos.getSnapshot(q, tenantId, t.body.snapshot_id);
+    ids = Object.keys(RUBRIC.questions).filter(id => !snap || (MANIFEST.questions[id]?.boundaries.includes(snap.boundary) ?? true));
+  }
   return Object.fromEntries(ids.filter(id => Object.hasOwn(RUBRIC.questions, id)).map(id => [id, RUBRIC.questions[id]]));
 }
 

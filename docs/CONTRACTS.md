@@ -306,7 +306,7 @@ Plan: `logs/2026-09-29_WORKPLAN_BATCH1_PLAN.md` (decisions D2–D5). Routes live
 
 Plan: `logs/2026-09-29_WORKPLAN_BATCH2_PLAN.md` (D3, D4).
 
-**Answerable questions** (`reviewQuestions`, used by both `GET /v1/reviews/:id` and resolve): the `question_ids` of the evaluation recorded in the task body when it asked any; otherwise every rubric question. The task body's `evaluation_id` is fixed when the task opens, so the set cannot change between viewing and resolving; a diagnostic evaluation that arrives later judged a separately assembled snapshot and is ignored.
+**Answerable questions** (`reviewQuestions`, used by both `GET /v1/reviews/:id` and resolve): the `question_ids` of the evaluation recorded in the task body when it asked any; otherwise the rubric questions whose manifest `boundaries` include the frozen snapshot's boundary (so a pre-tool decision is never offered a post-generation question). The task body's `evaluation_id` is fixed when the task opens, so the set cannot change between viewing and resolving; a diagnostic evaluation that arrives later judged a separately assembled snapshot and is ignored.
 
 **`POST /v1/reviews/sample`** (admin): body `{ budget? }`, an integer 1–100, default 20 (else 400). Opens sampler tasks (`path: sampler`, with `sample_reason` and `evaluation_id` = the evaluation that caused the pick) for original decisions that have no task, open or resolved, in one transaction, and returns `{ opened: [{ review_id, decision_id, reason }] }`. Each opened task is also appended to the outbox (kind `review`, status `open`).
 

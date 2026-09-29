@@ -202,7 +202,7 @@ Below the stream, **Review queue** lists decisions waiting for a person:
 - every `HOLD` or `REVIEW` decision, and in gate mode a held `UNKNOWN` preflight, opens one task automatically;
 - **Sample for review** (admin) opens up to 20 more for the decisions the judge is least sure about, or where it saw a risk the rules did not, or where two different judge models disagreed on the same frozen input. The row says why it was picked.
 
-Select a task to see the decision, its reasons and hard rules, **what the judge saw** (the frozen snapshot text), and one input per question. A task whose decision had a judge evaluation offers that evaluation's questions and shows the judge's answer next to each (uncalibrated). A hard-rule decision, like S4's, had no evaluation, so every rubric question is offered; skip the ones that do not apply.
+Select a task to see the decision, its reasons and hard rules, **what the judge saw** (the frozen snapshot text), and one input per question. A task whose decision had a judge evaluation offers that evaluation's questions and shows the judge's answer next to each (uncalibrated). A hard-rule decision, like S4's, had no evaluation, so every rubric question for its boundary is offered (for S4's pre-tool decision, the pre-tool questions); skip the ones that do not apply. A score answer shows the label of its nearest level, for example `score 1.597 (material)`.
 
 Answer what you can, then press **Allow** or **Deny**. This records one `human_reviewed` label per answer, for training and evaluation, and closes the task. **It does not release or execute the held action, and it never changes the decision.** With `AUTH_MODE=keys` the buttons need the admin key; with login off they work directly.
 

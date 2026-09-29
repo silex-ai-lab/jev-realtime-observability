@@ -333,10 +333,16 @@ function answerInput(qid, q) {
   return `<select data-answer="${esc(qid)}" data-type="${esc(q.type)}" aria-label="${esc(qid)}"><option value="">skip</option>${opts.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select>`;
 }
 
+/** A score with the legend label of its nearest level, e.g. "score 1.597 (material)". */
+function scoreText(s) {
+  const label = s.legend && typeof s.score === 'number' ? s.legend[String(Math.round(s.score))] : null;
+  return `score ${p3(s.score)}${label ? ` (${esc(label)})` : ''}`;
+}
+
 function judgeAnswer(s) {
   if (!s) return '<span class="lv-meta">no judge answer</span>';
   if (s.type === 'noul') return `<span class="lv-meta">judge: yes-probability ${p3(s.raw_probability)} (uncalibrated)</span>`;
-  return `<span class="lv-meta">judge: ${s.type === 'score' ? `score ${p3(s.score)}` : esc(s.choice)} (uncalibrated)</span>`;
+  return `<span class="lv-meta">judge: ${s.type === 'score' ? scoreText(s) : esc(s.choice)} (uncalibrated)</span>`;
 }
 
 async function showReview(id) {
@@ -350,7 +356,7 @@ async function showReview(id) {
   if (t.body.reasons?.length) out.push(`<h3>Reasons</h3><ul>${t.body.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`);
   if (d?.rule_results?.length) out.push(`<h3>Hard rules</h3><dl class="kv">${d.rule_results.map(x => `<dt>${esc(x.rule_id)}</dt><dd>${esc(x.verdict)} · ${esc(x.reason)}</dd>`).join('')}</dl>`);
   if (r.snapshot) out.push(`<h3>What the judge saw (frozen snapshot)</h3><pre class="json" data-review-state>${esc(r.snapshot.judge_view.state)}</pre>`);
-  out.push(`<h3>Your answers</h3>${r.evaluation ? '' : '<p class="lv-meta">This decision had no judge evaluation, so every rubric question is offered. Skip what does not apply.</p>'}`);
+  out.push(`<h3>Your answers</h3>${r.evaluation ? '' : '<p class="lv-meta">This decision had no judge evaluation, so every rubric question for its boundary is offered. Skip what does not apply.</p>'}`);
   out.push(Object.entries(r.questions).map(([qid, q]) => `<div class="rv-q" data-question="${esc(qid)}"><div class="h"><b>${esc(qid)}</b> <span class="chip">${esc(q.type)}</span> ${judgeAnswer(signals[qid])}</div>
     <p class="ins">${esc(q.instructions)}</p>${answerInput(qid, q)}</div>`).join(''));
   const ok = canResolve();

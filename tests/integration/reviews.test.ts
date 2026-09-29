@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { startGateAHarness, type GateAHarness } from '../helpers/harness.ts';
 import * as repos from '../../server/storage/repos.ts';
 import { openReviewTask, openSampledReviewTask } from '../../server/storage/reviews.ts';
-import { RUBRIC } from '../../server/state/index.ts';
+import { MANIFEST, RUBRIC } from '../../server/state/index.ts';
 import type { EvaluationRecord } from '../../contracts/judge.ts';
 import type { PolicyDecision } from '../../contracts/decision.ts';
 import type { ReviewTask } from '../../contracts/labels.ts';
@@ -121,7 +121,7 @@ test('resolve: validates answers, writes labels + audit, closes the task, 409 on
   } finally { await h.close(); }
 });
 
-test('question set (batch 2 D4): S4 gets the whole rubric with wire definitions, stable when a diagnostic arrives later', async () => {
+test('question set (batch 2 D4, N5): S4 gets the rubric questions of its pre_tool boundary with wire definitions, stable when a diagnostic arrives later', async () => {
   const h = await startGateAHarness({ worker });
   try {
     await h.app.runScenario('t-alpha', 'S4');
@@ -129,7 +129,11 @@ test('question set (batch 2 D4): S4 gets the whole rubric with wire definitions,
     const [task] = await openTasks(h);
     assert.equal(task.body.evaluation_id, null, 'S4 is a hard-rule HOLD with no evaluation');
     const got = await h.json<{ questions: Record<string, { type: string; instructions: string }>; snapshot: { judge_view: { state: string } } }>('GET', `/v1/reviews/${task.review_id}`);
-    assert.deepEqual(Object.keys(got.body.questions).sort(), Object.keys(RUBRIC.questions).sort());
+    const preTool = Object.keys(RUBRIC.questions).filter(id => MANIFEST.questions[id].boundaries.includes('pre_tool')).sort();
+    assert.ok(preTool.length > 0 && preTool.length < Object.keys(RUBRIC.questions).length);
+    assert.deepEqual(Object.keys(got.body.questions).sort(), preTool, 'no post_generation questions on a pre_tool decision');
+    const post = await h.request('POST', `/v1/reviews/${task.review_id}/resolve`, { role: 'admin', body: { outcome: 'deny', answers: { claim_asserts_completion: true } } });
+    assert.equal(post.status, 400, 'a post_generation question is refused on a pre_tool decision');
     assert.equal(got.body.questions.payee_relation.type, 'choice');
     assert.ok(got.body.questions.semantic_impact.instructions.length > 0);
     assert.ok(got.body.snapshot.judge_view.state.length > 0, 'the frozen judge view is returned');

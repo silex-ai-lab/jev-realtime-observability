@@ -128,7 +128,7 @@ async function main(): Promise<void> {
   });
   await state.page.send('Emulation.clearDeviceMetricsOverride');
 
-  // T8: the review queue. S4 (missing approval) is a hard-rule HOLD: no evaluation, so the whole rubric is offered.
+  // T8: the review queue. S4 (missing approval) is a hard-rule HOLD: no evaluation, so the rubric's pre_tool questions are offered (N5).
   await probe('P6', 'review panel: an S4 hold is listed, answered and denied; labels are recorded; no JS errors', async () => {
     const h = state.harness!;
     const runId = await startScenario(h, 'S4');
@@ -140,6 +140,8 @@ async function main(): Promise<void> {
     await waitFor(() => pageEval<boolean>(`return !!document.querySelector('[data-review-id="${task.review_id}"]')`), 'task listed in the panel', 10_000);
     await pageEval<void>(`document.querySelector('[data-review-id="${task.review_id}"]').click()`);
     await waitFor(() => pageEval<boolean>(`return !!document.querySelector('#review-detail [data-answer="semantic_impact"]') && !!document.querySelector('[data-review-state]')`), 'review detail with the judge view', 10_000);
+    const offered = await pageEval<string[]>(`return [...document.querySelectorAll('#review-detail [data-answer]')].map(el => el.dataset.answer)`);
+    assert.ok(!offered.includes('claim_support') && !offered.includes('claim_asserts_completion'), `S4 is pre_tool; offered ${offered.join(',')}`);
     const enabled = await pageEval<boolean>(`return !document.querySelector('#review-detail [data-resolve="deny"]').disabled`);
     assert.ok(enabled, 'deny must be enabled with the admin key');
     if (process.env.PROBE_SHOT_DIR) await screenshot(join(process.env.PROBE_SHOT_DIR, '14-review-queue.png'), '#reviews');
