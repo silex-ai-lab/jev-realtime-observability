@@ -7,12 +7,13 @@ import {
 } from '../helpers/harness.ts';
 
 const KEV_URL = process.env.KEV_URL;
+const GATE_KEV_URL = process.env.GATE_KEV_URL ?? 'http://127.0.0.1:8010';
 
 test('Gate C live Kev gate mode executes S1 under allow and prevents S3', { skip: !KEV_URL ? 'set KEV_URL to run live Kev gate e2e' : false, timeout: 180_000 }, async () => {
   assert.ok(KEV_URL);
-  const judge = {
+  const gateJudge = {
     backend: 'kev-local' as const,
-    baseUrl: KEV_URL,
+    baseUrl: GATE_KEV_URL,
     model: 'kev-latest',
     expectedRun: 'jaredpalmer/kev-0.8b',
     maxRps: 10,
@@ -21,8 +22,8 @@ test('Gate C live Kev gate mode executes S1 under allow and prevents S3', { skip
   };
   const h = await startGateAHarness({
     sourceMode: 'live_sandbox_gate',
-    judge,
-    gateJudge: judge,
+    judge: null,
+    gateJudge,
     worker: { autostart: true, leaseMs: 30_000, realtimeTtlMs: 60_000 },
   });
   try {
@@ -46,7 +47,7 @@ test('Gate C live Kev gate mode executes S1 under allow and prevents S3', { skip
         role: 'reader',
       });
       if (response.status !== 200) return null;
-      const prevented = metricNumber(body.prevented);
+      const prevented = metricNumber(metricObject(body, 'gate')?.prevented);
       return prevented >= 1 ? prevented : null;
     }, 'S3 prevented metric', 15_000);
     assert.ok(metrics >= 1, `expected prevented count for S3, got ${metrics}`);
@@ -116,6 +117,11 @@ async function ledgerCountForRun(h: Awaited<ReturnType<typeof startGateAHarness>
     ['t-alpha', attempts.rows.map(row => row.operation_id)],
   );
   return Number(result.rows[0]?.count ?? 0);
+}
+
+function metricObject(body: Record<string, unknown>, key: string): Record<string, unknown> | null {
+  const value = body[key];
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
 
 function metricNumber(value: unknown): number {

@@ -6,7 +6,11 @@ An agent's boundary events (input, generation, tool call, tool result) are captu
 
 Execution stays with the tools' own gateway. Nothing here is a production control yet.
 
-> **Status: Gates A and B (shadow loop, outcome verification, open-data evaluation).** The judge advises only. Semantic signals are recorded and shown but never change a live recommendation: thresholds were fitted in evaluation but are deliberately not activated (see [`docs/EVAL.md`](docs/EVAL.md) for why). Gate C (the sandbox pre-tool gate) follows; see [`logs/2026-09-28_BUILD_PLAN.md`](logs/2026-09-28_BUILD_PLAN.md).
+> **Status: Gates A, B and C.**
+> - **Shadow mode** (the default): the judge advises only.
+> - **Sandbox gate mode** (`SOURCE_MODE=live_sandbox_gate`): write and payment tools need a control bound to the exact call, which the gateway re-verifies before executing. See [`docs/GATE.md`](docs/GATE.md).
+> - **Semantic signals are recorded but never block or change a recommendation.** Thresholds were fitted in evaluation but are deliberately not activated ([`docs/EVAL.md`](docs/EVAL.md) explains why). Blocking comes only from hard rules, missing evidence, or an unavailable required judge signal.
+> - Plan and reviews: [`logs/2026-09-28_BUILD_PLAN.md`](logs/2026-09-28_BUILD_PLAN.md).
 
 ## What is real and what is not
 
@@ -15,6 +19,7 @@ Execution stays with the tools' own gateway. Nothing here is a production contro
 | Judge inference: Kev-4B served locally (MLX on Apple Silicon), called over HTTP for every eligible boundary | TypeSafe's hosted Jev. It is supported by config (`JUDGE_BACKEND=typesafe`) but has not been run: no key was available |
 | Tool execution in an isolated sandbox schema (ERP, vendors, ledger, mail sink); tools enforce their own limits and approvals | Real money or real email; any network egress from tools |
 | Measured latency: ingest → signal, judge HTTP RTT, per stage (monotonic clocks) | Latency targets as guarantees. The RFC's targets are hypotheses; measured numbers depend on this machine |
+| A sandbox pre-tool gate: a bound, single-use, expiring control; gateway re-verification (args digest, authority version, nonce, revocation); a not_executed receipt as the only proof of prevention | Semantic blocking (signals are uncalibrated), human review resolution, a production IAM or gateway integration |
 | Real timeouts (F1 aborts the HTTP call), a ledger of every judge attempt, duplicate and conflict detection | Calibrated live thresholds and independent human labels. The evaluation uses labels derived from benchmark ground truth, and its limits are listed in [`docs/EVAL.md`](docs/EVAL.md) |
 | Independent read-back of executed payments and emails (pending → verified / failed / mismatch / unknown after deadline) | A claim that a tool's HTTP 200 means the business action happened |
 | An open-data evaluation (InjecAgent, ASB, ToolEmu, tau-bench, with AgentDojo held out) and a local LoRA fine-tune of Kev-0.8B, with the weights not committed | Generalisation beyond the measured families. A residual style risk on the held-out family is documented |
