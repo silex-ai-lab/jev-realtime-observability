@@ -1,0 +1,9 @@
+started_at=2026-09-29T17:23:39Z
+kev_commit=3e1cd3bb588a388a06827443380befece23e68c7
+data=eval/splits/kev-train.jsonl sha256=21b5902ebe1ac6837d15b54d070a18afe16cdf7fc464cd607532c36d1edf107d records=    1223
+base=Qwen/Qwen3.5-0.8B-Base init_from=jaredpalmer/kev-0.8b timeout=3h device=mps args=--epochs 2 --lr 2e-5 --batch 1 --accum 8 --seed 20260928
+host=Apple M5 Pro memory_gb=24
+finished_at=2026-09-29T18:07:26Z wall_s=2627 exit=unknown
+records_used=1183 records_dropped=40
+result=completed (trainer logged 'saved runs/ft-kev-0.8b-2026-09-29/model' (last logged step 290/296; the trainer logs every 10 steps))
+recovered=these three lines were written afterwards from train.log and the model file's mtime: finetune.sh was edited while it ran, so its own epilogue failed with a bash syntax error and the trainer's exit code was not captured

@@ -136,6 +136,8 @@ Held-out items: calibration 245, dev 213, test 250 (test = AgentDojo, never seen
 
 <!-- /generated -->
 
+**Reproduction check (2026-09-29):** the same fine-tune recipe was re-run on a second machine with the same data, seed and Kev commit; its generated report, next to the original run's predictions, is [`runs/eval-2026-09-29-ft-rerun/REPORT.md`](../runs/eval-2026-09-29-ft-rerun/REPORT.md). It does not replace the block above. Its run record notes that the trainer's exit code was not captured.
+
 ### What these numbers do not show
 
 - **Eval v1 was confounded, and is kept for the record only** ([`runs/eval-2026-09-28-v1-confounded/`](../runs/eval-2026-09-28-v1-confounded/README.md)). There, the mere presence of low-authority text predicted the label. The data was rebuilt, and a shortcut audit is now enforced by a unit test.

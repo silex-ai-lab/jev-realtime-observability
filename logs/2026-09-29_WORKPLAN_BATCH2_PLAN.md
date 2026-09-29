@@ -174,3 +174,19 @@ thresholds on the calibration split, as on 09-28; none is activated in policy).
 | coder-deepseek | PLAN-APPROVED (5 notes) | PLAN-APPROVED (3 notes) | **PLAN-APPROVED** (1 note: the whole-rubric fallback offers post-generation questions on a pre_tool decision; skippable, kept) |
 | reviewer-codex | PLAN-REJECTED (5) | PLAN-REJECTED (2) | **PLAN-APPROVED** |
 | planner (claude) | — | — | **PLANNER (claude): PLAN-APPROVED** on v3 |
+
+## Code review
+
+### Code round 1 (diff revision `a12aa7e9`) → changes
+
+Verdicts: coder-deepseek **IMPL-APPROVED** (3 non-blocking notes); reviewer-codex **IMPL-REJECTED** (2 blocking). The T10 run was still training and not in this diff.
+
+| Defect (who) | Change |
+|---|---|
+| The perl time box returned 0 for a signal death (recorded as `completed`) and could wait forever on a child ignoring TERM (Codex 1) | New `eval/finetune/timebox.pl`: 124 only when the deadline passes, 128+N for a signal death, TERM to the process group then KILL after a grace period; `tests/unit/eval/timebox.test.ts` covers success, non-zero exit, signal death, deadline, and a TERM-resistant child. The fine-tune already running was started with the old inline wrapper; its result is read from `train.log` as well as the exit code |
+| `.gitignore` covered one directory level under `runs/`, so a nested export could be committed (Codex 2) | The exporter refuses any in-repo `--out` outside `runs/exports/`; `.gitignore` has `runs/exports/**/*.jsonl`; tests check refused paths, nested ignores, the manifest staying trackable, committed eval predictions staying tracked, and the CLI exit code |
+| (Codex, non-blocking) sampled tasks wrote no outbox record | Each sampled task appends a `review` outbox record; tested |
+| (Codex, non-blocking) document the sampler's scaling limit | CONTRACTS §10.4 "Limit" |
+| (DeepSeek 2) the exporter migrated a live Postgres | Migrates only a PGlite `--data-dir` |
+| (DeepSeek 1) push sampler predicates into SQL | Recorded as the follow-up in CONTRACTS §10.4 |
+| (DeepSeek 3) show score answers by level name | Not changed in this batch: the panel shows the judge's `score` number as returned, labelled uncalibrated; showing its `legend` label is a cosmetic follow-up |
