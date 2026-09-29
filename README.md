@@ -41,6 +41,10 @@ npm run server                    # http://127.0.0.1:8787 — live console at /,
 # 3. Open the console, paste READER_KEY (and ADMIN_KEY to start sandbox runs), press S1…S6 / F1.
 ```
 
+## Using the console
+
+[`docs/USER_MANUAL.md`](docs/USER_MANUAL.md) covers the whole page: connecting, the provenance header, the KPI tiles, every scenario and what it should show, the decision inspector, outcome read-back, replay and re-ask, gate mode, and a five-minute test of a deployment.
+
 ## Deploying on another host
 
 Follow the [`deploy-jev-observability`](skills/deploy-jev-observability/SKILL.md) skill. It covers:

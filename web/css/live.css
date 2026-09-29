@@ -39,7 +39,7 @@ main { padding: 16px 24px 40px; max-width: 1480px; margin: 0 auto; }
 .kpi.na .v { color: var(--muted); font-size: 14px; font-weight: 600; }
 .lv-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 12px; align-items: start; }
 .lv-stream { max-height: 70vh; overflow: auto; }
-.row { display: grid; grid-template-columns: 74px 110px minmax(0, 1fr) 150px; gap: 8px; padding: 7px 14px; border-bottom: 1px solid var(--soft); cursor: pointer; align-items: center; font-size: 13px; }
+.row { display: grid; grid-template-columns: 74px 110px minmax(0, 1fr) minmax(150px, 210px); gap: 8px; padding: 7px 14px; border-bottom: 1px solid var(--soft); cursor: pointer; align-items: center; font-size: 13px; }
 .row:hover { background: #fafbfc; } .row[aria-selected="true"] { background: var(--lav); }
 .row .t { font: 11px var(--mono); color: var(--muted); }
 .row .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -78,3 +78,7 @@ details > summary { cursor: pointer; font-size: 12px; font-weight: 600; color: v
 .chip.oc-pending { background: var(--lav); color: var(--blue2); border-color: transparent; }
 .chip.oc-verified_failure, .chip.oc-mismatch { background: var(--red-bg); color: var(--red); border-color: transparent; }
 .chip.oc-unknown_after_deadline { background: var(--amber-bg); color: var(--amber); border-color: transparent; }
+
+/* status column: chips may wrap instead of being clipped */
+.row > span:last-child { display: flex; flex-wrap: wrap; gap: 2px 4px; align-items: center; min-width: 0; }
+.row > span:last-child .chip { white-space: normal; }
