@@ -12,6 +12,7 @@ const keys = { reader: null, admin: null };
 let authMode = 'keys';
 let connected = false;
 const rows = new Map();        // event_id → { event, evaluations: [], decisions: [], outcomes: [], el }
+const MAX_ROWS = 500;          // DOM cap: the oldest rows are evicted, the selected row is kept
 let serverMetrics = null;
 let cursor = '0', es = null, selected = null, lastAt = null, judgeInfo = null, activePolicy = null;
 const counts = { expired: 0, gaps: 0 };
@@ -127,6 +128,19 @@ function draw(eventId) {
     <span class="bd"><span class="chip">${esc(ev.boundary)}</span></span>
     <span class="nm">${esc(ev.tool ?? ev.boundary)} <span class="lv-meta">${esc(ev.run_id)}</span></span>
     <span>${status ? `<span class="chip ${esc(status)}">${esc(status === 'NO_CONFIGURED_RISK' ? 'no configured risk' : status)}</span>` : ''} <span class="lv-meta">${esc(d?.decided_by ?? '')}</span>${oc ? ` <span class="chip oc-${esc(oc.state)}" data-outcome="${esc(oc.state)}">outcome: ${esc(oc.state.replace(/_/g, ' '))}</span>` : ''}</span>`;
+  evictRows();
+}
+
+// ---- row cap: keep the DOM bounded; the selected row always survives ----------------------
+function evictRows() {
+  const els = $('#stream').querySelectorAll('.row');
+  let excess = els.length - MAX_ROWS;
+  if (excess <= 0) return;
+  for (let i = els.length - 1; i >= 0 && excess > 0; i--) {
+    if (selected != null && els[i].dataset.eventId === selected) continue;
+    els[i].remove();
+    excess--;
+  }
 }
 
 // ---- KPIs: from this session's stream; unmeasurable ones say so ------------------------

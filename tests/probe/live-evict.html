@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>pending</title>
+<script>
+// Mock the server so the real live.js runs headless against synthetic records.
+// `fetch` answers the handful of endpoints live.js calls at connect time; `EventSource`
+// is replaced so we can inject records through the real `onRecord` → `draw` → eviction path.
+(function () {
+  const T = window.__jevTest = { listeners: {}, injected: 0, errors: [], es: null };
+  window.addEventListener('error', e => T.errors.push(String(e.message || e.error)));
+  window.addEventListener('unhandledrejection', e => T.errors.push(String(e.reason)));
+
+  const jsonRes = (body, ok = true) => ({ ok, status: ok ? 200 : 500, json: async () => body, text: async () => JSON.stringify(body) });
+
+  window.fetch = async (url) => {
+    const u = String(url);
+    if (u.indexOf('/v1/auth') === 0) return jsonRes({ mode: 'none' });
+    if (u.indexOf('/v1/judge') === 0) return jsonRes({ configured: false, backend: null, served_model: null, judge_source: null, wire_model: null });
+    if (u.indexOf('/v1/policies/active') === 0) return jsonRes({ policy: { policy_version: 'policy-a1', semantic: { bands: {} } } });
+    if (u.indexOf('/v1/stream/tokens') === 0) return jsonRes({ token: 'tok', expires_in: 60 });
+    if (u.indexOf('/v1/metrics') === 0) return jsonRes({ capture_coverage: { numerator: 0, denominator: 0, value: null }, outcomes: {}, gate: null });
+    return jsonRes({}, false);
+  };
+
+  T.emit = function (count) {
+    const fns = (T.es && T.es.listeners['event']) || [];
+    for (let i = 0; i < count; i++) {
+      const idx = T.injected++;
+      const rec = {
+        cursor: String(idx + 1),
+        kind: 'event',
+        payload: {
+          event_id: 'evt-' + idx,
+          run_id: 'run-probe',
+          boundary: 'post_tool',
+          tool: 'payments.execute',
+          received_at: new Date(Date.now() - (600 - idx) * 1000).toISOString(),
+        },
+      };
+      for (const fn of fns) fn({ data: JSON.stringify(rec) });
+    }
+  };
+
+  window.EventSource = function EventSource(url) { this.url = url; this.listeners = {}; T.es = this; };
+  window.EventSource.prototype.addEventListener = function (kind, fn) { (this.listeners[kind] = this.listeners[kind] || []).push(fn); };
+  window.EventSource.prototype.close = function () {};
+})();
+</script>
+</head>
+<body>
+<header class="lv-top">
+  <div class="lv-prov" id="prov">
+    <span class="pv" data-provenance="source_mode"><b>source</b> <i>—</i></span>
+    <span class="pv" data-provenance="judge_source"><b>judge</b> <i>—</i></span>
+    <span class="pv" data-provenance="tool_environment"><b>tools</b> <i>—</i></span>
+    <span class="pv" data-provenance="enforcement_mode"><b>enforcement</b> <i>—</i></span>
+  </div>
+  <p class="lv-note" id="judge-note">probe</p>
+</header>
+<main>
+  <section class="card lv-connect" id="connect">
+    <p class="lv-auth-off" id="auth-off" hidden><span class="lv-meta" id="conn-status-none"></span></p>
+    <form id="connect-form" autocomplete="off">
+      <label>Reader key <input type="password" id="k-reader" required minlength="16"></label>
+      <label>Admin key <input type="password" id="k-admin" minlength="16"></label>
+      <button class="btn primary" type="submit">Connect</button>
+      <span class="lv-meta" id="conn-status">Keys stay in this tab's memory only.</span>
+    </form>
+  </section>
+  <section class="lv-kpis" id="kpis"></section>
+  <section class="card lv-controls">
+    <span id="scenario-buttons"></span>
+    <span class="lv-meta" id="run-status"></span>
+  </section>
+  <div class="lv-grid">
+    <section class="card">
+      <header><h2>Live stream</h2><span class="lv-meta" id="lag"></span></header>
+      <div class="lv-stream" id="stream"><p class="lv-empty">Connect, then start a sandbox run.</p></div>
+    </section>
+    <aside class="card lv-insp">
+      <header><h2>Decision inspector</h2></header>
+      <div id="inspector" data-inspector><p class="lv-empty">Select a row.</p></div>
+    </aside>
+  </div>
+</main>
+<script type="module" src="../../web/js/live.js"></script>
+<script>
+// Drive the real eviction path: 600 synthetic rows must cap the DOM at 500, and the selected row
+// must survive further eviction. The verdict goes into the page title for --dump-dom.
+(function () {
+  const T = window.__jevTest;
+  function run() {
+    const es = T.es;
+    if (!es || !(es.listeners['event'] || []).length) { setTimeout(run, 30); return; }
+    T.emit(600);
+    const rows1 = document.querySelectorAll('#stream .row');
+    const target = rows1[rows1.length - 1];
+    target.click();                       // select the oldest row
+    const selId = target.getAttribute('data-event-id');
+    T.emit(50);                           // force more eviction
+    const rows2 = document.querySelectorAll('#stream .row');
+    const selEl = document.querySelector('#stream .row[data-event-id="' + selId + '"]');
+    const selectedSurvives = !!selEl && selEl.isConnected;
+    const capOk = rows1.length <= 500 && rows2.length <= 500;
+    const noErrors = T.errors.length === 0;
+    const ok = capOk && selectedSurvives && noErrors;
+    document.title = (ok ? 'PASS' : 'FAIL')
+      + ' cap1=' + rows1.length + ' cap2=' + rows2.length
+      + ' selected=' + (selectedSurvives ? 'survives' : 'evicted')
+      + ' errors=' + T.errors.length;
+  }
+  setTimeout(run, 0);
+})();
+</script>
+</body>
+</html>
