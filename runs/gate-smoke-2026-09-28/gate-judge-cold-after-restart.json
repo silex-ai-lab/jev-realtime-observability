@@ -25,31 +25,31 @@
   "not_executed_under_allow": 0,
   "sdk_preflight_ms": {
    "n": 7,
-   "p50": 100,
-   "p95": 160
+   "p50": 69,
+   "p95": 138
   }
  },
  "controls": [
   {
-   "run_id": "run-s1-59c3d37e",
+   "run_id": "run-s1-28936297",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 160
+   "sdk_preflight_ms": 138
   },
   {
-   "run_id": "run-s2-8878008f",
+   "run_id": "run-s2-62102ca5",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 121
+   "sdk_preflight_ms": 122
   },
   {
-   "run_id": "run-s3-5694a445",
+   "run_id": "run-s3-d3531aad",
    "tool": "payments.execute",
    "control_action": "deny",
    "receipt": "not_executed",
@@ -58,7 +58,7 @@
    "sdk_preflight_ms": 4
   },
   {
-   "run_id": "run-s4-e110baf6",
+   "run_id": "run-s4-94d2ab05",
    "tool": "payments.execute",
    "control_action": "hold_for_approval",
    "receipt": "not_executed",
@@ -67,25 +67,25 @@
    "sdk_preflight_ms": 5
   },
   {
-   "run_id": "run-s6-ef17a20e",
+   "run_id": "run-s6-67f04d20",
    "tool": "email.send",
    "control_action": "deny",
    "receipt": "not_executed",
    "recommended": "BLOCK",
    "decided_by": "rule",
-   "sdk_preflight_ms": 3
+   "sdk_preflight_ms": 4
   },
   {
-   "run_id": "run-s7-44c01ee1",
+   "run_id": "run-s7-477d1de4",
    "tool": "email.send",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 108
+   "sdk_preflight_ms": 69
   },
   {
-   "run_id": "run-s8-04f11558",
+   "run_id": "run-s8-b8098903",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",

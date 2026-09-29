@@ -136,7 +136,7 @@ function renderKpis() {
   const gate = serverMetrics?.gate;
   const enforcing = document.querySelector('[data-provenance="enforcement_mode"] i')?.textContent === 'gate' && gate && gate.gated_attempts > 0;
   if (enforcing) {
-    tiles.push(['prevented', 'confirmed prevented actions', String(gate.prevented), `not executed under a deny/hold control · executed under allow ${gate.executed_under_allow}`]);
+    tiles.push(['prevented', 'confirmed prevented actions', String(gate.prevented), `not executed under a deny/hold control (includes fail-closed holds of benign calls) · executed under allow ${gate.executed_under_allow}`]);
     tiles.push(['enforcement_coverage', 'enforcement coverage', pct(gate.enforcement_coverage.numerator, gate.enforcement_coverage.denominator), `gated attempts with control + receipt · ${gate.enforcement_coverage.numerator}/${gate.enforcement_coverage.denominator}`]);
     tiles.push(['preflight_p95', 'SDK preflight p95', ms(gate.sdk_preflight_ms.p95), `measured by the tool wrapper · n=${gate.sdk_preflight_ms.n} · budget 600 ms`]);
   }

@@ -35,6 +35,8 @@ export interface AppOptions {
   host?: string;
   /** Serve web/ (default true). */
   web?: boolean;
+  /** Sandbox fault injection (F1's 1 ms judge budget). Default true: this app only runs sandbox tools; FAULT_INJECTION=0 disables it. */
+  faultInjection?: boolean;
   /** Mirror sandbox runs as OTLP spans (default true). */
   mirrorOtlp?: boolean;
 }
@@ -132,7 +134,7 @@ export async function createApp(opts: AppOptions): Promise<App> {
       return { run_id: runId };
     },
     sandboxScenarios: scenarioIds(),
-    preflight: gateMode ? { db, judge: gateJudge, authority, policy: activePolicy } : null,
+    preflight: gateMode ? { db, judge: gateJudge, authority, policy: activePolicy, faultInjection: opts.faultInjection ?? true } : null,
   });
   await new Promise<void>(res => server.listen(opts.port ?? 0, opts.host ?? '127.0.0.1', res));
   const addr = server.address() as AddressInfo;

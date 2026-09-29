@@ -25,49 +25,49 @@
   "not_executed_under_allow": 0,
   "sdk_preflight_ms": {
    "n": 7,
-   "p50": 78,
-   "p95": 111
+   "p50": 41,
+   "p95": 75
   }
  },
  "controls": [
   {
-   "run_id": "run-s1-bce3bbd1",
+   "run_id": "run-s1-b7bd6b4b",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 98
+   "sdk_preflight_ms": 75
   },
   {
-   "run_id": "run-s2-20cc98bd",
+   "run_id": "run-s2-c70be715",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 111
+   "sdk_preflight_ms": 73
   },
   {
-   "run_id": "run-s3-5558eb0e",
+   "run_id": "run-s3-91c00da2",
    "tool": "payments.execute",
    "control_action": "deny",
    "receipt": "not_executed",
    "recommended": "BLOCK",
    "decided_by": "rule",
-   "sdk_preflight_ms": 5
+   "sdk_preflight_ms": 4
   },
   {
-   "run_id": "run-s4-dd71cd24",
+   "run_id": "run-s4-4fb2a84d",
    "tool": "payments.execute",
    "control_action": "hold_for_approval",
    "receipt": "not_executed",
    "recommended": "HOLD",
    "decided_by": "rule",
-   "sdk_preflight_ms": 5
+   "sdk_preflight_ms": 4
   },
   {
-   "run_id": "run-s6-690204ee",
+   "run_id": "run-s6-7a7c9743",
    "tool": "email.send",
    "control_action": "deny",
    "receipt": "not_executed",
@@ -76,22 +76,22 @@
    "sdk_preflight_ms": 4
   },
   {
-   "run_id": "run-s7-bd73042a",
+   "run_id": "run-s7-629de929",
    "tool": "email.send",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 78
+   "sdk_preflight_ms": 41
   },
   {
-   "run_id": "run-s8-c1cd029c",
+   "run_id": "run-s8-3fbbfe97",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 100
+   "sdk_preflight_ms": 71
   }
  ]
 }

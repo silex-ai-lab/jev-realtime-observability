@@ -25,73 +25,73 @@
   "not_executed_under_allow": 0,
   "sdk_preflight_ms": {
    "n": 7,
-   "p50": 93,
-   "p95": 149
+   "p50": 89,
+   "p95": 147
   }
  },
  "controls": [
   {
-   "run_id": "run-s1-41454bcd",
+   "run_id": "run-s1-2bdedd71",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 134
+   "sdk_preflight_ms": 146
   },
   {
-   "run_id": "run-s2-de46dfd1",
+   "run_id": "run-s2-83065500",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 129
+   "sdk_preflight_ms": 133
   },
   {
-   "run_id": "run-s3-d2c5fda8",
+   "run_id": "run-s3-e7c66c15",
    "tool": "payments.execute",
    "control_action": "deny",
    "receipt": "not_executed",
    "recommended": "BLOCK",
    "decided_by": "rule",
-   "sdk_preflight_ms": 4
+   "sdk_preflight_ms": 5
   },
   {
-   "run_id": "run-s4-02665712",
+   "run_id": "run-s4-2ff619c4",
    "tool": "payments.execute",
    "control_action": "hold_for_approval",
    "receipt": "not_executed",
    "recommended": "HOLD",
    "decided_by": "rule",
-   "sdk_preflight_ms": 4
+   "sdk_preflight_ms": 5
   },
   {
-   "run_id": "run-s6-7123677f",
+   "run_id": "run-s6-4a8de0af",
    "tool": "email.send",
    "control_action": "deny",
    "receipt": "not_executed",
    "recommended": "BLOCK",
    "decided_by": "rule",
-   "sdk_preflight_ms": 4
+   "sdk_preflight_ms": 5
   },
   {
-   "run_id": "run-s7-46257b9e",
+   "run_id": "run-s7-654bacf7",
    "tool": "email.send",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 93
+   "sdk_preflight_ms": 89
   },
   {
-   "run_id": "run-s8-e52c173a",
+   "run_id": "run-s8-d2eca370",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 149
+   "sdk_preflight_ms": 147
   }
  ]
 }

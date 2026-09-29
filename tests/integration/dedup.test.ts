@@ -58,3 +58,18 @@ test('args are redacted before storage per the tool registry; the digest still c
   const dump = JSON.stringify((await app.db.query(`SELECT * FROM events`)).rows);
   assert.ok(!dump.includes('secret body text'));
 }));
+
+test('gate mode: a preflight-recorded pre_tool and its OTLP mirror are stored once, with no conflict', async () => {
+  const app = await createApp({ judge: null, gateJudge: null, sourceMode: 'live_sandbox_gate', web: false, mirrorOtlp: true,
+    tenants: [{ tenant_id: 't-d', name: 'D', keys: { ingest: k('i'), reader: k('r'), gateway: k('g'), admin: k('a') } }], worker: { autostart: false } });
+  try {
+    const cap = createCapture({ baseUrl: app.url, apiKey: k('i'), producerId: 'p', runId: 'run-gate-dedup', mirrorOtlp: true });
+    const op = cap.operation('email.send', { to: 'ap@northwind.example', subject: 's', body: 'b', includes_fields: [] });
+    await cap.preflight(op, { tool_call_id: 'call-9', attributes: { scenario: 'test' } });
+    await cap.close();
+    const n = await app.db.query<{ n: number }>(`SELECT count(*)::int n FROM events WHERE run_id = 'run-gate-dedup'`);
+    assert.equal(n.rows[0].n, 1);
+    const conflicts = await app.db.query<{ n: number }>(`SELECT count(*)::int n FROM audit_log WHERE action = 'event_conflict'`);
+    assert.equal(conflicts.rows[0].n, 0, 'a faithful mirror of a preflight event is never a conflict');
+  } finally { await app.close(); }
+});

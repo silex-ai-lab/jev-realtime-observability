@@ -22,6 +22,8 @@ export interface PreflightDeps {
   judge: JudgeClient | null;          // the gate's judge (AppOptions.gateJudge, else the main judge)
   authority: AuthorityReader;
   policy: (tenantId: string) => Promise<PolicyBody>;
+  /** Sandbox fault injection (F1). Off unless the deployment enables it explicitly. */
+  faultInjection: boolean;
 }
 
 export class PreflightError extends Error {
@@ -48,14 +50,15 @@ export async function preflight(d: PreflightDeps, tenantId: string, body: unknow
   const policy = await d.policy(tenantId);
   const now = new Date();
 
-  const ev: StoredEvent = {
-    ...redactEvent({ schema_version: r.schema_version, event_id: r.event_id, source_event_id: r.event_id, run_id: r.run_id, trace_id: r.trace_id,
-      producer_id: r.producer_id, producer_seq: r.producer_seq, boundary: 'pre_tool', occurred_at: now.toISOString(), actor: r.actor,
-      operation: r.operation, tool_call_id: r.tool_call_id, sources: r.sources, attributes: { ...r.attributes, path: 'preflight' } }),
-    tenant_id: tenantId, received_at: now.toISOString(), ingest_path: 'sdk',
-  };
+  // Exactly what the client asserted: no server-added fields, so the SDK's OTLP mirror of this event dedups (RFC §5.2).
+  const raw = { schema_version: r.schema_version, event_id: r.event_id, source_event_id: r.event_id, run_id: r.run_id, trace_id: r.trace_id,
+    producer_id: r.producer_id, producer_seq: r.producer_seq, boundary: 'pre_tool' as const, occurred_at: now.toISOString(), actor: r.actor,
+    operation: r.operation, tool_call_id: r.tool_call_id, sources: r.sources, attributes: r.attributes };
+  // Digest the raw event, as ingest does; store the registry-redacted form.
+  const contentDigest = eventContentDigest(raw);
+  const ev: StoredEvent = { ...redactEvent(raw), tenant_id: tenantId, received_at: now.toISOString(), ingest_path: 'sdk' };
   const inserted = await d.db.tx(async q => {
-    const s = await repos.insertEventWithJob(q, ev, eventContentDigest(ev), null);   // no job: decided here, synchronously
+    const s = await repos.insertEventWithJob(q, ev, contentDigest, null);   // no job: decided here, synchronously
     if (s === 'inserted') await repos.appendOutbox(q, { tenant_id: tenantId, kind: 'event', ref_id: ev.event_id, run_id: ev.run_id,
       payload: { event_id: ev.event_id, run_id: ev.run_id, boundary: 'pre_tool', tool: r.operation.tool, operation_id: r.operation.operation_id,
         producer_id: ev.producer_id, producer_seq: ev.producer_seq, received_at: ev.received_at, ingest_path: 'sdk', actor: ev.actor, attributes: ev.attributes } });
@@ -72,7 +75,7 @@ export async function preflight(d: PreflightDeps, tenantId: string, body: unknow
   let evaluation: EvaluationRecord | null = null;
   const elapsed = performance.now() - t0;
   // F1 gate form (sandbox only): a 1 ms budget makes the real judge call abort; the gate must then fail closed.
-  const fault = r.attributes.fault === 'judge_timeout';
+  const fault = d.faultInjection && r.attributes.fault === 'judge_timeout';
   const judgeBudget = fault ? 1 : Math.max(0, Math.min(GATE_BUDGET.judgeMaxMs, GATE_BUDGET.totalMs - elapsed - GATE_BUDGET.commitMarginMs));
   const evaluationId = `eval-${randomUUID()}`;
   const startedAt = new Date().toISOString();

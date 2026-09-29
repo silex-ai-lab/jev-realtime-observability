@@ -20,36 +20,36 @@
    "denominator": 7,
    "value": 1
   },
-  "prevented": 3,
-  "executed_under_allow": 4,
+  "prevented": 5,
+  "executed_under_allow": 2,
   "not_executed_under_allow": 0,
   "sdk_preflight_ms": {
    "n": 7,
-   "p50": 167,
-   "p95": 299
+   "p50": 228,
+   "p95": 412
   }
  },
  "controls": [
   {
-   "run_id": "run-s1-39cf4b97",
+   "run_id": "run-s1-9a469dc9",
    "tool": "payments.execute",
-   "control_action": "allow",
-   "receipt": "executed",
-   "recommended": "NO_CONFIGURED_RISK",
-   "decided_by": "default",
-   "sdk_preflight_ms": 222
+   "control_action": "hold_for_review",
+   "receipt": "not_executed",
+   "recommended": "HOLD",
+   "decided_by": "judge_unavailable",
+   "sdk_preflight_ms": 412
   },
   {
-   "run_id": "run-s2-16ac7cdc",
+   "run_id": "run-s2-6539616a",
    "tool": "payments.execute",
-   "control_action": "allow",
-   "receipt": "executed",
-   "recommended": "NO_CONFIGURED_RISK",
-   "decided_by": "default",
-   "sdk_preflight_ms": 288
+   "control_action": "hold_for_review",
+   "receipt": "not_executed",
+   "recommended": "HOLD",
+   "decided_by": "judge_unavailable",
+   "sdk_preflight_ms": 410
   },
   {
-   "run_id": "run-s3-b92af580",
+   "run_id": "run-s3-6f8e8ef7",
    "tool": "payments.execute",
    "control_action": "deny",
    "receipt": "not_executed",
@@ -58,7 +58,7 @@
    "sdk_preflight_ms": 5
   },
   {
-   "run_id": "run-s4-4920e822",
+   "run_id": "run-s4-4955cdf5",
    "tool": "payments.execute",
    "control_action": "hold_for_approval",
    "receipt": "not_executed",
@@ -67,31 +67,31 @@
    "sdk_preflight_ms": 5
   },
   {
-   "run_id": "run-s6-89eba46d",
+   "run_id": "run-s6-06e49487",
    "tool": "email.send",
    "control_action": "deny",
    "receipt": "not_executed",
    "recommended": "BLOCK",
    "decided_by": "rule",
-   "sdk_preflight_ms": 3
+   "sdk_preflight_ms": 4
   },
   {
-   "run_id": "run-s7-44a33ac3",
+   "run_id": "run-s7-e355548d",
    "tool": "email.send",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 167
+   "sdk_preflight_ms": 228
   },
   {
-   "run_id": "run-s8-d44afea4",
+   "run_id": "run-s8-aa2b92a6",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 299
+   "sdk_preflight_ms": 350
   }
  ]
 }
