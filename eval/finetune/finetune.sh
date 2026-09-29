@@ -19,10 +19,20 @@ mkdir -p "$OUT"
   echo "started_at=$(date -u +%FT%TZ)"; echo "kev_commit=$(git -C "$KEV_DIR" rev-parse HEAD)"
   echo "data=eval/splits/kev-train.jsonl sha256=$(shasum -a 256 "$DATA" | cut -d' ' -f1) records=$(wc -l < "$DATA")"
   echo "base=$BASE init_from=$INIT timeout=$FT_TIMEOUT device=mps args=--epochs 2 --lr 2e-5 --batch 1 --accum 8 --seed 20260928"
+  echo "host=$(sysctl -n machdep.cpu.brand_string 2>/dev/null || uname -m) memory_gb=$(( $(sysctl -n hw.memsize 2>/dev/null || echo 0) / 1073741824 ))"
 } > "$OUT/RUN.txt"
+# GNU `timeout` is not on every Mac: fall back to coreutils' `gtimeout`, then to a perl alarm whose
+# SIGALRM exit (142) is mapped to timeout's 124, so a time-out is still reported as not completed.
+to_seconds() { case "$1" in *h) echo $(( ${1%h} * 3600 ));; *m) echo $(( ${1%m} * 60 ));; *s) echo "${1%s}";; *) echo "$1";; esac; }
+run_boxed() {
+  if command -v timeout >/dev/null; then timeout "$FT_TIMEOUT" "$@"
+  elif command -v gtimeout >/dev/null; then gtimeout "$FT_TIMEOUT" "$@"
+  else perl -e '$SIG{ALRM} = sub { local $SIG{TERM} = "IGNORE"; kill "TERM", -$$; waitpid(-1, 0); exit 124 }; setpgrp(0, 0); alarm shift; my $p = fork // die; if (!$p) { exec @ARGV or die } waitpid($p, 0); exit($? >> 8)' "$(to_seconds "$FT_TIMEOUT")" "$@"
+  fi
+}
 cd "$KEV_DIR"
 START=$(date +%s)
-timeout "$FT_TIMEOUT" uv run python -m kev.train --data "$DATA" --base "$BASE" --init_from "$INIT" \
+run_boxed uv run python -m kev.train --data "$DATA" --base "$BASE" --init_from "$INIT" \
   --epochs 2 --lr 2e-5 --batch 1 --accum 8 --device mps --seed 20260928 --out "$OUT/model" > "$OUT/train.log" 2>&1
 CODE=$?
 {

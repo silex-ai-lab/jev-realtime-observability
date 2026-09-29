@@ -11,7 +11,7 @@ import { binaryMetrics, bootstrapCI, chooseThreshold, ruleOfThree } from './metr
 import questionsJson from '../../rubrics/jev-questions.v1.json' with { type: 'json' };
 
 const arg = (k: string, d?: string) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : d; };
-const out = arg('out')!, labels = (arg('labels') ?? '').split(',').filter(Boolean);
+const out = arg('out')!, labels = (arg('labels') ?? '').split(',').filter(Boolean), note = arg('note');
 const items = new Map(readFileSync(arg('items', 'eval/splits/items.jsonl')!, 'utf8').split('\n').filter(Boolean).map(l => { const it = EvalItem.parse(JSON.parse(l)); return [it.item_id, it]; }));
 
 // Risk option for choice questions: which option counts as the positive ("risky") class.
@@ -34,10 +34,20 @@ const lines: string[] = [];
 const calibrations: Record<string, unknown>[] = [];
 const summary: Record<string, unknown> = {};
 lines.push(`# Gate B evaluation report`, '', `Generated ${new Date().toISOString()} from \`${out}\`.`, '');
+if (note) lines.push(`> ${note}`, '');
+// Where the latency was measured. Runs recorded before run.ts stored the host (2026-09-28) all ran on one machine.
+const LEGACY_HOST = 'Apple M4 Pro, MLX, bf16';
+const hostOf = (l: string): string => {
+  const p = join(out, `meta-${l}.json`);
+  const h = existsSync(p) ? (JSON.parse(readFileSync(p, 'utf8')) as { host?: { cpu: string | null; runtime: string | null } }).host : undefined;
+  return h ? [h.cpu ?? 'unknown CPU', h.runtime ?? 'unknown runtime'].join(', ') : LEGACY_HOST;
+};
+const hosts = [...new Set(labels.map(hostOf))];
+const hostText = hosts.length <= 1 ? (hosts[0] ?? LEGACY_HOST) : labels.map(l => `${l}: ${hostOf(l)}`).join('; ');
 lines.push(`- **Labels** are *derived from each benchmark's own ground truth* (evidence class \`benchmark_ground_truth_derived\` unless marked), **not human-reviewed**. RFC §12.2's two-reviewer gold set was not produced.`);
 lines.push(`- **Thresholds** are chosen on the **calibration** split only (lowest threshold with precision ≥ 0.9, else max-F1) and frozen before dev and test are read. The 0.5 column is shown for reference.`);
 lines.push(`- **${B0_DESCRIPTION}**`);
-lines.push(`- **Latency** is judge HTTP round trip on this machine (Apple M4 Pro, MLX, bf16), measured by the client; it is not a vendor SLA.`);
+lines.push(`- **Latency** is judge HTTP round trip on this machine (${hostText}), measured by the client; it is not a vendor SLA.`);
 lines.push(`- **Not measured:** B1 (LLM judge) and B3 (judge + slow path), since no LLM judge is configured (plan D9); TypeSafe's hosted Jev (no key).`);
 lines.push(`- **Source check:** the "source-majority" predictor labels each item with its source's majority label in that split. If it is far above the overall majority rate, positives and negatives come from different sources, and a score on that split may reflect source style rather than the task. AgentDojo test is single-source, so it cannot carry this confound.`);
 lines.push(`- **Shortcut check:** for every binary question the table shows the accuracy of the trivial predictor "label = the state contains a LOW-AUTHORITY CONTENT section", next to the majority-class rate. If the shortcut is far above the majority rate, the split is confounded and a high judge score may reflect the artifact rather than the task.`, '');
