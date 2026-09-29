@@ -199,3 +199,25 @@ Verdicts: coder-deepseek **IMPL-APPROVED** (2 non-blocking notes); reviewer-code
 |---|---|
 | `outputPathError` treated an in-repo directory named `..tenant-export` as outside the repository (a string prefix, not a path component), so its JSONL would not be ignored (Codex 1) | Checks the component (`rel === '..'` or starts with `..` + separator); regressions for `..tenant-export` and `runs/..x`, and a CLI check that the refused run writes nothing |
 | (DeepSeek 1, repeated) score answers by legend label | Stays a cosmetic follow-up, as recorded in round 1 |
+
+### Code round 3 (diff revision `14159611`, commit `2900bad`)
+
+Verdicts: coder-deepseek **IMPL-APPROVED** (2 non-blocking notes: `isAbsolute(rel)` is defensive only; document how to export outside the repo. Left as is, since the approved revision is what ships); reviewer-codex **IMPL-APPROVED**.
+
+## Outcome
+
+- **Roster:** planner Claude Code (Opus 5.5); coder-deepseek (OpenCode, `deepseek/deepseek-reasoner`); reviewer-codex (Codex CLI 0.157.1). No change.
+- **Rounds:** plan 3 (v1 → v3), code 3.
+- **Delivered:** T6, T7, T8, T10 (as a Kev-0.8B rerun). `npm test` on the final revision: 203 tests, 200 pass, 0 fail, 3 skip. `npm run probe`: 8/8 PASS against Kev-0.8B.
+- **T10 result:** the 2026-09-28 Kev-0.8B fine-tune recipe reproduced on a second machine within noise; the generated comparison is `runs/eval-2026-09-29-ft-rerun/REPORT.md`. The run's exit code was not captured (the planner edited `finetune.sh` while it ran); its record says so, and both reviewers judged it sufficient without a rerun.
+- **What each seat caught:**
+  - *Codex:* S4's rule HOLD would have had no questions to label; state text could straddle splits; the rule/judge class conflated "yes" with risk; cross-judge needed the same frozen input and different models; `report.ts` hardcoded the M4 Pro host; a question set that could shift between view and resolve; the perl time box turning a signal death into "completed"; exports that could be committed from nested or `..`-named directories.
+  - *DeepSeek:* grounding (the impossible realtime-vs-diagnostic pairing, the required-noul risk set from the rubric manifest, `ServedModel.runtime`, the report timestamp); the sampled task should carry its evaluation; the exporter should not migrate a live Postgres. Implemented T6 and T7.
+  - *Claude:* F0, T8 (panel and CDP probes in both auth modes, screenshot), T10 (portability, provenance, run and eval); found the missing `timeout` binary on this Mac and the score-label index encoding; mutation-checked every new test.
+- **Known limits:** the sampler scans the tenant's history on each call; the panel shows a score answer as a number, not its legend label; the whole-rubric fallback offers post-generation questions on a pre-tool decision (skippable).
+
+### Final verdicts (revision `14159611`, base `7c9dae4`)
+
+- coder-deepseek: **IMPL-APPROVED** (plan: PLAN-APPROVED on v3)
+- reviewer-codex: **IMPL-APPROVED** (plan: PLAN-APPROVED on v3)
+- **PLANNER (claude): IMPL-APPROVED** on revision `14159611`, base `7c9dae4` (plan: PLAN-APPROVED on v3)

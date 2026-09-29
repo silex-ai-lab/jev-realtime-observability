@@ -2,6 +2,17 @@
 
 Newest first. The plan and its review record live in this folder.
 
+## 2026-09-29 — Work plan batch 2: label export, sampler, review panel, fine-tune rerun
+
+[Plan and review record](2026-09-29_WORKPLAN_BATCH2_PLAN.md) · [API contract §10.4](../docs/CONTRACTS.md) · [Rerun report](../runs/eval-2026-09-29-ft-rerun/REPORT.md).
+
+- **Review panel (T8):** the live console lists open review tasks, shows the frozen judge view and the judge's answers, and records a person's answers as `human_reviewed` labels. It never releases a held action.
+- **Sampler (T7):** `POST /v1/reviews/sample` opens tasks for uncertain answers, risks the judge saw but no rule held, and disagreements between two judge models on the same snapshot.
+- **Export (T6):** labels become Kev training JSONL with state-grouped time splits and a human-reviewed-only test split; inside the repo, exports go only to the git-ignored `runs/exports/`.
+- **Fine-tune rerun (T10):** on this 24 GB Mac the user chose Kev-0.8B over Kev-4B. The 2026-09-28 recipe reproduced within noise on a second machine; `report.ts` now records the machine each run used.
+- **Left alone:** the `docs/EVAL.md` generated block and its drift test (unchanged, still passing); T11, which needs PostgreSQL.
+- **Review:** three-seat, 3 plan rounds and 3 code rounds, unanimous on diff revision `14159611` (base `7c9dae4`).
+
 ## 2026-09-29 — Work plan batch 1: review queue, labels, policy lifecycle, P0 cleanup
 
 [Plan and review record](2026-09-29_WORKPLAN_BATCH1_PLAN.md) · [API contract §10](../docs/CONTRACTS.md) · [Day plan](../skills/jev-work-plan/plans/2026-09-29.md).

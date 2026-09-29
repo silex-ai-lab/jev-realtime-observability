@@ -30,6 +30,7 @@ last review round).
 ## Work plan 2026-09-29 (`skills/jev-work-plan/plans/2026-09-29.md`)
 
 Batch 1 (T1–T5, T9) is a reviewed fleet run, unanimous on revision `8c5825e0`; review fixes in `89ccf2d`: `logs/2026-09-29_WORKPLAN_BATCH1_PLAN.md`.
+Batch 2 (T6, T7, T8, T10) is a reviewed fleet run, unanimous on revision `14159611`; review fixes in `b87a09a`, `2900bad`: `logs/2026-09-29_WORKPLAN_BATCH2_PLAN.md`.
 
 | ID | Task | Status |
 |---|---|---|
@@ -38,9 +39,9 @@ Batch 1 (T1–T5, T9) is a reviewed fleet run, unanimous on revision `8c5825e0`;
 | T3 | Live console evicts old rows, keeps the selected row | done (`fa2e1ba`) |
 | T4 | Review queue backend | done (`5b8249e`) |
 | T5 | Label API | done (`5b8249e`) |
-| T6 | Export labels to Kev training JSONL | todo |
-| T7 | Active-learning sampler | todo |
-| T8 | Review panel in the live console | todo |
+| T6 | Export labels to Kev training JSONL | done (`e5af1be`, fixes `b87a09a`, `2900bad`) |
+| T7 | Active-learning sampler | done (`e65299e`, fixes `b87a09a`) |
+| T8 | Review panel in the live console | done (`d6641d1`) |
 | T9 | Policy lifecycle: publish, activate, rollback | done (`e000676`) |
-| T10 | Kev-4B fine-tune on the open-data split | todo (needs a GPU) |
+| T10 | Kev-4B fine-tune on the open-data split | done as a **Kev-0.8B** rerun, the user's scope change for this 24 GB machine (`611890f`, prep `5b373e2`, fixes `b87a09a`); a Kev-4B fine-tune is still not done |
 | T11 | Gate row-lock tests on real PostgreSQL | todo (needs PostgreSQL) |
