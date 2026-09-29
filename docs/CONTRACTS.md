@@ -251,3 +251,33 @@ Every gateway execution:
   - `enforcement_coverage` = gated attempts that have a control and a receipt / gated attempts;
   - `prevented` = receipts `not_executed` under a non-allow control (the only thing the UI may call "prevented", RFC §2);
   - `executed_under_allow`.
+
+## 10. Review queue, labels and policy lifecycle (work plan 2026-09-29, batch 1)
+
+Plan: `logs/2026-09-29_WORKPLAN_BATCH1_PLAN.md` (decisions D2–D5). Routes live in `server/api/reviews.ts` and `server/api/policies.ts`; storage in `server/storage/reviews.ts` and `server/storage/policies.ts`.
+
+### 10.1 Review tasks (T4)
+
+**Which decisions open one:** an original decision (never a policy-only or model re-eval replay) whose `recommended` is `HOLD` or `REVIEW`; on the preflight path also `UNKNOWN`, because preflight holds that action (`hold_for_review`). The worker never opens one for `UNKNOWN`. The task is inserted in the same transaction as the decision. Migration `0004_reviews_labels.sql` adds a unique index on `review_tasks (tenant_id, decision_id)`, and the insert is `ON CONFLICT DO NOTHING`, so redelivery never adds a second task.
+
+**Task body:** `{ path: worker|preflight, event_id, run_id, snapshot_id, evaluation_id, recommended, decided_by, tool, reasons, resolution? }` (`contracts/labels.ts` `ReviewTask`).
+
+| Route | Role | Result |
+|---|---|---|
+| `GET /v1/reviews?status=open\|resolved_allow\|resolved_deny\|expired\|all&limit=` | reader, admin | `{ reviews }`, newest first; default `open`, limit ≤ 200 |
+| `GET /v1/reviews/:review_id` | reader, admin | `{ review, snapshot, evaluation, decision }`; 404 for another tenant |
+| `POST /v1/reviews/:review_id/resolve` | admin | body `{ outcome: allow\|deny, answers: { question_id: value } }` |
+
+**Resolve**, in one transaction with the task row locked: 404 if not the caller's; 409 `already_resolved` unless `open`; every answer must be a question the decision's evaluation asked (any rubric question when it had none) and valid for its type (§10.2), else 400 and nothing is written. Then it writes one `labels` row per answer (`ref` = the decision's `snapshot_id`, `evidence_class: human_reviewed`, `source: review:<review_id>`), sets `resolved_allow` or `resolved_deny` with the resolution in the body, writes an `audit_log` row (`review_resolved`), and appends an outbox record of kind `review` (`{ review_id, decision_id, status }`), which the review panel (T8) will consume. **It does not release, execute or re-issue a held action, and it never changes the decision.**
+
+### 10.2 Labels (T5)
+
+| Route | Role | Result |
+|---|---|---|
+| `POST /v1/labels` | admin (every evidence class) | body `{ ref, question_id, value, evidence_class, source }` → 201 `{ label }`; audit row `label_created` |
+| `GET /v1/labels?ref=&question_id=` | reader, admin | `{ labels }`, tenant-scoped, newest first, at most 500 |
+
+- `ref` is an evaluation id or a snapshot id **of the caller's tenant**; otherwise 404.
+- `value` by question type (`rubrics/jev-questions.v1.json`): `noul` → boolean; `choice` → one of its `criteria` keys; `score` → one of its `criteria` levels (a string). Anything else, or an unknown question, → 400.
+- `evidence_class` ∈ `benchmark_ground_truth_derived`, `heuristic_derived`, `human_reviewed`.
+- With `AUTH_MODE=none` the caller acts as admin (loopback only).
