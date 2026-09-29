@@ -9,19 +9,23 @@ import type { JudgeClient } from '../judges/index.ts';
 import { judgeSourceOf, type EvaluationRecord } from '../../contracts/judge.ts';
 import { ingestEvents, normaliseOtlp } from '../ingest/index.ts';
 import { decide, validatePolicy, type PolicyBody } from '../policy/index.ts';
+import { HttpError, readJson, send, type AuthFn, type Role } from './http.ts';
+import * as policyRoutes from './policies.ts';
+import * as reviewRoutes from './reviews.ts';
 import type { PolicyDecision } from '../../contracts/decision.ts';
 import type { DecisionSnapshot } from '../../contracts/snapshot.ts';
 import { RUBRIC } from '../state/index.ts';
 import { computeMetrics } from './metrics.ts';
 import { preflight, PreflightError, type PreflightDeps } from './preflight.ts';
 
-type Role = 'ingest' | 'reader' | 'gateway' | 'admin';
 export interface ApiDeps {
   db: Db;
   judge: JudgeClient | null;
   realtimeTtlMs: number;
   webRoot: string | null;
   activePolicy: (tenantId: string) => Promise<PolicyBody>;
+  /** Drops the tenant's cached active policy; policy lifecycle routes call it after commit. */
+  invalidatePolicy: (tenantId: string) => void;
   notify: () => void;
   subscribe: (fn: () => void) => () => void;
   startSandboxRun: (tenantId: string, scenario: string) => Promise<{ run_id: string }>;
@@ -37,30 +41,11 @@ export interface ApiDeps {
   preflight: PreflightDeps | null;
 }
 
-const MAX_BODY = 1 << 20;
-class HttpError extends Error {
-  readonly status: number;
-  readonly code: string;
-  constructor(status: number, code: string, message: string) { super(message); this.status = status; this.code = code; }
-}
-
-function send(res: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}) {
-  const s = JSON.stringify(body);
-  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...headers });
-  res.end(s);
-}
-
-async function readJson(req: IncomingMessage): Promise<unknown> {
-  let size = 0; const chunks: Buffer[] = [];
-  for await (const c of req) { size += (c as Buffer).length; if (size > MAX_BODY) throw new HttpError(413, 'too_large', 'body too large'); chunks.push(c as Buffer); }
-  try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || 'null'); } catch { throw new HttpError(400, 'bad_json', 'invalid JSON'); }
-}
-
 export function createApi(d: ApiDeps): Server {
   const streamTokens = new Map<string, { tenant_id: string; exp: number }>();
   const sandboxRate = new Map<string, number[]>();
 
-  async function auth(req: IncomingMessage, roles: Role[]): Promise<{ tenant_id: string; role: Role }> {
+  const auth: AuthFn = async (req, roles) => {
     if (d.authMode === 'none') return { tenant_id: d.defaultTenant, role: roles[0] };
     const h = req.headers.authorization ?? '';
     const m = /^Bearer (.+)$/.exec(h);
@@ -69,7 +54,7 @@ export function createApi(d: ApiDeps): Server {
     if (!k) throw new HttpError(401, 'unauthenticated', 'unknown key');
     if (!roles.includes(k.role as Role)) throw new HttpError(403, 'forbidden', 'role not allowed');
     return { tenant_id: k.tenant_id, role: k.role as Role };
-  }
+  };
 
   async function handle(req: IncomingMessage, res: ServerResponse) {
     const url = new URL(req.url ?? '/', 'http://local');
@@ -130,21 +115,8 @@ export function createApi(d: ApiDeps): Server {
       return send(res, 200, { evaluation: e, snapshot: await repos.getSnapshot(d.db, a.tenant_id, e.snapshot_id), decisions: await repos.listDecisionsForEvent(d.db, a.tenant_id, e.event_id) });
     }
 
-    if (m === 'GET' && p === '/v1/policies/active') {
-      const a = await auth(req, ['reader', 'admin']);
-      return send(res, 200, { policy: await d.activePolicy(a.tenant_id) });
-    }
-    if (m === 'POST' && p === '/v1/policies/drafts') {
-      const a = await auth(req, ['admin']);
-      const v = validatePolicy(await readJson(req));
-      if (!v.ok) return send(res, 400, { ok: false, errors: v.errors });
-      const draft_version = `${v.policy.policy_version}+draft-${randomUUID().slice(0, 8)}`;
-      await d.db.tx(async q => {
-        await repos.insertPolicyVersion(q, { policy_version: draft_version, tenant_id: a.tenant_id, base_version: v.policy.policy_version, status: 'draft', body: { ...v.policy, policy_version: draft_version }, actor: 'admin-key' });
-        await repos.audit(q, a.tenant_id, 'admin-key', 'policy_draft', { draft_version });
-      });
-      return send(res, 200, { ok: true, errors: [], draft_version });
-    }
+    if (await policyRoutes.handle(d, auth, req, res, url)) return;
+    if (await reviewRoutes.handle(d, auth, req, res, url)) return;
 
     if (m === 'POST' && p === '/v1/preflight') {
       const a = await auth(req, ['ingest']);

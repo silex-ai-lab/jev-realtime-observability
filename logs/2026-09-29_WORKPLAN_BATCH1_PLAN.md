@@ -4,7 +4,7 @@ Fleet run (`herdr-agent-fleet`) over tasks T1, T2, T3, T4, T5 and T9 of
 `skills/jev-work-plan/plans/2026-09-29.md`. T6, T7, T8 build on T4/T5 and go in a later batch;
 T10 (gpu) and T11 (pg) need hardware this machine does not have.
 
-**Plan version:** v3 · **Repo HEAD at planning:** `ee9732a` · **Review base (`BASE`):** set at Step 5.
+**Plan version:** v3 · **Repo HEAD at planning:** `ee9732a` · **Review base (`BASE`):** `0687397` (the plan commit).
 
 ## Roster
 

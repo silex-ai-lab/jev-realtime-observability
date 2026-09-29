@@ -23,6 +23,8 @@ export interface WorkerDeps {
   onChange: () => void;
   /** Gate B: independent read-back of executed side-effect tools. */
   verifier?: OutcomeVerifier | null;
+  /** Sandbox fault injection (F1): honour `attributes.fault` only when the deployment enables it. */
+  faultInjection: boolean;
 }
 
 export interface Worker {
@@ -111,7 +113,7 @@ export function createWorker(d: WorkerDeps): Worker {
       evaluation = evaluationRecord(tenantId, eventId, a.snapshot.snapshot_id, 'realtime', a.questionIds, a.requiredQuestionIds, null, 'not_configured', evaluationId, startedAt);
     } else {
       // Sandbox fault injection (F1): a 1 ms budget makes the real HTTP call to the judge abort.
-      const fault = ev.attributes?.fault === 'judge_timeout';
+      const fault = d.faultInjection && ev.attributes?.fault === 'judge_timeout';
       const r = await d.judge.call(a.judgeRequest, a.requiredQuestionIds,
         { tenantId, evaluationId, caller: 'realtime', deadlineMs: fault ? 1 : policy.judge_deadline_ms, retry429: !fault });
       judgeRtt = r.judge_http_rtt_ms;

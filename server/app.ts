@@ -120,7 +120,7 @@ export async function createApp(opts: AppOptions): Promise<App> {
     deadlineMs: { 'payments.execute': 10_000, 'email.send': 5_000 }, backoffMs: [250, 500, 1000, 2000],
   });
   const worker: Worker = createWorker({
-    db, judge, authority, policy: activePolicy, provenance, verifier,
+    db, judge, authority, policy: activePolicy, provenance, verifier, faultInjection: opts.faultInjection ?? true,
     leaseMs: opts.worker.leaseMs ?? 30_000, concurrency: opts.worker.concurrency ?? 2, onChange: notify,
   });
 
@@ -136,6 +136,7 @@ export async function createApp(opts: AppOptions): Promise<App> {
     db, judge, realtimeTtlMs: opts.worker.realtimeTtlMs ?? DEFAULT_POLICY.realtime_ttl_ms,
     webRoot: opts.web === false ? null : join(ROOT, 'web'),
     activePolicy,
+    invalidatePolicy: tenantId => { policies.delete(tenantId); },
     notify: () => { notify(); worker.wake(); },
     subscribe: fn => { bus.on('change', fn); return () => bus.off('change', fn); },
     startSandboxRun: async (tenantId, scenario) => {
