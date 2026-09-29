@@ -27,6 +27,7 @@ timeout "$FT_TIMEOUT" uv run python -m kev.train --data "$DATA" --base "$BASE" -
 CODE=$?
 {
   echo "finished_at=$(date -u +%FT%TZ) wall_s=$(( $(date +%s) - START )) exit=$CODE"
+  echo "records_used=$(LC_ALL=C tr '\r' '\n' < "$OUT/train.log" | grep -ao '[0-9]* training requests' | grep -o '^[0-9]*') records_dropped=$(LC_ALL=C tr '\r' '\n' < "$OUT/train.log" | grep -ao 'dropped [0-9]*' | grep -o '[0-9]*$')"
   if [ $CODE -eq 124 ]; then echo "result=not_completed_locally (time box $FT_TIMEOUT reached)"; elif [ $CODE -eq 0 ]; then echo "result=completed"; else echo "result=failed (see train.log)"; fi
 } >> "$OUT/RUN.txt"
 cat "$OUT/RUN.txt"

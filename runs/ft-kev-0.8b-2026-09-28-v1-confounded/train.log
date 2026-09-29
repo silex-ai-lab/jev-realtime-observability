@@ -1,0 +1,39 @@
+Loading weights:   0%|          | 0/320 [00:00<?, ?it/s]Loading weights:   0%|          | 1/320 [00:01<06:47,  1.28s/it]Loading weights: 100%|██████████| 320/320 [00:01<00:00, 249.46it/s]
+Fetching 9 files:   0%|          | 0/9 [00:00<?, ?it/s]Fetching 9 files: 100%|██████████| 9/9 [00:00<00:00, 2655.74it/s]
+delta: warm start from ~/.cache/huggingface/hub/models--jaredpalmer--kev-0.8b/snapshots/9a45d25eb2ab761841196625383fa1dff0e56c1e: 372 lora tensors and the pointer head loaded
+device=mps world=1 trainable params=11.3M
+dropped 14 of 1223 records that exceed the training context (384 state / 1024 branch / 2048 packed tokens)
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `chunk_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+1209 training requests (holdout=[]), questions by type {'noul': 1910, 'score': 95}
+ep0 step 10/304 loss 0.880 kl 0.000 anchor 0.000 1.227s/rec
+ep0 step 20/304 loss 0.379 kl 0.000 anchor 0.000 1.140s/rec
+ep0 step 30/304 loss 0.217 kl 0.000 anchor 0.000 1.088s/rec
+ep0 step 40/304 loss 0.081 kl 0.000 anchor 0.000 1.083s/rec
+ep0 step 50/304 loss 0.233 kl 0.000 anchor 0.000 1.068s/rec
+ep0 step 60/304 loss 0.051 kl 0.000 anchor 0.000 1.060s/rec
+ep0 step 70/304 loss 0.254 kl 0.000 anchor 0.000 1.053s/rec
+ep0 step 80/304 loss 0.040 kl 0.000 anchor 0.000 1.051s/rec
+ep0 step 90/304 loss 0.040 kl 0.000 anchor 0.000 1.061s/rec
+ep0 step 100/304 loss 0.147 kl 0.000 anchor 0.000 1.059s/rec
+ep0 step 110/304 loss 0.033 kl 0.000 anchor 0.000 1.064s/rec
+ep0 step 120/304 loss 0.069 kl 0.000 anchor 0.000 1.057s/rec
+ep0 step 130/304 loss 0.089 kl 0.000 anchor 0.000 1.043s/rec
+ep0 step 140/304 loss 0.010 kl 0.000 anchor 0.000 1.038s/rec
+ep0 step 150/304 loss 0.228 kl 0.000 anchor 0.000 1.037s/rec
+ep1 step 160/304 loss 0.048 kl 0.000 anchor 0.000 1.026s/rec
+ep1 step 170/304 loss 0.026 kl 0.000 anchor 0.000 1.015s/rec
+ep1 step 180/304 loss 0.062 kl 0.000 anchor 0.000 1.001s/rec
+ep1 step 190/304 loss 0.032 kl 0.000 anchor 0.000 0.994s/rec
+ep1 step 200/304 loss 0.024 kl 0.000 anchor 0.000 0.986s/rec
+ep1 step 210/304 loss 0.089 kl 0.000 anchor 0.000 0.980s/rec
+ep1 step 220/304 loss 0.065 kl 0.000 anchor 0.000 0.975s/rec
+ep1 step 230/304 loss 0.007 kl 0.000 anchor 0.000 0.970s/rec
+ep1 step 240/304 loss 0.036 kl 0.000 anchor 0.000 0.967s/rec
+ep1 step 250/304 loss 0.042 kl 0.000 anchor 0.000 0.961s/rec
+ep1 step 260/304 loss 0.033 kl 0.000 anchor 0.000 0.957s/rec
+ep1 step 270/304 loss 0.041 kl 0.000 anchor 0.000 0.951s/rec
+ep1 step 280/304 loss 0.004 kl 0.000 anchor 0.000 0.948s/rec
+ep1 step 290/304 loss 0.052 kl 0.000 anchor 0.000 0.944s/rec
+ep1 step 300/304 loss 0.042 kl 0.000 anchor 0.000 0.941s/rec
+saved runs/ft-kev-0.8b-2026-09-28/model

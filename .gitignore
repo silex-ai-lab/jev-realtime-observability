@@ -4,3 +4,4 @@ eval/sources/raw/
 *.log
 .env
 runs/ft-*/model/
+!runs/ft-*/train.log
