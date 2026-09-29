@@ -1,9 +1,9 @@
 {
  "label": "kev-0.8b-ft",
- "judge_source": "kev-local:/Users/bytedance/workplace/Silex/jev-realtime-observability/runs/ft-kev-0.8b-2026-09-28/model",
+ "judge_source": "kev-local:runs/ft-kev-0.8b-2026-09-28/model",
  "served": {
   "backend": "kev-local",
-  "run": "/Users/bytedance/workplace/Silex/jev-realtime-observability/runs/ft-kev-0.8b-2026-09-28/model",
+  "run": "runs/ft-kev-0.8b-2026-09-28/model",
   "base": "Qwen/Qwen3.5-0.8B-Base",
   "revision": null,
   "temperature": 1,

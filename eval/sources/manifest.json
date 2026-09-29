@@ -1,5 +1,5 @@
 {
-  "note": "Each source is pinned to a commit. `files` are the data files the converters read; `sha256` is over the file at that commit. The licence is re-checked per file and per data-directory note during fetch (docs/CONTRACTS.md §8.4); no source below carries a data licence that differs from its repo licence, so all are redistributable.",
+  "note": "Each source is pinned to a commit. `files` are the data files the converters read; `sha256` is over the file at that commit. `notes` lists every data-directory note file a human reviewed (path, sha256, and a decision: permissive-same-as-repo | restrictive | not-a-licence). During fetch (docs/CONTRACTS.md §8.4) the repo licence is re-detected and every note is re-checked fail-closed: a note file found on disk but not listed, or a listed note whose sha256 differs, aborts; redistribute becomes false if the detected repo licence differs from `licence` or any note is `restrictive`. No source below has a restrictive note, so all are redistributable.",
   "sources": [
     {
       "source": "injecagent",
@@ -8,7 +8,7 @@
       "licence": "MIT",
       "licence_file": "LICENCE",
       "data_licence": "MIT",
-      "data_note": "data/ has no separate licence or terms note; the repo MIT licence governs the data",
+      "notes": [],
       "redistribute": true,
       "files": [
         { "path": "data/test_cases_dh_base.json", "sha256": "0a8186468d21389af432e8c7b399ae42264d1b93a07b65c7a489468508604305", "licence": "MIT" },
@@ -25,7 +25,7 @@
       "licence": "MIT",
       "licence_file": "LICENSE",
       "data_licence": "MIT",
-      "data_note": "ground-truth tool calls are dumped from the pinned PyPI package via eval/convert/agentdojo_dump.py; the repo has no separate data licence",
+      "notes": [],
       "redistribute": true,
       "files": [
         { "path": "LICENSE", "sha256": "4285a071f2d382338e52b4fb0a186d952984a34d43a33d8872e1a1d8cb43401e", "licence": "MIT" }
@@ -38,7 +38,7 @@
       "licence": "MIT",
       "licence_file": "LICENSE",
       "data_licence": "MIT",
-      "data_note": "data/ has no separate licence or terms note; the repo MIT licence governs the data",
+      "notes": [],
       "redistribute": true,
       "files": [
         { "path": "data/agent_task.jsonl", "sha256": "d6c1d214811b5d908ae9c04ffbbde36ce35d39932766feb8bf24e202441c1dc8", "licence": "MIT" },
@@ -54,7 +54,10 @@
       "licence": "Apache-2.0",
       "licence_file": "LICENSE",
       "data_licence": "Apache-2.0",
-      "data_note": "assets/README.md is a data specification, not a licence; the repo Apache-2.0 governs the data. Note: setup.py's classifier says MIT, which contradicts the LICENSE file — the LICENSE file (Apache-2.0) is authoritative.",
+      "notes": [
+        { "path": "assets/README.md", "sha256": "236b2e9d68d3607d23b9868870aaacd67af8b219fd45e7b7ec3ccf9d7d387bec", "decision": "not-a-licence" },
+        { "path": "assets/for_generation/README.md", "sha256": "b952386e96745deed7a0e7bc2bb578ceb81fb1260871ed7155b035b4498d97fe", "decision": "not-a-licence" }
+      ],
       "redistribute": true,
       "files": [
         { "path": "assets/all_cases.json", "sha256": "63f92818dfc2d4c5bf82de3f03d2fe10c166e697235d07c2f55142c8169460b4", "licence": "Apache-2.0" },
@@ -68,7 +71,9 @@
       "licence": "MIT",
       "licence_file": "LICENSE",
       "data_licence": "MIT",
-      "data_note": "tau_bench/envs/retail/data/readme.md is a mock-data generation note, not a licence; the repo MIT licence governs the tasks",
+      "notes": [
+        { "path": "tau_bench/envs/retail/data/readme.md", "sha256": "448640f4b5e104f15e4476e2aa10f3b6616181135dc38262a86e71ed1b30737d", "decision": "not-a-licence" }
+      ],
       "redistribute": true,
       "files": [
         { "path": "tau_bench/envs/retail/tasks_train.py", "sha256": "30880ce4e8d524dd0fdd18c1d3a5713551fc8638e82673de3e0fd1ab70046c6f", "licence": "MIT" },

@@ -1,6 +1,6 @@
 # Gate B evaluation report
 
-Generated 2026-09-29T02:13:12.939Z from `runs/eval-2026-09-28-v2`.
+Generated 2026-09-29T02:25:34.396Z from `runs/eval-2026-09-28-v2`.
 
 - **Labels** are *derived from each benchmark's own ground truth* (evidence class `benchmark_ground_truth_derived` unless marked), **not human-reviewed**. RFC §12.2's two-reviewer gold set was not produced.
 - **Thresholds** are chosen on the **calibration** split only (lowest threshold with precision ≥ 0.9, else max-F1) and frozen before dev and test are read. The 0.5 column is shown for reference.
@@ -23,7 +23,7 @@ Items: 708 · failed calls: 0 · judge HTTP RTT p50 151 ms, p95 345 ms (n=708).
 | sensitive_data_transfer | dev | 56 (27) | 0.446 / 0.518 | 0.554 | 0.518 / 0.185 | 0.679 | 0.630 | 0.276 | 0.71 | 0.037 [0.000, 0.130] | 0.069 | 0.232 | 0.136 | 0.651 | 0.045 (of 22) |
 | semantic_impact | dev | 24 | — | — | no code baseline | 0.083 (exact level) | — | — | — | — | — | — | — | — | — |
 
-## kev-0.8b-ft — `kev-local:/Users/bytedance/workplace/Silex/jev-realtime-observability/runs/ft-kev-0.8b-2026-09-28/model`
+## kev-0.8b-ft — `kev-local:runs/ft-kev-0.8b-2026-09-28/model`
 
 Items: 708 · failed calls: 0 · judge HTTP RTT p50 149 ms, p95 343 ms (n=708).
 

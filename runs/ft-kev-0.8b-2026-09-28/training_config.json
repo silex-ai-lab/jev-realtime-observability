@@ -37,8 +37,8 @@
     "anchor": "",
     "anchor_w": 0.0,
     "anchor_sources": "",
-    "out": "/Users/bytedance/workplace/Silex/jev-realtime-observability/runs/ft-kev-0.8b-2026-09-28/model",
-    "data": "/Users/bytedance/workplace/Silex/jev-realtime-observability/eval/splits/kev-train.jsonl",
+    "out": "runs/ft-kev-0.8b-2026-09-28/model",
+    "data": "eval/splits/kev-train.jsonl",
     "max_state": 384,
     "replay": 0,
     "init_from": "jaredpalmer/kev-0.8b",
@@ -61,7 +61,7 @@
   "base_revision": null,
   "init_source": {
     "init_from": "jaredpalmer/kev-0.8b",
-    "resolved": "/Users/bytedance/.cache/huggingface/hub/models--jaredpalmer--kev-0.8b/snapshots/9a45d25eb2ab761841196625383fa1dff0e56c1e",
+    "resolved": "~/.cache/huggingface/hub/models--jaredpalmer--kev-0.8b/snapshots/9a45d25eb2ab761841196625383fa1dff0e56c1e",
     "weights_sha256": "9b908623acb162118575f4e7a94524f9c139c335be4bfb74d6cfceca01e1885a",
     "head_sha256": "f400bd12802b2b105ae45d6b03774a158a3db4fccff42413734ddca2e5c920b6",
     "tensors": 372

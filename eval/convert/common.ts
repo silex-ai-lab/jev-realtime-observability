@@ -107,9 +107,9 @@ export function evidenceFor(questionId: string, la: LowAuthorityProvenance): Evi
  * (fine-tuning on a state that also appears in a held-out split would inflate those numbers).
  *
  * Any two items of the same source whose `state` is byte-identical are merged onto one canonical
- * `template_id` (the lexicographically smallest among them, so the result is order-independent),
- * and every item's split and item_id are recomputed from that template_id. Splitting stays a pure
- * function of (source, template_id), so a template still never spans two splits.
+ * `template_id` (the `template_id` of whichever of them sorts first by `item_id`, so the result is
+ * deterministic), and every item's split and item_id are recomputed from that template_id. Splitting
+ * stays a pure function of (source, template_id), so a template still never spans two splits.
  */
 export function finalizeSplits(items: EvalItemWithMeta[]): EvalItemWithMeta[] {
   const sorted = [...items].sort((a, b) => a.item_id.localeCompare(b.item_id));

@@ -22,7 +22,7 @@ Items: 708 · failed calls: 0 · judge HTTP RTT p50 119 ms, p95 161 ms (n=708).
 | sensitive_data_transfer | dev | 56 (27) | 0.446 / 0.518 | 0.518 / 0.185 | 0.679 | 0.630 | 0.276 | 0.71 | 0.037 [0.000, 0.130] | 0.069 | 0.232 | 0.144 | 0.653 | 0.045 (of 22) |
 | semantic_impact | dev | 24 | — | no code baseline | 0.083 (exact level) | — | — | — | — | — | — | — | — | — |
 
-## kev-0.8b-ft — `kev-local:/Users/bytedance/workplace/Silex/jev-realtime-observability/runs/ft-kev-0.8b-2026-09-28/model`
+## kev-0.8b-ft — `kev-local:runs/ft-kev-0.8b-2026-09-28/model`
 
 Items: 708 · failed calls: 0 · judge HTTP RTT p50 119 ms, p95 161 ms (n=708).
 

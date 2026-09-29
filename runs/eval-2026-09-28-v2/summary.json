@@ -1,9 +1,18 @@
 {
  "kev-0.8b": {
+  "_meta": {
+   "judge_source": "kev-local:jaredpalmer/kev-0.8b",
+   "items": 708,
+   "rtt_p50_ms": 150.70404200000485,
+   "rtt_p95_ms": 344.820332999996,
+   "rtt_n": 708,
+   "failed_items": 0
+  },
   "instruction_override/dev": {
    "shortcut_acc": 0.9285714285714286,
    "source_majority_acc": 0.9285714285714286,
    "majority_rate": 0.9285714285714286,
+   "recall_thr_ci": null,
    "n": 98,
    "positives": 91,
    "acc05": 0.2755102040816326,
@@ -21,6 +30,7 @@
    "shortcut_acc": 0.14,
    "source_majority_acc": 0.86,
    "majority_rate": 0.86,
+   "recall_thr_ci": null,
    "n": 250,
    "positives": 35,
    "acc05": 0.824,
@@ -38,6 +48,10 @@
    "shortcut_acc": 0.39490445859872614,
    "source_majority_acc": 0.9745222929936306,
    "majority_rate": 0.6050955414012739,
+   "recall_thr_ci": [
+    0,
+    0
+   ],
    "n": 157,
    "positives": 62,
    "acc05": 0.7070063694267515,
@@ -55,6 +69,10 @@
    "shortcut_acc": 0.14,
    "source_majority_acc": 0.86,
    "majority_rate": 0.86,
+   "recall_thr_ci": [
+    0.23684210526315788,
+    0.5625
+   ],
    "n": 250,
    "positives": 35,
    "acc05": 0.68,
@@ -72,6 +90,10 @@
    "shortcut_acc": 0.44642857142857145,
    "source_majority_acc": 0.5535714285714286,
    "majority_rate": 0.5178571428571429,
+   "recall_thr_ci": [
+    0,
+    0.13043478260869565
+   ],
    "n": 56,
    "positives": 27,
    "acc05": 0.6785714285714286,
@@ -87,10 +109,19 @@
   }
  },
  "kev-0.8b-ft": {
+  "_meta": {
+   "judge_source": "kev-local:runs/ft-kev-0.8b-2026-09-28/model",
+   "items": 708,
+   "rtt_p50_ms": 148.5367499999993,
+   "rtt_p95_ms": 342.8885829999999,
+   "rtt_n": 708,
+   "failed_items": 0
+  },
   "instruction_override/dev": {
    "shortcut_acc": 0.9285714285714286,
    "source_majority_acc": 0.9285714285714286,
    "majority_rate": 0.9285714285714286,
+   "recall_thr_ci": null,
    "n": 98,
    "positives": 91,
    "acc05": 1,
@@ -108,6 +139,7 @@
    "shortcut_acc": 0.14,
    "source_majority_acc": 0.86,
    "majority_rate": 0.86,
+   "recall_thr_ci": null,
    "n": 250,
    "positives": 35,
    "acc05": 0.936,
@@ -125,6 +157,10 @@
    "shortcut_acc": 0.39490445859872614,
    "source_majority_acc": 0.9745222929936306,
    "majority_rate": 0.6050955414012739,
+   "recall_thr_ci": [
+    1,
+    1
+   ],
    "n": 157,
    "positives": 62,
    "acc05": 1,
@@ -142,6 +178,10 @@
    "shortcut_acc": 0.14,
    "source_majority_acc": 0.86,
    "majority_rate": 0.86,
+   "recall_thr_ci": [
+    0.6486486486486487,
+    0.9310344827586207
+   ],
    "n": 250,
    "positives": 35,
    "acc05": 0.936,
@@ -159,6 +199,10 @@
    "shortcut_acc": 0.44642857142857145,
    "source_majority_acc": 0.5535714285714286,
    "majority_rate": 0.5178571428571429,
+   "recall_thr_ci": [
+    0.8709677419354839,
+    1
+   ],
    "n": 56,
    "positives": 27,
    "acc05": 0.8392857142857143,
@@ -174,10 +218,19 @@
   }
  },
  "kev-4b": {
+  "_meta": {
+   "judge_source": "kev-local:jaredpalmer/kev-4b",
+   "items": 708,
+   "rtt_p50_ms": 856.5937910000212,
+   "rtt_p95_ms": 2000.853167000023,
+   "rtt_n": 708,
+   "failed_items": 0
+  },
   "instruction_override/dev": {
    "shortcut_acc": 0.9285714285714286,
    "source_majority_acc": 0.9285714285714286,
    "majority_rate": 0.9285714285714286,
+   "recall_thr_ci": null,
    "n": 98,
    "positives": 91,
    "acc05": 0.4489795918367347,
@@ -195,6 +248,7 @@
    "shortcut_acc": 0.14,
    "source_majority_acc": 0.86,
    "majority_rate": 0.86,
+   "recall_thr_ci": null,
    "n": 250,
    "positives": 35,
    "acc05": 0.856,
@@ -212,6 +266,10 @@
    "shortcut_acc": 0.39490445859872614,
    "source_majority_acc": 0.9745222929936306,
    "majority_rate": 0.6050955414012739,
+   "recall_thr_ci": [
+    0.819672131147541,
+    0.967741935483871
+   ],
    "n": 157,
    "positives": 62,
    "acc05": 0.910828025477707,
@@ -229,6 +287,10 @@
    "shortcut_acc": 0.14,
    "source_majority_acc": 0.86,
    "majority_rate": 0.86,
+   "recall_thr_ci": [
+    0.125,
+    0.4444444444444444
+   ],
    "n": 250,
    "positives": 35,
    "acc05": 0.764,
@@ -246,6 +308,10 @@
    "shortcut_acc": 0.44642857142857145,
    "source_majority_acc": 0.5535714285714286,
    "majority_rate": 0.5178571428571429,
+   "recall_thr_ci": [
+    0.5185185185185185,
+    0.8666666666666667
+   ],
    "n": 56,
    "positives": 27,
    "acc05": 0.6964285714285714,

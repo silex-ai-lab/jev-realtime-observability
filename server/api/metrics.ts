@@ -32,6 +32,8 @@ export async function computeMetrics(q: Queryable, tenantId: string, runId: stri
     `SELECT d.body FROM decisions d JOIN events v ON v.tenant_id = d.tenant_id AND v.event_id = d.event_id WHERE d.tenant_id = $1${runId ? ' AND v.run_id = $2' : ''} AND d.replay_of IS NULL`, params)).rows.map(r => r.body);
   const judgePath = decisions.filter(d => d.evaluation_id && answeredIds.has(d.evaluation_id)).map(d => d.timings.ingest_to_signal_ms).filter((v): v is number => v != null);
   const noJudge = decisions.filter(d => d.timings.judge_http_rtt_ms == null).map(d => d.timings.ingest_to_signal_ms).filter((v): v is number => v != null);
+  // Judge was called but returned no usable answer (timeout, error, mismatch): its own bucket, never mixed into either path.
+  const judgeFailed = decisions.filter(d => d.timings.judge_http_rtt_ms != null && !(d.evaluation_id && answeredIds.has(d.evaluation_id))).map(d => d.timings.ingest_to_signal_ms).filter((v): v is number => v != null);
   const rtt = asked.filter(e => answeredIds.has(e.evaluation_id)).map(e => e.judge_http_rtt_ms).filter((v): v is number => v != null);
 
   const outcomes = await q.query<{ state: string; n: number }>(`SELECT state, count(*)::int n FROM outcome_checks WHERE tenant_id = $1${runFilter} GROUP BY 1`, params);
@@ -46,6 +48,7 @@ export async function computeMetrics(q: Queryable, tenantId: string, runId: stri
     ingest_to_signal_ms: {
       judge_path: { n: judgePath.length, p50: nearestRank(judgePath, 0.5), p95: nearestRank(judgePath, 0.95) },
       no_judge_path: { n: noJudge.length, p50: nearestRank(noJudge, 0.5), p95: nearestRank(noJudge, 0.95) },
+      judge_failed: { n: judgeFailed.length, p50: nearestRank(judgeFailed, 0.5), p95: nearestRank(judgeFailed, 0.95) },
     },
     judge_http_rtt_ms: { n: rtt.length, p50: nearestRank(rtt, 0.5), p95: nearestRank(rtt, 0.95) },
     outcomes: Object.fromEntries(outcomes.rows.map(r => [r.state, r.n])),

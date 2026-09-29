@@ -48,6 +48,10 @@ for (const l of labels) {
   const preds = load(l);
   const rtts = preds.filter((p, i, a) => a.findIndex(x => x.item_id === p.item_id) === i).map(p => p.rtt_ms).filter((v): v is number => v != null).sort((a, b) => a - b);
   const pct = (q: number) => rtts.length ? rtts[Math.max(0, Math.ceil(q * rtts.length) - 1)] : null;
+  (summary[l] ??= {} as Record<string, unknown>);
+  (summary[l] as Record<string, unknown>)['_meta'] = { judge_source: meta.judge_source ?? null, items: new Set(preds.map(p => p.item_id)).size,
+    rtt_p50_ms: pct(0.5), rtt_p95_ms: pct(0.95), rtt_n: rtts.length,
+    failed_items: new Set(preds.filter(p => p.status !== 'ok' && p.status !== 'partial').map(p => p.item_id)).size };
   lines.push(`Items: ${new Set(preds.map(p => p.item_id)).size} · failed calls: ${new Set(preds.filter(p => p.status !== 'ok' && p.status !== 'partial').map(p => p.item_id)).size} · judge HTTP RTT p50 ${fmt(pct(0.5), 0)} ms, p95 ${fmt(pct(0.95), 0)} ms (n=${rtts.length}).`, '');
   lines.push(`| question | split | n (pos) | shortcut acc / majority | source-majority acc | B0 acc / recall | judge acc@0.5 | recall@0.5 | FPR@0.5 | threshold (from cal) | recall@thr [95% CI] | FPR@thr | Brier | ECE | AUROC | incremental recall over B0 |`);
   lines.push(`|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|`);
@@ -95,7 +99,7 @@ for (const l of labels) {
       const fprNote = mt && mt.fp === 0 && (mt.fp + mt.tn) > 0 ? ` (0 of ${mt.fp + mt.tn}; ≤ ${fmt(ruleOfThree(mt.fp + mt.tn))} one-sided 95%)` : '';
       lines.push(`| ${qid} | ${split} | ${pts.length} (${m5.positives}) | ${fmt(shortcut)} / ${fmt(majority)}${shortcut != null && majority != null && shortcut > majority + 0.1 ? ' ⚠ confounded' : ''} | ${fmt(sourceMajority)}${sourceMajority != null && majority != null && sourceMajority > majority + 0.1 ? ' ⚠ source-separable' : ''} | ${b0Has ? `${fmt(b0Acc)} / ${fmt(b0Recall)}` : 'no code baseline'} | ${fmt(m5.accuracy)} | ${fmt(m5.recall)} | ${fmt(m5.false_positive_rate)} | ${thr ? fmt(thr.threshold, 2) : (notFitted ?? 'not fitted')} | ${mt ? `${fmt(mt.recall)} ${ci(recallCI)}` : '—'} | ${mt ? fmt(mt.false_positive_rate) + fprNote : '—'} | ${fmt(m5.brier)} | ${fmt(m5.ece)} | ${fmt(m5.auroc)} | ${incr == null ? '—' : `${fmt(incr)} (of ${missedByB0.length})`} |`);
       (summary[l] ??= {} as Record<string, unknown>) as Record<string, unknown>;
-      (summary[l] as Record<string, unknown>)[`${qid}/${split}`] = { shortcut_acc: shortcut, source_majority_acc: sourceMajority, majority_rate: majority, n: pts.length, positives: m5.positives, acc05: m5.accuracy, recall_thr: mt?.recall ?? null, fpr_thr: mt?.false_positive_rate ?? null, auroc: m5.auroc, brier: m5.brier, ece: m5.ece, b0_acc: b0Acc, b0_recall: b0Recall, incremental_recall: incr, threshold: thr?.threshold ?? null };
+      (summary[l] as Record<string, unknown>)[`${qid}/${split}`] = { shortcut_acc: shortcut, source_majority_acc: sourceMajority, majority_rate: majority, recall_thr_ci: recallCI, n: pts.length, positives: m5.positives, acc05: m5.accuracy, recall_thr: mt?.recall ?? null, fpr_thr: mt?.false_positive_rate ?? null, auroc: m5.auroc, brier: m5.brier, ece: m5.ece, b0_acc: b0Acc, b0_recall: b0Recall, incremental_recall: incr, threshold: thr?.threshold ?? null };
     }
   }
   lines.push('');

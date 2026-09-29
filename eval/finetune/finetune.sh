@@ -17,8 +17,8 @@ esac
 mkdir -p "$OUT"
 {
   echo "started_at=$(date -u +%FT%TZ)"; echo "kev_commit=$(git -C "$KEV_DIR" rev-parse HEAD)"
-  echo "data=$DATA sha256=$(shasum -a 256 "$DATA" | cut -d' ' -f1) records=$(wc -l < "$DATA")"
-  echo "base=$BASE init_from=$INIT timeout=$FT_TIMEOUT device=mps"
+  echo "data=eval/splits/kev-train.jsonl sha256=$(shasum -a 256 "$DATA" | cut -d' ' -f1) records=$(wc -l < "$DATA")"
+  echo "base=$BASE init_from=$INIT timeout=$FT_TIMEOUT device=mps args=--epochs 2 --lr 2e-5 --batch 1 --accum 8 --seed 20260928"
 } > "$OUT/RUN.txt"
 cd "$KEV_DIR"
 START=$(date +%s)

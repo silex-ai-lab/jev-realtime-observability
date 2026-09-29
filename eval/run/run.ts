@@ -25,7 +25,9 @@ const client = createJudgeClient({ backend: 'kev-local', baseUrl: judgeUrl, mode
   { ledger: async () => undefined });
 const served = await client.describe();
 if (!served) throw new Error(`judge at ${judgeUrl} did not describe itself`);
-writeFileSync(join(out, `meta-${label}.json`), JSON.stringify({ label, judge_source: judgeSourceOf(served), served, items_file: itemsPath, splits: [...splits], n: todo.length, started_at: new Date().toISOString() }, null, 1));
+// A locally fine-tuned run is served from an absolute path; committed artefacts keep it repo-relative.
+const rel = (s: string) => s.split(process.cwd() + '/').join('');
+writeFileSync(join(out, `meta-${label}.json`), JSON.stringify({ label, judge_source: rel(judgeSourceOf(served)), served: JSON.parse(rel(JSON.stringify(served))), items_file: itemsPath, splits: [...splits], n: todo.length, started_at: new Date().toISOString() }, null, 1));
 console.log(`${label}: ${judgeSourceOf(served)} · ${todo.length} items (${done.size} already done)`);
 
 let i = 0, t0 = performance.now();

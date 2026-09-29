@@ -47,7 +47,7 @@
  },
  {
   "calibration_id": "cal-kev-0.8b-ft-goal_deviation",
-  "judge_source": "kev-local:/Users/bytedance/workplace/Silex/jev-realtime-observability/runs/ft-kev-0.8b-2026-09-28/model",
+  "judge_source": "kev-local:runs/ft-kev-0.8b-2026-09-28/model",
   "rubric_id": "ap-runtime-semantic:v1",
   "extractor_version": "eval-format/1",
   "question_id": "goal_deviation",
@@ -70,7 +70,7 @@
  },
  {
   "calibration_id": "cal-kev-0.8b-ft-sensitive_data_transfer",
-  "judge_source": "kev-local:/Users/bytedance/workplace/Silex/jev-realtime-observability/runs/ft-kev-0.8b-2026-09-28/model",
+  "judge_source": "kev-local:runs/ft-kev-0.8b-2026-09-28/model",
   "rubric_id": "ap-runtime-semantic:v1",
   "extractor_version": "eval-format/1",
   "question_id": "sensitive_data_transfer",

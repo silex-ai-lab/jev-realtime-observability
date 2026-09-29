@@ -1,6 +1,6 @@
 started_at=2026-09-29T00:31:01Z
 kev_commit=3e1cd3bb588a388a06827443380befece23e68c7
-data=/Users/bytedance/workplace/Silex/jev-realtime-observability/eval/splits/kev-train.jsonl sha256=1a943867fd6f97ac5ee8c159843d86fb6cadc8d2f1c474ffbb59e0ce76bdd192 records=    1223
+data=eval/splits/kev-train.jsonl sha256=1a943867fd6f97ac5ee8c159843d86fb6cadc8d2f1c474ffbb59e0ce76bdd192 records=    1223
 base=Qwen/Qwen3.5-0.8B-Base init_from=jaredpalmer/kev-0.8b timeout=3h device=mps
 finished_at=2026-09-29T01:09:07Z wall_s=2286 exit=0
 result=completed
