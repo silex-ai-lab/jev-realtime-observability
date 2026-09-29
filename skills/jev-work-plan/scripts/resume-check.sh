@@ -31,8 +31,29 @@ for port in 8009 8010; do
   else warn "no kev on :$port (only tasks marked needs: kev require it)"; fi
 done
 
+# Kev checkout (needed to serve a judge or to fine-tune). The pin is in docs/THIRD_PARTY.md and scripts/kev-serve.sh.
+KEV_DIR="${KEV_DIR:-$HOME/workplace/Silex/third_party/kev}"; pin=3e1cd3b
+if [ -d "$KEV_DIR/.git" ]; then
+  head=$(git -C "$KEV_DIR" rev-parse --short=7 HEAD 2>/dev/null)
+  [ "$head" = "$pin" ] && ok "kev checkout $KEV_DIR at $pin" || warn "kev checkout at $head, pinned $pin: git -C $KEV_DIR checkout $pin"
+else warn "no kev checkout at $KEV_DIR (needs: kev/gpu): see deploy skill step 3"; fi
+
+# Hardware bar for 'needs: gpu' (a Kev-4B fine-tune): an H100/L40S, or an Apple Silicon Mac with >= 32 GB.
+if [ "$(uname)" = Darwin ]; then
+  gb=$(( $(sysctl -n hw.memsize) / 1073741824 )); chip=$(sysctl -n machdep.cpu.brand_string 2>/dev/null)
+  [ "$gb" -ge 32 ] && ok "$chip, ${gb} GB: meets 'needs: gpu'" || warn "$chip, ${gb} GB: under the 32 GB 'gpu' bar (ask the user before substituting Kev-0.8B)"
+elif command -v nvidia-smi >/dev/null; then ok "GPU: $(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader | head -1)"
+else warn "no Apple Silicon or NVIDIA GPU detected: 'needs: gpu' tasks cannot run here"; fi
+command -v timeout >/dev/null || command -v gtimeout >/dev/null && ok "GNU timeout available" || ok "no GNU timeout: finetune.sh uses eval/finetune/timebox.pl (perl)"
+
+# PostgreSQL for 'needs: pg'. Installing it needs the user's OK.
+if [ -n "${TEST_DATABASE_URL:-}" ]; then ok "TEST_DATABASE_URL is set (real-PostgreSQL tests will run)"
+elif command -v psql >/dev/null || command -v pg_ctl >/dev/null; then warn "PostgreSQL binaries present, TEST_DATABASE_URL unset (set it to run 'needs: pg' tests)"
+elif command -v docker >/dev/null && docker info >/dev/null 2>&1; then warn "no PostgreSQL, Docker running: docker run -d -e POSTGRES_PASSWORD=pw -p 5432:5432 postgres:17"
+else warn "no PostgreSQL or Docker: 'needs: pg' tasks cannot run here without an install (ask the user)"; fi
+
 plan=$(ls "$here"/plans/*.md 2>/dev/null | sort | tail -1)
 if [ -n "$plan" ]; then
   echo; echo "plan: ${plan#$PWD/}"; echo "open tasks:"
-  grep -E '^\| T[0-9]+ ' "$plan" | awk -F'|' '{s=$(NF-1); gsub(/^ +| +$/,"",s); if (s !~ /^done/) { id=$2; t=$4; n=$(NF-2); gsub(/^ +| +$/,"",id); gsub(/^ +| +$/,"",t); gsub(/^ +| +$/,"",n); printf "  %-4s [%s] needs:%s  %s\n", id, s, n, substr(t,1,90) } }'
+  grep -E '^\| [A-Z][0-9]+ ' "$plan" | awk -F'|' '{s=$(NF-1); gsub(/^ +| +$/,"",s); if (s !~ /^done/) { id=$2; t=$4; n=$(NF-2); gsub(/^ +| +$/,"",id); gsub(/^ +| +$/,"",t); gsub(/^ +| +$/,"",n); printf "  %-4s [%s] needs:%s  %s\n", id, s, n, substr(t,1,90) } }'
 else warn "no plan files in $here/plans"; fi

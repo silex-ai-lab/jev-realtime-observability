@@ -44,4 +44,17 @@ Batch 2 (T6, T7, T8, T10) is a reviewed fleet run, unanimous on revision `141596
 | T8 | Review panel in the live console | done (`d6641d1`) |
 | T9 | Policy lifecycle: publish, activate, rollback | done (`e000676`) |
 | T10 | Kev-4B fine-tune on the open-data split | done as a **Kev-0.8B** rerun, the user's scope change for this 24 GB machine (`611890f`, prep `5b373e2`, fixes `b87a09a`); a Kev-4B fine-tune is still not done |
-| T11 | Gate row-lock tests on real PostgreSQL | todo (needs PostgreSQL) |
+| T11 | Gate row-lock tests on real PostgreSQL | carried forward as N1 |
+
+## Work plan 2026-09-30 (`skills/jev-work-plan/plans/2026-09-30.md`)
+
+Carried forward from 2026-09-29: its open items and the follow-ups its reviews recorded.
+
+| ID | Task | Status |
+|---|---|---|
+| N1 | Gate and policy concurrency tests on real PostgreSQL (was T11) | todo (needs PostgreSQL) |
+| N2 | Kev-4B fine-tune and its row in the EVAL block (the original T10) | todo (needs a 32 GB+ Mac or a GPU) |
+| N3 | Sampler predicates in SQL, or a bounded scan | todo |
+| N4 | Live console: bounded memory with the same KPIs | todo |
+| N5 | Review panel: score legend labels; boundary-aware whole-rubric fallback | todo |
+| N6 | Exporter: document exporting outside the repo; tidy the path check | todo |
