@@ -2,6 +2,17 @@
 
 Newest first. The plan and its review record live in this folder.
 
+## 2026-09-29 — Work plan batch 1: review queue, labels, policy lifecycle, P0 cleanup
+
+[Plan and review record](2026-09-29_WORKPLAN_BATCH1_PLAN.md) · [API contract §10](../docs/CONTRACTS.md) · [Day plan](../skills/jev-work-plan/plans/2026-09-29.md).
+
+- **Review queue (T4):** HOLD/REVIEW decisions (and held `UNKNOWN` preflights) open exactly one review task in the decision's transaction. Resolving writes `human_reviewed` labels and an audit row; it never releases a held action or changes a decision.
+- **Labels (T5):** `POST/GET /v1/labels`, values checked against the question type, tenant-scoped refs, admin-only writes.
+- **Policy lifecycle (T9):** per-tenant policy versions (migration 0005), publish / activate / rollback with an optimistic `expected_active_version` check under a tenant lock, and a cache that a delayed read cannot re-fill with a switched-out policy.
+- **P0:** `FAULT_INJECTION` is off by default for the worker and preflight (T2); the live console caps the stream at 500 DOM rows and keeps the selected row (T3); the backlog carries a commit for every task (T1).
+- **Left alone:** the recorded Gate C runs in `docs/GATE.md` (recorded with fault injection on; not regenerated); the eval pipeline and its generated blocks.
+- **Review:** three-seat, 3 plan rounds and 2 code rounds, unanimous on diff revision `8c5825e0` (base `0687397`).
+
 ## 2026-09-29 — Gate C: the sandbox pre-tool gate
 
 [Plan and review record](2026-09-28_BUILD_PLAN.md) · [Gate design and measurements](../docs/GATE.md).

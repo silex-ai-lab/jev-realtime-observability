@@ -29,11 +29,11 @@ last review round).
 
 ## Work plan 2026-09-29 (`skills/jev-work-plan/plans/2026-09-29.md`)
 
-Batch 1 (T1–T5, T9) is a reviewed fleet run; statuses are final only once its code gate passes: `logs/2026-09-29_WORKPLAN_BATCH1_PLAN.md`.
+Batch 1 (T1–T5, T9) is a reviewed fleet run, unanimous on revision `8c5825e0`; review fixes in `89ccf2d`: `logs/2026-09-29_WORKPLAN_BATCH1_PLAN.md`.
 
 | ID | Task | Status |
 |---|---|---|
-| T1 | This backlog brought up to date | done (the commit that last changed this file) |
+| T1 | This backlog brought up to date | done (`3cd5b9c`) |
 | T2 | `FAULT_INJECTION` off by default, worker and preflight | done (`f01332a`) |
 | T3 | Live console evicts old rows, keeps the selected row | done (`fa2e1ba`) |
 | T4 | Review queue backend | done (`5b8249e`) |

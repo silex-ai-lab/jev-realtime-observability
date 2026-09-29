@@ -204,3 +204,24 @@ Verdicts: coder-deepseek **IMPL-APPROVED** (3 non-blocking notes); reviewer-code
 | (DeepSeek 1) the manual's five-minute test still expects F1 to hold without `FAULT_INJECTION=1` | `docs/USER_MANUAL.md` step 5 says to set it |
 
 Mutation checks on the new tests: removing the cache generation guard fails all four race tests; removing the body validation fails the 400 test; removing `Object.hasOwn` fails the labels test. `npm test`: 181 tests, 178 pass, 0 fail, 3 skip.
+
+### Code round 2 (diff revision `8c5825e0`, commit `89ccf2d`)
+
+Verdicts: coder-deepseek **IMPL-APPROVED** (1 non-blocking note: resolve's `d.notify()` also wakes the worker; harmless, left as is); reviewer-codex **IMPL-APPROVED**.
+
+## Outcome
+
+- **Roster:** planner Claude Code (Opus 5.5); coder-deepseek (OpenCode, `deepseek/deepseek-reasoner`); reviewer-codex (Codex CLI 0.157.1). No roster change.
+- **Rounds:** plan 3 (v1 → v3), code 2.
+- **Delivered:** T1, T2, T3, T4, T5, T9 of `skills/jev-work-plan/plans/2026-09-29.md`. `npm test` on the final revision: 181 tests, 178 pass, 0 fail, 3 skip (live-Kev opt-in; raw eval data not fetched on this machine; real-Postgres concurrency without `TEST_DATABASE_URL`).
+- **What each seat caught:**
+  - *Codex:* the worker applied F1's fault unconditionally; the global `policy_version` key left every tenant but the first without a stored active policy; the cache could be refilled with a switched-out policy; valid policy names the routes could not address; 500s on malformed input; a T9 test that compared `null` with `null`; a "redelivery" test that redelivered nothing.
+  - *DeepSeek:* grounding notes (shadow `UNKNOWN` comes from the evidence gate; draft names contain `+`; no test used `faultInjection`; the harness needed the option); the worker must never open `UNKNOWN` tasks in gate mode; the SQL backfill could drift from `DEFAULT_POLICY`; the manual's five-minute test contradicted the new F1 default. Implemented T2, T3 and T9 and reported the one out-of-list change it needed instead of making it.
+  - *Claude:* F0 route-module split; T4/T5; the policy-cache invalidation gap; mutation checks on every new test, which found that nothing tested `createApp`'s own `FAULT_INJECTION` default; kept the T3 KPI/memory trade-off visible instead of silently changing KPI semantics.
+- **Known limits (stated, not fixed):** T3 caps DOM rows only; the page's memory still grows with the session. The policy cache is per process (one process is the only deployment). Real-Postgres locking is untested on this machine.
+
+### Final verdicts (revision `8c5825e0`, base `0687397`)
+
+- coder-deepseek: **IMPL-APPROVED** (plan: PLAN-APPROVED on v3)
+- reviewer-codex: **IMPL-APPROVED** (plan: PLAN-APPROVED on v3)
+- **PLANNER (claude): IMPL-APPROVED** on revision `8c5825e0`, base `0687397` (plan: PLAN-APPROVED on v3)
