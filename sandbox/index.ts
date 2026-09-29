@@ -49,6 +49,12 @@ export interface ToolGatewayOptions {
    * body. On failure execute() returns receipt status 'not_executed' and performs no side effect.
    */
   requireControl?: (call: ToolCall, control: ControlDecision | null) => Promise<{ ok: boolean; reason: string }>;
+  /**
+   * Test-only hook, invoked in gate mode after the outside pre-check and before the consume
+   * transaction opens. Used to prove a concurrent authority change (e.g. revokeApproval) is caught
+   * by the in-transaction check.
+   */
+  onBeforeGateTx?: (call: ToolCall, control: ControlDecision | null) => Promise<void>;
 }
 
 export interface ToolGateway {

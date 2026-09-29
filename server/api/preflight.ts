@@ -51,7 +51,7 @@ export async function preflight(d: PreflightDeps, tenantId: string, body: unknow
   const ev: StoredEvent = {
     ...redactEvent({ schema_version: r.schema_version, event_id: r.event_id, source_event_id: r.event_id, run_id: r.run_id, trace_id: r.trace_id,
       producer_id: r.producer_id, producer_seq: r.producer_seq, boundary: 'pre_tool', occurred_at: now.toISOString(), actor: r.actor,
-      operation: r.operation, sources: r.sources, attributes: { path: 'preflight' } }),
+      operation: r.operation, tool_call_id: r.tool_call_id, sources: r.sources, attributes: { ...r.attributes, path: 'preflight' } }),
     tenant_id: tenantId, received_at: now.toISOString(), ingest_path: 'sdk',
   };
   const inserted = await d.db.tx(async q => {
@@ -71,14 +71,16 @@ export async function preflight(d: PreflightDeps, tenantId: string, body: unknow
 
   let evaluation: EvaluationRecord | null = null;
   const elapsed = performance.now() - t0;
-  const judgeBudget = Math.max(0, Math.min(GATE_BUDGET.judgeMaxMs, GATE_BUDGET.totalMs - elapsed - GATE_BUDGET.commitMarginMs));
+  // F1 gate form (sandbox only): a 1 ms budget makes the real judge call abort; the gate must then fail closed.
+  const fault = r.attributes.fault === 'judge_timeout';
+  const judgeBudget = fault ? 1 : Math.max(0, Math.min(GATE_BUDGET.judgeMaxMs, GATE_BUDGET.totalMs - elapsed - GATE_BUDGET.commitMarginMs));
   const evaluationId = `eval-${randomUUID()}`;
   const startedAt = new Date().toISOString();
   if (!hardDecided && a.judgeRequest) {
     const served = d.judge?.served() ?? null;
     const base = { evaluation_id: evaluationId, tenant_id: tenantId, event_id: ev.event_id, snapshot_id: a.snapshot.snapshot_id, kind: 'realtime' as const,
       rubric_id: RUBRIC.rubric_id, question_ids: a.questionIds, required_question_ids: a.requiredQuestionIds, started_at: startedAt };
-    if (!d.judge || judgeBudget < 20) {
+    if (!d.judge || (judgeBudget < 20 && !fault)) {
       evaluation = { ...base, judge_source: served ? judgeSourceOf(served) : null, served_model: served, request_hash: '', client_request_id: `none-${evaluationId}`,
         vendor_request_id: null, status: d.judge ? 'timeout' : 'not_configured', http_status: null, attempts: 0, judge_http_rtt_ms: null, vendor_latency_ms: null,
         usage: null, billing: 'none', signals: {}, errors: [d.judge ? `no judge budget left (${judgeBudget.toFixed(0)} ms)` : 'no gate judge configured'], finished_at: new Date().toISOString() };

@@ -42,7 +42,7 @@ export async function runScripted(d: DriverDeps, sc: Scenario, runId = `run-${sc
       let control = null, gateAttrs: Record<string, string | number> = {};
       if (gated) {
         // The preflight records the pre_tool event itself and returns a control bound to exactly this call.
-        const pf = await cap.preflight(op);
+        const pf = await cap.preflight(op, { tool_call_id: callId, attributes: { ...faultAttrs } });
         control = pf.response.control;
         gateAttrs = { control_id: control.control_id, control_action: control.action, sdk_preflight_ms: Math.round(pf.sdk_preflight_ms) };
       } else {

@@ -14,9 +14,13 @@ export const PreflightRequest = z.object({
   producer_seq: z.number().int().nonnegative(),
   actor: z.object({ kind: z.enum(['agent', 'user', 'tool', 'system']), id: Id }),
   operation: z.object({ tool: z.string(), operation_id: Id, args: z.record(z.string(), z.unknown()), args_digest: Digest }),
+  tool_call_id: Id.optional(),          // correlates this pre_tool with its post_tool
   sources: z.array(SourceExcerpt).max(32).default([]),
+  /** Sandbox-only: `fault: 'judge_timeout'` gives the judge a 1 ms budget so the HTTP call really aborts (F1 gate form). */
+  attributes: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).default({}),
 });
-export type PreflightRequest = z.infer<typeof PreflightRequest>;
+// What a client sends (defaults such as sources and attributes may be omitted); the server parses to the full shape.
+export type PreflightRequest = z.input<typeof PreflightRequest>;
 
 export const PreflightResponse = z.object({
   control: z.object({

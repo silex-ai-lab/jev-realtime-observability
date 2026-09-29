@@ -121,11 +121,15 @@ export function createJudgeClient(cfg: JudgeConfig, deps: { ledger: (row: JudgeL
   const { apiKey, ...publicConfig } = cfg;
   const base = cfg.baseUrl.replace(/\/+$/, '');
   let servedModel: ServedModel | null = null;
+  // A failed /v1/models lookup is not retried on every call: this bounds the total gate latency when
+  // the judge's models endpoint is unreachable, while still allowing recovery after a short cooldown.
+  let describeFailedUntil = 0;
+  const DESCRIBE_FAIL_COOLDOWN_MS = 30_000;
 
-  async function describe(): Promise<ServedModel | null> {
+  async function describe(timeoutMs = 5000): Promise<ServedModel | null> {
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 5000);
+      const timer = setTimeout(() => controller.abort(), Math.max(1, timeoutMs));
       try {
         const res = await fetch(`${base}/v1/models`, { signal: controller.signal });
         if (!res.ok) return null;
@@ -185,7 +189,13 @@ export function createJudgeClient(cfg: JudgeConfig, deps: { ledger: (row: JudgeL
     const clientRequestId = `req-${randomUUID()}`;
     const rh = requestHash(req);
 
-    if (servedModel === null) await describe();
+    // Bound the /v1/models lookup by the remaining call deadline (never more than the default 5 s),
+    // and cache a failure so a missing models endpoint cannot push the call past its budget.
+    if (servedModel === null && monotonicMs() > describeFailedUntil) {
+      const remaining = Math.max(1, deadline - monotonicMs());
+      await describe(Math.min(5000, remaining));
+      if (servedModel === null) describeFailedUntil = monotonicMs() + DESCRIBE_FAIL_COOLDOWN_MS;
+    }
 
     if (cfg.expectedRun) {
       if (servedModel && servedModel.run !== cfg.expectedRun) {

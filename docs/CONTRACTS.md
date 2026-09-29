@@ -206,7 +206,7 @@ The gateway **loads the ControlDecision from `control_decisions` by `control_id`
 6. `consumed_at` is null;
 7. `authorization_version === authorityVersion(now)`.
 
-Then it executes the side effect and **sets `consumed_at` in the same transaction**, so a nonce is single-use.
+Then it executes the side effect and **sets `consumed_at` in the same transaction**. Single use is enforced by `consumed_at` on the control row. The `nonce` is an unguessable identifier stored with the control; it is not compared separately.
 
 Any failure returns receipt status `not_executed` with the failed check as the reason, and writes no side effect.
 

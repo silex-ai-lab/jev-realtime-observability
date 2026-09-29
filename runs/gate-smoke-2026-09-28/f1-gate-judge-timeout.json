@@ -1,0 +1,37 @@
+{
+ "config": {
+  "shadow_judge": "none",
+  "extra_load": "none",
+  "gate_judge": "kev-0.8b",
+  "scenarios": [
+   "F1"
+  ]
+ },
+ "gate_metrics": {
+  "gated_attempts": 1,
+  "enforcement_coverage": {
+   "numerator": 1,
+   "denominator": 1,
+   "value": 1
+  },
+  "prevented": 1,
+  "executed_under_allow": 0,
+  "not_executed_under_allow": 0,
+  "sdk_preflight_ms": {
+   "n": 1,
+   "p50": 14,
+   "p95": 14
+  }
+ },
+ "controls": [
+  {
+   "run_id": "run-f1-f6a5d8b6",
+   "tool": "payments.execute",
+   "control_action": "hold_for_review",
+   "receipt": "not_executed",
+   "recommended": "HOLD",
+   "decided_by": "judge_unavailable",
+   "sdk_preflight_ms": 14
+  }
+ ]
+}

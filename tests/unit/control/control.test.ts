@@ -124,6 +124,30 @@ test('an expired control is not executed', async () => {
   } finally { await db.close(); }
 });
 
+test('an operation refused for an expired control can be retried with a fresh control and executes once', async () => {
+  const { db, gateway } = await setup();
+  try {
+    const c = call('payments.execute', S1, 'op-retry');
+    const expired = await issue(db, c);
+    await db.query(`UPDATE control_decisions SET body = body || jsonb_build_object('expires_at', $2::text) WHERE control_id = $1`,
+      [expired.control_id, new Date(Date.now() - 1_000).toISOString()]);
+    const first = await gateway.execute(c, expired);
+    assert.equal(first.receipt.status, 'not_executed');
+    assert.match(first.receipt.reason, /expir/);
+    assert.equal(await ledgerRows(db, 'op-retry'), 0);
+
+    // A not_executed receipt must not wedge the idempotency key: re-preflight and retry executes.
+    const fresh = await issue(db, c);
+    const second = await gateway.execute(c, fresh);
+    assert.equal(second.receipt.status, 'executed');
+    assert.equal(await ledgerRows(db, 'op-retry'), 1);
+
+    const third = await gateway.execute(c, fresh);
+    assert.equal(third.receipt.receipt_id, second.receipt.receipt_id, 'the completed side effect is idempotent');
+    assert.equal(await ledgerRows(db, 'op-retry'), 1, 'exactly one side effect');
+  } finally { await db.close(); }
+});
+
 test('a revoked control is not executed', async () => {
   const { db, gateway } = await setup();
   try {
@@ -147,6 +171,28 @@ test('authority changed after issue (approval revoked) is not executed', async (
     assert.equal(exec.receipt.status, 'not_executed');
     assert.match(exec.receipt.reason, /authori|version|approval|changed|revok/i);
     assert.equal(await ledgerRows(db, 'op-auth'), 0);
+  } finally { await db.close(); }
+});
+
+test('a revocation that lands after the pre-check but before the transaction is caught in-tx', async () => {
+  const db = await openDb();
+  await migrate(db);
+  await seedSandbox(db, 't-alpha');
+  try {
+    const c = call('payments.execute', S1, 'op-interleave');
+    const control = await issue(db, c);
+    const gateway = createToolGateway(db, {
+      gate: true,
+      requireControl: createControlVerifier(db),
+      // Test hook: revoke the approval after the outside pre-check has already passed and before the
+      // consume transaction opens. Only the in-transaction authority re-check can see this change.
+      onBeforeGateTx: async () => { await revokeApproval(db, 't-alpha', 'APR-2291'); },
+    });
+    const exec = await gateway.execute(c, control);
+    assert.equal(exec.receipt.status, 'not_executed');
+    assert.match(exec.receipt.reason, /authori|version|approval|changed|revok/i);
+    assert.equal(await ledgerRows(db, 'op-interleave'), 0, 'the side effect must not run');
+    assert.equal(await consumedAt(db, control.control_id), null, 'a refused call must not consume the nonce');
   } finally { await db.close(); }
 });
 

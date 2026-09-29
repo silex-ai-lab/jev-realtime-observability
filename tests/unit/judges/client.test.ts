@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createServer } from 'node:http';
 import { createJudgeClient, mapServedModel, requestHash } from '../../../server/judges/index.ts';
 import type { JudgeLedgerRow, JudgeCallOptions } from '../../../server/judges/index.ts';
 import { startStubJudge } from '../../helpers/stub-judge-server.ts';
@@ -142,4 +143,31 @@ test('the api key never appears in errors, results, config or ledger (canary)', 
     assert.ok(!('apiKey' in c.config), 'config exposes apiKey');
     assert.ok(!JSON.stringify(c.config).includes(CANARY));
   } finally { await judge.close(); }
+});
+
+test('a hanging /v1/models does not push a call past its deadline (describe is bounded + cached)', async () => {
+  const sockets = new Set<import('node:net').Socket>();
+  const server = createServer((req, res) => {
+    res.on('error', () => {});
+    if (req.method === 'GET' && (req.url === '/v1/models' || req.url === '/v1/models/')) {
+      return; // hang: never respond, so the client must abort on its own deadline
+    }
+    res.writeHead(404, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ error: 'not found' }));
+  });
+  server.on('connection', s => { sockets.add(s); s.on('close', () => sockets.delete(s)); });
+  await new Promise<void>(r => server.listen(0, '127.0.0.1', r));
+  const addr = server.address();
+  const url = `http://127.0.0.1:${typeof addr === 'object' && addr ? addr.port : 0}`;
+  try {
+    const { c } = client(url);
+    const t0 = performance.now();
+    const r = await c.call(apReq, ['payee_relation'], opts({ deadlineMs: 120, retry429: false }));
+    const elapsed = performance.now() - t0;
+    assert.equal(r.status, 'timeout');
+    assert.ok(elapsed < 4000, `describe() must be bounded by the remaining deadline, took ${Math.round(elapsed)}ms`);
+  } finally {
+    for (const s of sockets) s.destroy();
+    await new Promise<void>(r => server.close(() => r()));
+  }
 });

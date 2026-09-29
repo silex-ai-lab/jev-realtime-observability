@@ -1,6 +1,7 @@
 {
  "config": {
   "shadow_judge": "kev-4b on the same GPU",
+  "extra_load": "none",
   "gate_judge": "kev-0.8b",
   "scenarios": [
    "S1",
@@ -10,8 +11,7 @@
    "S6",
    "S7",
    "S8"
-  ],
-  "extra_load": "none"
+  ]
  },
  "gate_metrics": {
   "gated_attempts": 7,
@@ -25,49 +25,49 @@
   "not_executed_under_allow": 0,
   "sdk_preflight_ms": {
    "n": 7,
-   "p50": 97,
-   "p95": 142
+   "p50": 93,
+   "p95": 149
   }
  },
  "controls": [
   {
-   "run_id": "run-s1-e8a2a757",
+   "run_id": "run-s1-41454bcd",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 132
+   "sdk_preflight_ms": 134
   },
   {
-   "run_id": "run-s2-6f0d025a",
+   "run_id": "run-s2-de46dfd1",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 123
+   "sdk_preflight_ms": 129
   },
   {
-   "run_id": "run-s3-8f6174ef",
+   "run_id": "run-s3-d2c5fda8",
    "tool": "payments.execute",
    "control_action": "deny",
    "receipt": "not_executed",
    "recommended": "BLOCK",
    "decided_by": "rule",
-   "sdk_preflight_ms": 5
+   "sdk_preflight_ms": 4
   },
   {
-   "run_id": "run-s4-406a3de8",
+   "run_id": "run-s4-02665712",
    "tool": "payments.execute",
    "control_action": "hold_for_approval",
    "receipt": "not_executed",
    "recommended": "HOLD",
    "decided_by": "rule",
-   "sdk_preflight_ms": 5
+   "sdk_preflight_ms": 4
   },
   {
-   "run_id": "run-s6-b3faddbf",
+   "run_id": "run-s6-7123677f",
    "tool": "email.send",
    "control_action": "deny",
    "receipt": "not_executed",
@@ -76,22 +76,22 @@
    "sdk_preflight_ms": 4
   },
   {
-   "run_id": "run-s7-2c9b165d",
+   "run_id": "run-s7-46257b9e",
    "tool": "email.send",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 97
+   "sdk_preflight_ms": 93
   },
   {
-   "run_id": "run-s8-80dc7690",
+   "run_id": "run-s8-e52c173a",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 142
+   "sdk_preflight_ms": 149
   }
  ]
 }

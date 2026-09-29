@@ -320,7 +320,7 @@ function makePreflightRequest(input: PreflightInput): PreflightRequest {
 }
 
 function gatedGateway(h: GateAHarness) {
-  return createToolGateway(h.db, { requireControl: createControlVerifier(h.db) });
+  return createToolGateway(h.db, { gate: true, requireControl: createControlVerifier(h.db) });
 }
 
 function assertNotExecuted(receipt: ExecutionReceipt, reasonPattern: RegExp): void {

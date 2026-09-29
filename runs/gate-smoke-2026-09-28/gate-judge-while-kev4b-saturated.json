@@ -25,31 +25,31 @@
   "not_executed_under_allow": 0,
   "sdk_preflight_ms": {
    "n": 7,
-   "p50": 172,
-   "p95": 287
+   "p50": 167,
+   "p95": 299
   }
  },
  "controls": [
   {
-   "run_id": "run-s1-69ce2f48",
+   "run_id": "run-s1-39cf4b97",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 172
+   "sdk_preflight_ms": 222
   },
   {
-   "run_id": "run-s2-8ce9a4ea",
+   "run_id": "run-s2-16ac7cdc",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 283
+   "sdk_preflight_ms": 288
   },
   {
-   "run_id": "run-s3-ab879369",
+   "run_id": "run-s3-b92af580",
    "tool": "payments.execute",
    "control_action": "deny",
    "receipt": "not_executed",
@@ -58,7 +58,7 @@
    "sdk_preflight_ms": 5
   },
   {
-   "run_id": "run-s4-dcb67853",
+   "run_id": "run-s4-4920e822",
    "tool": "payments.execute",
    "control_action": "hold_for_approval",
    "receipt": "not_executed",
@@ -67,31 +67,31 @@
    "sdk_preflight_ms": 5
   },
   {
-   "run_id": "run-s6-ed676013",
+   "run_id": "run-s6-89eba46d",
    "tool": "email.send",
    "control_action": "deny",
    "receipt": "not_executed",
    "recommended": "BLOCK",
    "decided_by": "rule",
-   "sdk_preflight_ms": 4
+   "sdk_preflight_ms": 3
   },
   {
-   "run_id": "run-s7-691358f9",
+   "run_id": "run-s7-44a33ac3",
    "tool": "email.send",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 184
+   "sdk_preflight_ms": 167
   },
   {
-   "run_id": "run-s8-426bf7ca",
+   "run_id": "run-s8-d44afea4",
    "tool": "payments.execute",
    "control_action": "allow",
    "receipt": "executed",
    "recommended": "NO_CONFIGURED_RISK",
    "decided_by": "default",
-   "sdk_preflight_ms": 287
+   "sdk_preflight_ms": 299
   }
  ]
 }
