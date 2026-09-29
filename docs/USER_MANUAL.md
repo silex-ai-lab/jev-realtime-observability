@@ -75,7 +75,7 @@ The sentence under the chips repeats this in words.
 | **outcome read-back** | the independent checks of executed payments and emails, by state | see §7 |
 | **not measured** tiles | confirmed preventions (shadow never enforces), recall and false intervention (need independent labels), the LLM-judge baseline (none configured) | shown on purpose. A missing measurement is never shown as 0%. |
 
-The first tiles are computed in your browser from what this page has streamed since you connected. Capture coverage and outcome read-back are computed by the server over all runs.
+The first tiles are computed in your browser from what this page has streamed since you connected. They cover the whole session: the live stream keeps only the newest 500 rows (plus the selected one), and a row that scrolls out is folded into the session totals first, so a long session does not grow the page's memory by whole records. Capture coverage and outcome read-back are computed by the server over all runs.
 
 ## 5. Run a scenario
 

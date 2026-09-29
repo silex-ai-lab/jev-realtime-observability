@@ -13,6 +13,7 @@ let authMode = 'keys';
 let connected = false;
 const rows = new Map();        // event_id → { event, evaluations: [], decisions: [], outcomes: [], el }
 const MAX_ROWS = 500;          // DOM cap: the oldest rows are evicted, the selected row is kept
+const evicted = new Set();     // event_ids of evicted rows: their late evaluations and decisions go straight to `archive`
 let serverMetrics = null;
 let cursor = '0', es = null, selected = null, lastAt = null, judgeInfo = null, activePolicy = null;
 const counts = { expired: 0, gaps: 0 };
@@ -77,12 +78,15 @@ function onRecord(rec) {
   if (rec.kind === 'decision' || rec.kind === 'review') scheduleReviews();
   if (rec.kind === 'review') return;
   if (rec.kind === 'event') {
+    if (evicted.has(p.event_id)) return;
     const r = rows.get(p.event_id) ?? { evaluations: [], decisions: [], outcomes: [] };
     r.event = p; rows.set(p.event_id, r); draw(p.event_id);
   } else if (rec.kind === 'evaluation') {
+    if (evicted.has(p.event_id)) { addEval(archive, p); scheduleKpis(); return; }
     const r = rows.get(p.event_id); if (!r) return;
     r.evaluations.push(p); if (p.judge_source) setProv('judge_source', p.judge_source); draw(p.event_id);
   } else if (rec.kind === 'decision') {
+    if (evicted.has(p.event_id)) { addDecision(archive, p, answered); scheduleKpis(); return; }
     const r = rows.get(p.event_id); if (!r) return;
     r.decisions.push(p);
     for (const k of ['source_mode', 'judge_source', 'tool_environment', 'enforcement_mode']) if (p.provenance?.[k]) setProv(k, p.provenance[k]);
@@ -93,7 +97,7 @@ function onRecord(rec) {
     (r.outcomes ??= []).push(p); draw(p.event_id);
   } else if (rec.kind === 'evaluation_expired') { counts.expired++; }
   else if (rec.kind === 'coverage_gap') { counts.gaps++; }
-  renderKpis();
+  scheduleKpis();
   if (selected === p.event_id) inspect(selected);
 }
 
@@ -136,42 +140,73 @@ function draw(eventId) {
 }
 
 // ---- row cap: keep the DOM bounded; the selected row always survives ----------------------
-// Only the DOM is capped. Evicted rows stay in `rows`, because the session KPIs are computed from it,
-// so the page's memory still grows with a long session.
+// An evicted row's KPI contributions are folded into `archive` and the row leaves `rows`, so the session KPIs
+// keep counting it while the page keeps only a few numbers and its event_id per evicted row.
 function evictRows() {
   const els = $('#stream').querySelectorAll('.row');
   let excess = els.length - MAX_ROWS;
   if (excess <= 0) return;
   for (let i = els.length - 1; i >= 0 && excess > 0; i--) {
-    if (selected != null && els[i].dataset.eventId === selected) continue;
+    const id = els[i].dataset.eventId;
+    if (selected != null && id === selected) continue;
     els[i].remove();
+    const r = rows.get(id);
+    if (r) {
+      for (const e of r.evaluations) addEval(archive, e);
+      for (const d of r.decisions) addDecision(archive, d, answered);
+      rows.delete(id);
+    }
+    evicted.add(id);
     excess--;
   }
 }
 
 // ---- KPIs: from this session's stream; unmeasurable ones say so ------------------------
-function renderKpis() {
-  const decisions = [...rows.values()].flatMap(r => r.decisions.filter(d => !d.replay_of));
-  const evals = [...rows.values()].flatMap(r => r.evaluations.filter(e => e.kind === 'realtime'));
-  // RFC §11.2: judge path and rule-only path are reported separately, never mixed.
+// Aggregates are the retained rows (recomputed on each render) plus `archive`, the folded evicted rows.
+const newAgg = () => ({ i2sJudge: [], i2sRule: [], rtt: [], asked: 0, semOk: 0, decisions: 0, interventions: 0, answered: new Set() });
+const archive = newAgg();
+let live = newAgg();
+const answered = id => live.answered.has(id) || archive.answered.has(id);
+
+function addEval(a, e) {
+  if (e.kind !== 'realtime') return;
+  const returned = e.status === 'ok' || e.status === 'partial', asked = (e.question_ids ?? []).length > 0;
   // Judge path = the realtime judge call returned an answer (aborted/failed calls are not "fast answers").
-  const answered = new Set([...rows.values()].flatMap(r => r.evaluations).filter(e => e.kind === 'realtime' && (e.status === 'ok' || e.status === 'partial') && (e.question_ids ?? []).length).map(e => e.evaluation_id));
-  const judged = decisions.filter(d => d.evaluation_id && answered.has(d.evaluation_id));
-  const ruleOnly = decisions.filter(d => d.timings?.judge_http_rtt_ms == null);
-  const i2sJudge = judged.map(d => d.timings.ingest_to_signal_ms).filter(v => v != null);
-  const i2sRule = ruleOnly.map(d => d.timings.ingest_to_signal_ms).filter(v => v != null);
-  const rtt = evals.filter(e => e.status === 'ok' || e.status === 'partial').map(e => e.judge_http_rtt_ms).filter(v => v != null);
+  if (returned && asked) a.answered.add(e.evaluation_id);
+  if (returned && e.judge_http_rtt_ms != null) a.rtt.push(e.judge_http_rtt_ms);
   // Semantic coverage counts only evaluations that asked the judge something.
-  const asked = evals.filter(e => (e.question_ids ?? []).length > 0);
   // Covered = every required signal arrived (ok, or partial with all required answers present).
-  const semOk = asked.filter(e => e.status === 'ok' || (e.status === 'partial' && (e.required_question_ids ?? []).every(q => e.signals?.[q]))).length;
-  const interventions = decisions.filter(d => d.recommended !== 'NO_CONFIGURED_RISK').length;
+  if (asked) { a.asked++; if (e.status === 'ok' || (e.status === 'partial' && (e.required_question_ids ?? []).every(q => e.signals?.[q]))) a.semOk++; }
+}
+
+// RFC §11.2: judge path and rule-only path are reported separately, never mixed.
+function addDecision(a, d, isAnswered) {
+  if (d.replay_of) return;
+  a.decisions++;
+  if (d.recommended !== 'NO_CONFIGURED_RISK') a.interventions++;
+  const v = d.timings?.ingest_to_signal_ms;
+  if (v == null) return;
+  if (d.evaluation_id && isAnswered(d.evaluation_id)) a.i2sJudge.push(v);
+  if (d.timings.judge_http_rtt_ms == null) a.i2sRule.push(v);
+}
+
+// A busy stream re-renders the tiles at most every 100 ms instead of on every record.
+let kpiTimer = null;
+function scheduleKpis() { kpiTimer ??= setTimeout(() => { kpiTimer = null; renderKpis(); }, 100); }
+
+function renderKpis() {
+  live = newAgg();
+  for (const r of rows.values()) for (const e of r.evaluations) addEval(live, e);
+  for (const r of rows.values()) for (const d of r.decisions) addDecision(live, d, answered);
+  const i2sJudge = archive.i2sJudge.concat(live.i2sJudge), i2sRule = archive.i2sRule.concat(live.i2sRule), rtt = archive.rtt.concat(live.rtt);
+  const asked = archive.asked + live.asked, semOk = archive.semOk + live.semOk;
+  const decisions = archive.decisions + live.decisions, interventions = archive.interventions + live.interventions;
   const tiles = [
     ['i2s_judge_p95', 'ingest → signal p95, judge path', ms(nearestRank(i2sJudge, 0.95)), `measured · n=${i2sJudge.length} · p50 ${ms(nearestRank(i2sJudge, 0.5))}`],
     ['i2s_rule_p95', 'ingest → signal p95, no judge call', ms(nearestRank(i2sRule, 0.95)), `measured · n=${i2sRule.length} (rule-decided or nothing to ask; judge failures excluded from both)`],
     ['rtt_p95', 'judge HTTP RTT p95', ms(nearestRank(rtt, 0.95)), `measured · n=${rtt.length}`],
-    ['semantic_coverage', 'semantic coverage', pct(semOk, asked.length), `required signals delivered / evaluations that asked (n=${asked.length}) · expired ${counts.expired}`],
-    ['interventions', 'recommended interventions', String(interventions), `of ${decisions.length} decisions · gaps ${counts.gaps}`],
+    ['semantic_coverage', 'semantic coverage', pct(semOk, asked), `required signals delivered / evaluations that asked (n=${asked}) · expired ${counts.expired}`],
+    ['interventions', 'recommended interventions', String(interventions), `of ${decisions} decisions · gaps ${counts.gaps}`],
   ];
   const gate = serverMetrics?.gate;
   const enforcing = document.querySelector('[data-provenance="enforcement_mode"] i')?.textContent === 'gate' && gate && gate.gated_attempts > 0;
@@ -194,6 +229,8 @@ function renderKpis() {
   $('#kpis').innerHTML = tiles.map(([id, k, v, s]) => `<div class="kpi" data-kpi="${id}"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join('')
     + na.map(([id, k, v, s]) => `<div class="kpi na" data-kpi="${id}" data-baseline-status="not_measured"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join('');
 }
+// Headless probe hook (tests/probe/live-evict.html): only defined when the probe page sets window.__jevTest.
+if (window.__jevTest) window.__jevTest.rowCount = () => rows.size;
 setInterval(async () => { if (!connected) return; try { serverMetrics = await api('/v1/metrics'); renderKpis(); } catch { /* keep last */ } }, 3000);
 setInterval(() => { $('#lag').textContent = lastAt ? `last record ${Math.round((Date.now() - lastAt) / 1000)} s ago` : ''; }, 1000);
 

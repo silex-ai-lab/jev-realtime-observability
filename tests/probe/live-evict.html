@@ -20,8 +20,35 @@
     if (u.indexOf('/v1/judge') === 0) return jsonRes({ configured: false, backend: null, served_model: null, judge_source: null, wire_model: null });
     if (u.indexOf('/v1/policies/active') === 0) return jsonRes({ policy: { policy_version: 'policy-a1', semantic: { bands: {} } } });
     if (u.indexOf('/v1/stream/tokens') === 0) return jsonRes({ token: 'tok', expires_in: 60 });
+    if (u.indexOf('/v1/reviews') === 0) return jsonRes({ reviews: [] });
     if (u.indexOf('/v1/metrics') === 0) return jsonRes({ capture_coverage: { numerator: 0, denominator: 0, value: null }, outcomes: {}, gate: null });
     return jsonRes({}, false);
+  };
+
+  // Records injected through the real per-kind listeners; `T.sent` keeps every one for the reference KPIs.
+  T.sent = [];
+  T.send = function (kind, payload) {
+    const rec = { cursor: String(++T.cursor), kind: kind, payload: payload };
+    T.sent.push(rec);
+    for (const fn of (T.es && T.es.listeners[kind]) || []) fn({ data: JSON.stringify(rec) });
+  };
+  T.cursor = 0;
+  // A row with a judge evaluation (ok or failed) and a decision, or a rule-only decision.
+  T.emitRich = function (count) {
+    for (let i = 0; i < count; i++) {
+      const idx = T.injected++, id = 'evt-' + idx;
+      T.send('event', { event_id: id, run_id: 'run-probe', boundary: 'pre_tool', tool: 'payments.execute', received_at: new Date().toISOString() });
+      if (idx % 3 !== 0) {
+        const ok = idx % 7 !== 0;
+        T.send('evaluation', { evaluation_id: 'ev-' + idx, event_id: id, kind: 'realtime', status: ok ? 'ok' : 'failed',
+          question_ids: ['q'], required_question_ids: ['q'], signals: ok ? { q: {} } : {}, judge_http_rtt_ms: 20 + idx % 50, judge_source: 'kev-local:probe' });
+        T.send('decision', { decision_id: 'd-' + idx, event_id: id, evaluation_id: 'ev-' + idx, recommended: idx % 10 === 0 ? 'HOLD' : 'NO_CONFIGURED_RISK',
+          decided_by: 'policy', timings: { ingest_to_signal_ms: 30 + idx % 97, judge_http_rtt_ms: 20 + idx % 50 } });
+      } else {
+        T.send('decision', { decision_id: 'd-' + idx, event_id: id, evaluation_id: null, recommended: idx % 5 === 0 ? 'BLOCK' : 'NO_CONFIGURED_RISK',
+          decided_by: 'hard_rule', timings: { ingest_to_signal_ms: 5 + idx % 13, judge_http_rtt_ms: null } });
+      }
+    }
   };
 
   T.emit = function (count) {
@@ -29,7 +56,7 @@
     for (let i = 0; i < count; i++) {
       const idx = T.injected++;
       const rec = {
-        cursor: String(idx + 1),
+        cursor: String(++T.cursor),
         kind: 'event',
         payload: {
           event_id: 'evt-' + idx,
@@ -84,13 +111,57 @@
       <div id="inspector" data-inspector><p class="lv-empty">Select a row.</p></div>
     </aside>
   </div>
+  <section class="card lv-reviews" id="reviews" data-reviews>
+    <header><h2>Review queue</h2><span class="lv-meta" id="review-count"></span>
+      <button class="btn" type="button" id="review-sample" data-review-sample>Sample for review</button></header>
+    <div class="lv-rv-grid">
+      <div class="lv-rv-list" id="review-list" data-review-list><p class="lv-empty">No open reviews.</p></div>
+      <div class="lv-rv-detail" id="review-detail" data-review-detail><p class="lv-empty">Select a review.</p></div>
+    </div>
+  </section>
 </main>
 <script type="module" src="../../web/js/live.js"></script>
 <script>
 // Drive the real eviction path: 600 synthetic rows must cap the DOM at 500, and the selected row
-// must survive further eviction. The verdict goes into the page title for --dump-dom.
+// must survive further eviction. Then 5,000 rows with evaluations and decisions: the `rows` Map must stay
+// at the cap plus the selected row, and the KPI tiles must equal the pre-N4 algorithm (every record kept)
+// computed here over everything sent, including a late decision for an evicted row.
+// The verdict goes into the page title for --dump-dom.
 (function () {
   const T = window.__jevTest;
+  const nearestRank = (xs, q) => { if (!xs.length) return null; const s = [...xs].sort((a, b) => a - b); return s[Math.max(0, Math.ceil(q * s.length) - 1)]; };
+  const ms = v => (v == null ? '—' : Math.round(v) + ' ms');
+  const pct = (a, b) => (b ? ((a / b) * 100).toFixed(1) + '%' : '—');
+  function reference() {
+    const seen = new Set(T.sent.filter(r => r.kind === 'event').map(r => r.payload.event_id));
+    const decisions = T.sent.filter(r => r.kind === 'decision' && seen.has(r.payload.event_id)).map(r => r.payload).filter(d => !d.replay_of);
+    const allEvals = T.sent.filter(r => r.kind === 'evaluation' && seen.has(r.payload.event_id)).map(r => r.payload);
+    const evals = allEvals.filter(e => e.kind === 'realtime');
+    const answered = new Set(allEvals.filter(e => e.kind === 'realtime' && (e.status === 'ok' || e.status === 'partial') && (e.question_ids || []).length).map(e => e.evaluation_id));
+    const i2sJudge = decisions.filter(d => d.evaluation_id && answered.has(d.evaluation_id)).map(d => d.timings.ingest_to_signal_ms).filter(v => v != null);
+    const i2sRule = decisions.filter(d => d.timings && d.timings.judge_http_rtt_ms == null).map(d => d.timings.ingest_to_signal_ms).filter(v => v != null);
+    const rtt = evals.filter(e => e.status === 'ok' || e.status === 'partial').map(e => e.judge_http_rtt_ms).filter(v => v != null);
+    const asked = evals.filter(e => (e.question_ids || []).length > 0);
+    const semOk = asked.filter(e => e.status === 'ok' || (e.status === 'partial' && (e.required_question_ids || []).every(q => e.signals && e.signals[q]))).length;
+    const interventions = decisions.filter(d => d.recommended !== 'NO_CONFIGURED_RISK').length;
+    return {
+      i2s_judge_p95: ms(nearestRank(i2sJudge, 0.95)) + '|n=' + i2sJudge.length + ' · p50 ' + ms(nearestRank(i2sJudge, 0.5)),
+      i2s_rule_p95: ms(nearestRank(i2sRule, 0.95)) + '|n=' + i2sRule.length + ' ',
+      rtt_p95: ms(nearestRank(rtt, 0.95)) + '|n=' + rtt.length,
+      semantic_coverage: pct(semOk, asked.length) + '|(n=' + asked.length + ')',
+      interventions: String(interventions) + '|of ' + decisions.length + ' decisions',
+    };
+  }
+  function kpiMismatches() {
+    const want = reference(), bad = [];
+    for (const [id, w] of Object.entries(want)) {
+      const [v, sub] = w.split('|');
+      const el = document.querySelector('[data-kpi="' + id + '"]');
+      const gotV = el && el.querySelector('.v').textContent, gotS = el && el.querySelector('.s').textContent;
+      if (gotV !== v || !gotS.includes(sub)) bad.push(id + ':' + gotV + '/' + v);
+    }
+    return bad;
+  }
   function run() {
     const es = T.es;
     if (!es || !(es.listeners['event'] || []).length) { setTimeout(run, 30); return; }
@@ -101,15 +172,28 @@
     const selId = target.getAttribute('data-event-id');
     T.emit(50);                           // force more eviction
     const rows2 = document.querySelectorAll('#stream .row');
+    T.emitRich(5000);
+    // A late decision for an evicted row still counts, as it did when evicted rows stayed in the Map.
+    T.send('decision', { decision_id: 'd-late', event_id: 'evt-700', evaluation_id: null, recommended: 'BLOCK', decided_by: 'hard_rule',
+      timings: { ingest_to_signal_ms: 999, judge_http_rtt_ms: null } });
+    setTimeout(() => check(rows1, rows2, selId), 300);   // the tiles re-render at most every 100 ms
+  }
+  function check(rows1, rows2, selId) {
+    const rows3 = document.querySelectorAll('#stream .row');
+    const mapSize = T.rowCount();
     const selEl = document.querySelector('#stream .row[data-event-id="' + selId + '"]');
     const selectedSurvives = !!selEl && selEl.isConnected;
-    const capOk = rows1.length <= 500 && rows2.length <= 500;
+    const capOk = rows1.length <= 500 && rows2.length <= 500 && rows3.length <= 501;
+    const mapOk = mapSize <= 500 + 1;
+    const bad = kpiMismatches();
     const noErrors = T.errors.length === 0;
-    const ok = capOk && selectedSurvives && noErrors;
+    const ok = capOk && mapOk && bad.length === 0 && selectedSurvives && noErrors;
     document.title = (ok ? 'PASS' : 'FAIL')
-      + ' cap1=' + rows1.length + ' cap2=' + rows2.length
+      + ' cap1=' + rows1.length + ' cap2=' + rows2.length + ' cap3=' + rows3.length
+      + ' map=' + mapSize + ' rows_sent=' + T.injected
+      + ' kpis=' + (bad.length ? 'differ:' + bad.join(',') : 'equal')
       + ' selected=' + (selectedSurvives ? 'survives' : 'evicted')
-      + ' errors=' + T.errors.length;
+      + ' errors=' + T.errors.length + (T.errors.length ? ':' + T.errors[0] : '');
   }
   setTimeout(run, 0);
 })();
