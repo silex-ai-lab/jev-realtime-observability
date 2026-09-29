@@ -2,6 +2,17 @@
 
 Newest first. The plan and its review record live in this folder.
 
+## 2026-09-29 — Gate C: the sandbox pre-tool gate
+
+[Plan and review record](2026-09-28_BUILD_PLAN.md) · [Gate design and measurements](../docs/GATE.md).
+
+- **What it does:** `SOURCE_MODE=live_sandbox_gate` requires a control bound to the exact call before any write or payment tool runs.
+  - The control covers the args digest and authorization version, with an expiry and single use.
+  - The gateway re-verifies it inside the side-effect transaction, so a hold or deny never executes.
+  - Only a not_executed receipt under a non-allow control counts as prevented.
+- **Measured** (`runs/gate-smoke-2026-09-28/`): hard-rule decisions arrive in milliseconds. The judged path fits the budget with an isolated gate judge (Kev-0.8B), and fails closed under GPU saturation.
+- **Review:** three-seat, 3 code rounds (a TOCTOU and a dedup regression fixed), unanimous on `d0aead2`.
+
 ## 2026-09-29 — Gate B: outcome verification, open-data evaluation, fine-tune
 
 [Plan and review record](2026-09-28_BUILD_PLAN.md) · [Evaluation data and results](../docs/EVAL.md).
