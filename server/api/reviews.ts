@@ -13,7 +13,7 @@ const ID = '([A-Za-z0-9._:~\\-]+)';
 const reviewMatch = new RegExp(`^/v1/reviews/${ID}$`), resolveMatch = new RegExp(`^/v1/reviews/${ID}/resolve$`);
 
 function checkValue(questionId: string, value: unknown): void {
-  const q = RUBRIC.questions[questionId];
+  const q = Object.hasOwn(RUBRIC.questions, questionId) ? RUBRIC.questions[questionId] : undefined;
   if (!q) throw new HttpError(400, 'unknown_question', `unknown question ${questionId}`);
   const err = labelValueError(q, value);
   if (err) throw new HttpError(400, 'bad_value', `${questionId}: ${err}`);

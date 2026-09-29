@@ -132,6 +132,8 @@ function draw(eventId) {
 }
 
 // ---- row cap: keep the DOM bounded; the selected row always survives ----------------------
+// Only the DOM is capped. Evicted rows stay in `rows`, because the session KPIs are computed from it,
+// so the page's memory still grows with a long session.
 function evictRows() {
   const els = $('#stream').querySelectorAll('.row');
   let excess = els.length - MAX_ROWS;

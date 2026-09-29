@@ -28,6 +28,8 @@ test('labels: type validation, ref ownership, admin-only writes, tenant-scoped r
     assert.equal((await post({ question_id: 'payee_relation', value: 'maybe' })).status, 400);
     assert.equal((await post({ question_id: 'semantic_impact', value: 3 })).status, 400);
     assert.equal((await post({ question_id: 'no_such_question', value: true })).status, 400);
+    assert.equal((await post({ question_id: 'constructor', value: true })).status, 400);
+    assert.equal((await post({ question_id: '__proto__', value: true })).status, 400);
     assert.equal((await post({ question_id: 'goal_deviation', value: true, evidence_class: 'gut_feeling' })).status, 400);
     // Unknown ref, and another tenant's ref → 404.
     assert.equal((await post({ ref: 'snap-does-not-exist', question_id: 'goal_deviation', value: true })).status, 404);

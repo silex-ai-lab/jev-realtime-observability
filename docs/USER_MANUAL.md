@@ -208,7 +208,7 @@ This is the original click-through demo. Its judge, latencies and tenant are **s
 2. Open `/`. With login off it connects by itself; with `AUTH_MODE=keys`, connect with the reader and admin keys. The header should show `judge kev-local:…` (or `typesafe:…` if hosted Jev is configured).
 3. Press **S3**. The `pre_tool payments.execute` row must turn **BLOCK · rule**; open it and check that `amount_limit` shows BLOCK.
 4. Press **S1**. All rows should show `no configured risk`. Open the payment's `pre_tool` row: *Realtime judge evaluation* must be `status ok` with answer cards. Its `post_tool` row gets `outcome: verified success` within a few seconds.
-5. Press **F1**. The payment must be **HOLD · judge_unavailable**.
+5. With `FAULT_INJECTION=1` set, press **F1**. The payment must be **HOLD · judge_unavailable**. (Without it, F1 runs as a normal payment; the drill is off by default.)
 6. Press **S5**, wait 10–15 s, and open its payment's `post_tool` row. It should read `unknown_after_deadline`.
 7. On any decision, press **Replay this decision**. The result must say *Judge calls made by this replay: 0*.
 8. Check **capture coverage** reads 100% and **semantic coverage** is not falling. A falling semantic coverage means judge timeouts.

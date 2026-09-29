@@ -187,3 +187,20 @@ Releasing held gate actions on review; the review UI (T8); export (T6); sampler 
 DeepSeek's r3 non-blocking notes are implementation guidance, passed to T9's owner, not plan
 changes: give `policy_activations` a `bigserial` id and order rollback's lookup by it; keep the
 cache-fill test hook a no-op unless a test installs it.
+
+## Code review
+
+### Code round 1 (diff revision `792abd53`) → changes
+
+Verdicts: coder-deepseek **IMPL-APPROVED** (3 non-blocking notes); reviewer-codex **IMPL-REJECTED** (3 blocking).
+
+| Defect (who) | Change |
+|---|---|
+| Activate/rollback with an empty or `null` body → 500; label `question_id: "constructor"` → 500 (Codex 1) | `expectedVersion()` in `server/api/policies.ts` requires a non-empty string, 400 otherwise; rubric lookup uses `Object.hasOwn`; regression tests for six bad bodies on both routes and for `constructor` / `__proto__` |
+| Immutability assertions queried tenant `alpha` (stored as `t-alpha`), so they compared `null` with `null`; the cache race checked only GET after activate (Codex 2) | `bodyOf` uses `t-alpha` and asserts the published row exists; race tests now cover activate **and** rollback, each checked through GET, a worker decision and a preflight control, each starting from a cold cache; the race helper fails in 5 s instead of hanging if the read never reaches the fill |
+| The "redelivery" test called `enqueueJob`, which is a no-op for an existing job (Codex 3) | The test puts the completed job back to `queued`, asserts it was leased and completed again (`attempts + 1`), and that there is still one original decision and one task; the direct duplicate-insert check stays as a separate assertion |
+| (Codex, non-blocking) the real-Postgres test hardcodes `policy-a1` against a persistent DB | It starts from the current active version and asserts one active row |
+| (Codex, non-blocking) the DOM cap must not be described as bounded memory | Comment in `web/js/live.js` states that memory still grows with the session |
+| (DeepSeek 1) the manual's five-minute test still expects F1 to hold without `FAULT_INJECTION=1` | `docs/USER_MANUAL.md` step 5 says to set it |
+
+Mutation checks on the new tests: removing the cache generation guard fails all four race tests; removing the body validation fails the 400 test; removing `Object.hasOwn` fails the labels test. `npm test`: 181 tests, 178 pass, 0 fail, 3 skip.

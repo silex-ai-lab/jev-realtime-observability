@@ -24,6 +24,14 @@ function decodeVersion(encoded: string): string {
   catch { throw new HttpError(400, 'bad_version', 'malformed version escape'); }
 }
 
+/** The optimistic-check body of activate and rollback: `{ expected_active_version: non-empty string }`, else 400. */
+async function expectedVersion(req: IncomingMessage): Promise<string> {
+  const body = await readJson(req);
+  const v = body && typeof body === 'object' ? (body as { expected_active_version?: unknown }).expected_active_version : undefined;
+  if (typeof v !== 'string' || !v) throw new HttpError(400, 'bad_request', 'body must be { "expected_active_version": "<version>" }');
+  return v;
+}
+
 /** Returns true when the request was one of this module's routes. */
 export async function handle(d: ApiDeps, auth: AuthFn, req: IncomingMessage, res: ServerResponse, url: URL): Promise<boolean> {
   const p = url.pathname, m = req.method ?? 'GET';
@@ -47,8 +55,7 @@ export async function handle(d: ApiDeps, auth: AuthFn, req: IncomingMessage, res
   }
   if (m === 'POST' && p === '/v1/policies/rollback') {
     const a = await auth(req, ['admin']);
-    const body = await readJson(req) as { expected_active_version?: unknown };
-    const expected = typeof body.expected_active_version === 'string' ? body.expected_active_version : '';
+    const expected = await expectedVersion(req);
     const outcome = await d.db.tx(async q => {
       await lockPolicy(q, a.tenant_id);
       const active = await bootstrapActivePolicy(q, a.tenant_id);
@@ -98,8 +105,7 @@ export async function handle(d: ApiDeps, auth: AuthFn, req: IncomingMessage, res
   if (m === 'POST' && act) {
     const a = await auth(req, ['admin']);
     const version = decodeVersion(act[1]);
-    const body = await readJson(req) as { expected_active_version?: unknown };
-    const expected = typeof body.expected_active_version === 'string' ? body.expected_active_version : '';
+    const expected = await expectedVersion(req);
     const outcome = await d.db.tx(async q => {
       await lockPolicy(q, a.tenant_id);
       const active = await bootstrapActivePolicy(q, a.tenant_id);

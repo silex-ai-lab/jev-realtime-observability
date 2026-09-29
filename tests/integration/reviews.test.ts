@@ -32,13 +32,26 @@ test('shadow: every original HOLD/REVIEW decision opens exactly one task, also o
     assert.deepEqual(tasks.map(t => t.decision_id).sort(), held.map(d => d.decision_id).sort());
     assert.ok(tasks.every(t => t.body.path === 'worker' && t.body.run_id === run.run_id));
 
-    // Redelivery: re-enqueue the held event's realtime job; the worker must not add a decision or a task.
-    await h.db.tx(q => repos.enqueueJob(q, 't-alpha', held[0].event_id, 'realtime', 0, new Date(Date.now() + 60_000).toISOString()));
+    // Redelivery: put the held event's completed realtime job back in the queue (as an expired lease would)
+    // and prove the worker really processed it again, without a second decision or task.
+    const job = async () => (await h.db.query<{ status: string; attempts: number }>(
+      `SELECT status, attempts FROM evaluation_jobs WHERE tenant_id = 't-alpha' AND event_id = $1 AND kind = 'realtime'`, [held[0].event_id])).rows[0];
+    const before = await job();
+    assert.equal(before.status, 'done');
+    await h.db.query(`UPDATE evaluation_jobs SET status = 'queued', lease_until = NULL, finished_at = NULL
+      WHERE tenant_id = 't-alpha' AND event_id = $1 AND kind = 'realtime'`, [held[0].event_id]);
     await h.app.worker.drain();
-    // And the insert itself is idempotent per decision.
-    assert.equal(await h.db.tx(q => openReviewTask(q, held[0], { path: 'worker', run_id: run.run_id, tool: null })), null);
+    const after = await job();
+    assert.equal(after.status, 'done');
+    assert.equal(after.attempts, before.attempts + 1, 'the redelivered job was leased and completed again');
+    const originals = await h.db.query<{ n: number }>(`SELECT count(*)::int AS n FROM decisions WHERE tenant_id = 't-alpha' AND event_id = $1 AND replay_of IS NULL`, [held[0].event_id]);
+    assert.equal(originals.rows[0].n, 1, 'still exactly one original decision');
     tasks = await openTasks(h);
     assert.equal(tasks.length, held.length);
+    assert.equal(tasks.filter(t => t.decision_id === held[0].decision_id).length, 1);
+
+    // Separately: the insert itself is idempotent per decision.
+    assert.equal(await h.db.tx(q => openReviewTask(q, held[0], { path: 'worker', run_id: run.run_id, tool: null })), null);
 
     // A policy-only replay of a held decision opens no task.
     const policy = (await h.json<{ policy: object }>('GET', '/v1/policies/active')).body.policy;
