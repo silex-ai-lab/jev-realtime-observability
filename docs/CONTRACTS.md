@@ -300,7 +300,7 @@ Plan: `logs/2026-09-29_WORKPLAN_BATCH1_PLAN.md` (decisions D2–D5). Routes live
 - Other errors: 404 for a version of another tenant or none; 409 `bad_target` (activate a draft or the active one), 409 `nothing_to_roll_back`.
 - Each switch writes one `policy_activations` row and one audit row (`policy_publish`, `policy_activate`, `policy_rollback`). No route changes a body after publish.
 - **Cache:** the app caches each tenant's active policy. Routes call `invalidatePolicy` after commit; a per-tenant generation counter stops a read that began before the switch from re-filling the cache with the old policy. This holds within one server process, which is the only deployment today; several replicas would each need invalidation.
-- Real-PostgreSQL row-lock behaviour is tested only when `TEST_DATABASE_URL` is set; PGlite runs transactions one at a time, so its concurrency test proves the stale check, not Postgres locking.
+- Real-PostgreSQL row-lock behaviour runs when `TEST_DATABASE_URL` is set (`tests/security/policy-lifecycle.test.ts`, "real-Postgres concurrency"), and it has passed on PostgreSQL (plan 2026-09-30, N1). PGlite runs transactions one at a time, so without that variable the concurrency test proves the stale check, not Postgres locking.
 
 ### 10.4 Answerable questions and the active-learning sampler (batch 2: F0, T7)
 

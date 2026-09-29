@@ -29,6 +29,15 @@ Apple M4 Pro; the gate judge is Kev-0.8B via MLX. Every scenario ran end to end:
 - **Saturating the same GPU with a Kev-4B workload pushed the gate judge to the budget.** In the recorded saturated run (the `gate-judge-while-kev4b-saturated` row above), judged preflights reached the budget, and some benign judged payments were **held** (`judge_unavailable`) instead of allowed. The row's allowed and prevented counts show how many. An earlier, unrecorded run under the same kind of contention held every judged payment. Either way, the gate **failed closed**: held, never silently allowed. That is safe, but it blocks legitimate work.
 - **Deployment rule that follows:** give the gate judge its own accelerator (or run the shadow judge elsewhere), and watch `/v1/metrics` `gate.sdk_preflight_ms` and the rate of `judge_unavailable` holds.
 
+## Tested on PostgreSQL
+
+The one-time control relies on row locks: the deciding transaction takes the control row `FOR UPDATE`, re-checks it, consumes the nonce and executes. PGlite runs one transaction at a time, so `tests/integration/gate-postgres.test.ts` checks the locking on a real PostgreSQL when `TEST_DATABASE_URL` is set (it skips otherwise):
+- two concurrent consumes of one control: exactly one executes, the other is refused as consumed, and the ledger has one row;
+- a revocation holding the control row: the consume waits for it and is refused once it commits;
+- free races between the revoke API and a consume: an executed call was always consumed before its revocation, and a refused call never consumes.
+
+The Log of `skills/jev-work-plan/plans/2026-09-30.md` (task N1) records the PostgreSQL version it passed on.
+
 ## What the gate does not do yet
 
 Semantic signals are uncalibrated (see `docs/EVAL.md`), so they never block. S2 (payee mismatch) and S7 (goal deviation) are **allowed** in gate mode today. What blocks is:
