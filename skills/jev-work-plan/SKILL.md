@@ -7,10 +7,7 @@ description: Resume or continue the dated work plan for jev-realtime-observabili
 
 ## Where things stand (update this when a plan closes)
 
-- **Current plan:** [`plans/2026-09-30.md`](plans/2026-09-30.md). It was created 2026-09-29 at `3d16c9f` and nothing in it has started. Its open tasks:
-  - N1: real-PostgreSQL concurrency tests (`needs: pg`);
-  - N2: a Kev-4B fine-tune (`needs: gpu, kev`);
-  - N3–N6: follow-ups that review recorded (any machine).
+- **Current plan:** none open. [`plans/2026-09-30.md`](plans/2026-09-30.md) is finished: N1–N6 were done on 2026-09-29 on an M4 Pro (48 GB) with PostgreSQL 17.11. Its Log ends with the one follow-up it suggests: a 4B-specific fine-tune recipe, since the Kev-4B fine-tune (N2) did not match the 0.8B one on held-out goal_deviation. Start the next day's plan from that Log.
 - **Closed:** [`plans/2026-09-29.md`](plans/2026-09-29.md). T1–T10 are done in two reviewed fleet runs (`logs/2026-09-29_WORKPLAN_BATCH1_PLAN.md`, `…BATCH2_PLAN.md`). T10 was a Kev-0.8B rerun, by the user's decision on a 24 GB Mac.
 
 ## Quick resume on a new host
