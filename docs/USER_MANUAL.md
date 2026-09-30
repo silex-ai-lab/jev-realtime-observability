@@ -183,7 +183,7 @@ The console opens on the **Runs view**, which reads each run as plain sentences 
 
 The dark header holds, on one row: the brand, a **mode pill** (Gate mode = blue dot, Watch-only = amber dot), the session numbers as **pills**, a **"N waiting for a person"** pill (hidden while nothing waits; clicking it scrolls to the review section), the **Run a scenario** button, and the Runs / Engineer toggle. A quiet line below carries the mode sentence. The provenance chips and the judge note appear in the Engineer view (they stay in the DOM but are hidden in the Runs view).
 
-The session pills count **tool calls only**, not boundary events, over the runs in the runs list. The list keeps the newest 50 runs (plus a run you selected, until you pick another); an older run is dropped from the page, and its late records are ignored. Once that has happened, the pills say *counts cover the 50 most recent runs*. The server keeps every run: `GET /v1/runs/:id` and the Engineer metrics are not limited this way.
+The session pills count **tool calls only**, not boundary events, over the runs in the runs list. The list keeps the newest 50 runs (plus a run you selected, until you pick another); an older run is dropped from the page, and its late records are ignored (the page remembers the last 5000 dropped runs for this). Once that has happened, the pills say *counts cover the 50 most recent runs*, plus *the selected older run* while one is pinned. The server keeps every run: `GET /v1/runs/:id` and the Engineer metrics are not limited this way.
 
 | Pill | Counts |
 |---|---|

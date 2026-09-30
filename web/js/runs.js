@@ -24,7 +24,7 @@ export function createRunsView(deps) {
   // Retention: the view keeps the newest MAX_RUNS runs (plus the run the viewer selected). Older runs are forgotten,
   // timers included, so a long session does not grow memory; their late records are ignored, not resurrected.
   const evicted = new Set();
-  let evictedCount = 0;
+  let evictedCount = 0, pinnedShown = false;
 
   const runOf = runId => {
     if (evicted.has(runId)) return null;
@@ -191,6 +191,7 @@ export function createRunsView(deps) {
     const ordered = sorted.slice(0, MAX_RUNS);
     const pinned = sorted.slice(MAX_RUNS).find(r => r.runId === selectedRun);
     if (pinned) ordered.push(pinned);   // a manually selected older run stays on screen until the viewer picks another
+    pinnedShown = !!pinned;
     for (const r of sorted.slice(MAX_RUNS)) if (r !== pinned) evict(r);
     const allCalls = [], rowsHtml = [];
     root.innerHTML = ordered.length ? ordered.map(r => {
@@ -222,6 +223,7 @@ export function createRunsView(deps) {
     for (const x of r.events.values()) if (x.event?.boundary === 'post_tool' && x.event.operation_id) byOperation.delete(x.event.operation_id);
     runs.delete(r.runId); evictedCount++;
     evicted.add(r.runId);
+    // Remembered for the newest 5000 evictions; a record for an older evicted run would start a new partial card.
     if (evicted.size > 5000) evicted.delete(evicted.values().next().value);
   }
   let autoFollow = true;   // follow the newest run until the viewer picks one
@@ -241,7 +243,7 @@ export function createRunsView(deps) {
       sum.failed ? n('failed', sum.failed, 'failed', 'fail') : '',
       sum.didNotRunOther ? n('didNotRunOther', sum.didNotRunOther, 'did not run (other)', 'warn') : '',
       sum.pending ? n('pending', sum.pending, 'pending', 'neutral') : '',
-    ].join('') + (evictedCount ? `<span class="lv-meta" data-window>counts cover the ${MAX_RUNS} most recent runs</span>` : '') + `<span hidden>${n('didNotRun', sum.didNotRun, '', '')}${n('waiting', openReviews.length, '', '')}</span>`;
+    ].join('') + (evictedCount ? `<span class="lv-meta" data-window>counts cover the ${MAX_RUNS} most recent runs${pinnedShown ? ' plus the selected older run' : ''}</span>` : '') + `<span hidden>${n('didNotRun', sum.didNotRun, '', '')}${n('waiting', openReviews.length, '', '')}</span>`;
     const wb = document.querySelector('#waiting-btn'), wn = document.querySelector('#waiting-n');
     if (wb && wn) { wn.textContent = String(openReviews.length); wb.hidden = openReviews.length === 0; }
   }

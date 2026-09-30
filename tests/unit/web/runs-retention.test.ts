@@ -53,6 +53,8 @@ test('a manually selected older run stays rendered and selected past the window'
   assert.equal(selected(), 'run-0');
   assert.equal(cards(), 51);
   assert.equal(v.runIds().length, 51);
+  assert.equal(calls(), 51);
+  assert.match(nodes['#runs-summary'].innerHTML, /counts cover the 50 most recent runs plus the selected older run/);
   v.reset();
 });
 
