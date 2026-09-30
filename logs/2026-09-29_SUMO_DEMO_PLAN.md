@@ -240,6 +240,38 @@ These answers settle the §8 questions. They change no task, file list or accept
 
 - **Review base:** `BASE=81f9c9f` (main). Work happens on branch `sumo-demo`; nothing merges to `main` before the Step 7 code gate.
 - **F0:** done, alone. `npm test`: 210 tests, 206 pass, 0 fail, 4 skip, with no existing test edited. `npm run probe` against Kev-0.8B: 8/8 PASS. CONTRACTS §11 frozen.
+- **B1, B2 and E1** (DeepSeek), **P1, V1 and D1** (planner) and **R1** (Codex) are built against CONTRACTS §11.
+- **Planner fixes to other seats' slices** (small gaps, per the skill; all are listed for the code gate):
+  - E1: the exporter now fills `silex.control_action` from `control_decisions`, and `silex.receipt_status` from `execution_receipts` when the receipt exists. The gate path's decision payload already carried `control_action` (`server/api/preflight.ts:131`), but the exporter did not map it and the worker path has none, so a single source per operation is used. The receipt is never in the decision payload. (The earlier wording "never carries either" was wrong about `control_action`; DeepSeek, code round 2.) A gate-mode test was added and shown to fail with the fix disabled. Its cleanup is in `finally`: without that, a failing run hung the test process.
+  - B1: the SOC tables moved from an append to `sandbox/schema.sql` into their own migration, `sandbox/schema_002_soc.sql`. An existing database had already recorded `sandbox/schema.sql` and never got the tables; real PostgreSQL failed with `relation "sandbox.soc_users" does not exist`. Covered by `tests/unit/sandbox/soc-migration.test.ts`.
+  - P1: the harness forwards `testDisabledRules`. It is outside every task's file list and is a test helper only.
+- **Outside the plan's file lists, and why:**
+  - `tests/helpers/harness.ts`: one option passthrough.
+  - `sandbox/schema_002_soc.sql`: the migration fix above.
+- **Checks before the code gate:**
+  - `npm test`: 228 tests, 224 pass, 0 fail, 4 skip.
+  - The real-PostgreSQL gate, policy and Gate C suites: 25/25.
+  - `npm run probe` (AP, Kev-0.8B): 8/8.
+  - `node tests/probe/soc-probes.ts`: 7 PASS, including the negative control.
+  - Reports: [stub judge](../runs/vv-soc-2026-09-29/REPORT.md) and [live Kev-0.8B](../runs/vv-soc-live-kev08b-2026-09-29/REPORT.md).
+
+## Code round 1 → changes
+
+Round 1 (revision `e99bde8b`): DeepSeek IMPL-APPROVED; Codex IMPL-REJECTED with four defects.
+
+| # | Defect (who) | Change |
+|---|---|---|
+| 1 | A `webhook.post` with an allowlisted `to` or `remit_domain` passed the domain rule although it posts to `url` (Codex, reproduced) | The webhook destination is the https URL host only. A missing, malformed or non-https URL gets `dest_domain = invalid-url:…`, `domain_allowed = false`, so the rule BLOCKs. The handler validates with `new URL`. A new gate test covers a spoofed `to`, a malformed URL, `http://` and a missing URL (deny, not_executed, empty sink). With the fix disabled, the test fails. |
+| 2 | The export feed read one 1,000-record page and stopped (Codex, reproduced) | The feeder drains each tenant page by page until a short page. The backlog test showed the root cause in core code: `readOutbox` ordered by the text alias of the cursor (`'10' < '9'`), which skipped and repeated records across pages, and would also affect the live console stream on a large backlog. It now orders by the numeric `outbox.cursor`. Regression tests: `tests/unit/repos/outbox-order.test.ts`, and a 1,500-record backlog exported exactly once after a single notification. |
+| 3 | Export-feed failures could crash the process, and shutdown did not stop the feed (Codex) | The feeder has an error boundary (failures counted in `App.otlpFeed.errors()` and logged, with a delayed retry), advances the cursor only after a record is handled, and on close removes its listener, clears the retry timer and awaits the in-flight feed before the database closes. Test: breaking a table the feeder reads leaves decisions intact, gives no unhandled rejection, and after repair the pending decisions are exported. |
+| 4 | The acceptance report did not check authoritative state; SOC5's harm check was "> 0 suspended" (Codex) | Per-scenario A checks (expected vs actual, counted in the match). SOC5 checks each of the three accounts. A negative test removes SOC1's deny-list entry and the report shows the mismatch. Both reports were regenerated. |
+| n | Allow branches of both SOC rules untested; "matched on N of N" not pinned; CONTRACTS seed wording; the "every decision leaves" claim (DeepSeek, non-blocking; Codex #2) | `tests/unit/rules/soc-rules.test.ts` covers every branch and the seam. The report test pins "9 of 9" for both layers. CONTRACTS §11.2 wording corrected. The talk track says export is best-effort (drops counted, bounded retries), and the claims sheet adds "delivery guaranteed: not claimed". |
+
+**Checks after round 1:**
+- `npm test`: 236 tests, 232 pass, 0 fail, 4 skip.
+- Real PostgreSQL: 25/25.
+- SOC probes: 7 PASS, including the negative control.
+- AP probes against Kev-0.8B: 8/8.
 
 ## Round-1 objections → changes
 
@@ -313,3 +345,37 @@ These answers settle the §8 questions. They change no task, file list or accept
   - `reviewer-codex` (Codex): PLAN-APPROVED
   - PLANNER (claude): PLAN-APPROVED
 - **Review files** were kept outside the repo, in the planner's scratch directory.
+
+## Outcome (code gate)
+
+- **Rounds:** 3.
+  - r1 (`e99bde8b`): DeepSeek approved; Codex rejected with 4 defects.
+  - r2 (`ccc2ef7f`): both approved.
+  - r3 (`034bbdab`): a confirmation round for DeepSeek's three non-blocking doc and log suggestions; both approved.
+- **What each seat caught in code review:**
+  - **Codex:**
+    - a webhook destination spoofable through `to`;
+    - the export feed stopping after one page;
+    - export-feed failures able to crash the process, and shutdown not awaiting the feed;
+    - the acceptance report missing its authoritative-state layer.
+  - **DeepSeek:**
+    - untested allow branches of both SOC rules;
+    - unpinned match counts;
+    - contract and schema drift;
+    - an overstated "weakly separated" claim;
+    - a wrong note in this log.
+  - **Planner, before review:**
+    - `control_action` missing from exported spans;
+    - the SOC tables never reaching an existing database (the migration fix);
+    - a hanging test cleanup.
+  - **Planner, while fixing round 1:** the pre-existing `readOutbox` text-ordering bug in core code.
+- **Final verdicts on revision `034bbdab6063da3c733fb64a86e64fc5ee3a6084`** (`git diff 81f9c9f`):
+  - `coder-deepseek` (deepseek/deepseek-v4-pro): IMPL-APPROVED
+  - `reviewer-codex` (Codex): IMPL-APPROVED
+  - PLANNER (claude): IMPL-APPROVED
+- **Checks on that revision:**
+  - `npm test`: 236 tests, 232 pass, 0 fail, 4 skip.
+  - Real PostgreSQL gate, policy and Gate C suites: 25/25.
+  - SOC probes: 7 PASS, including the negative control.
+  - AP probes against Kev-0.8B: 8/8.
+- **Only this record file** differs from the approved revision.

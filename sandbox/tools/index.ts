@@ -7,6 +7,7 @@ import type { Queryable } from '../../server/storage/db.ts';
 import { sha256 } from '../../contracts/canonical.ts';
 import type { ToolCall } from '../index.ts';
 import { effectiveLedgerStatus } from '../settlement.ts';
+import { SOC_HANDLERS, SOC_TOOL_NAMES } from './soc.ts';
 
 const toMs = (v: unknown): number => (v instanceof Date ? v.getTime() : Date.parse(String(v)));
 
@@ -20,7 +21,7 @@ export interface ToolOutcome {
   resource_ref: string | null;
 }
 
-export const TOOL_NAMES = ['erp.get_po', 'vendor.lookup', 'erp.payment_status', 'email.send', 'payments.execute'] as const;
+export const TOOL_NAMES = ['erp.get_po', 'vendor.lookup', 'erp.payment_status', 'email.send', 'payments.execute', ...SOC_TOOL_NAMES] as const;
 
 const domainOf = (addr: unknown): string | null => (typeof addr === 'string' && addr.includes('@')) ? addr.split('@').pop()!.toLowerCase() : null;
 
@@ -106,6 +107,7 @@ const HANDLERS: Record<string, (db: Queryable, call: ToolCall) => Promise<ToolOu
   'erp.payment_status': erpPaymentStatus,
   'email.send': emailSend,
   'payments.execute': paymentsExecute,
+  ...SOC_HANDLERS,
 };
 
 export async function dispatchTool(db: Queryable, call: ToolCall): Promise<ToolOutcome> {

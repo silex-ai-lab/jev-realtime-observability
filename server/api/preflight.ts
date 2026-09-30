@@ -25,6 +25,8 @@ export interface PreflightDeps {
   policy: (tenantId: string) => Promise<PolicyBody>;
   /** Sandbox fault injection (F1). Off unless the deployment enables it explicitly. */
   faultInjection: boolean;
+  /** Test-only rule seam (docs/CONTRACTS.md §11.5); empty in every deployment. */
+  disabledRules?: readonly string[];
 }
 
 export class PreflightError extends Error {
@@ -70,7 +72,7 @@ export async function preflight(d: PreflightDeps, tenantId: string, body: unknow
   const history = await repos.listRunEvents(d.db, tenantId, r.run_id, ev.received_at, 500);
   const a = await assembleSnapshot({ tenantId, event: ev, history, authority: d.authority, judgeViewMaxTokens: policy.judge_view_max_tokens,
     judgeModel: d.judge?.config.model ?? 'none', now });
-  const rules = evaluateRules(a.snapshot);
+  const rules = evaluateRules(a.snapshot, d.disabledRules ?? []);
   const hardDecided = rules.some(x => x.verdict === 'STOP' || x.verdict === 'BLOCK' || x.verdict === 'HOLD');
 
   let evaluation: EvaluationRecord | null = null;

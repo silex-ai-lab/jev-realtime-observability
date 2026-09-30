@@ -8,6 +8,7 @@ import type { DecisionSnapshot, SnapshotEvidence } from '../../contracts/snapsho
 import type { SystemOneRequest, WireQuestion } from '../../contracts/judge.ts';
 import type { Impact } from '../../contracts/common.ts';
 import type { AuthorityReader } from '../../sandbox/index.ts';
+import { SOC_GATED_TOOLS } from '../../sandbox/control.ts';
 import questionsJson from '../../rubrics/jev-questions.v1.json' with { type: 'json' };
 import manifestJson from '../../rubrics/rubric-manifest.v1.json' with { type: 'json' };
 
@@ -44,6 +45,8 @@ export interface Assembled {
 const str = (v: unknown): string | null => (typeof v === 'string' && v.length ? v : null);
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const domainOf = (addr: string | null) => (addr && addr.includes('@') ? addr.split('@').pop()!.toLowerCase() : addr?.toLowerCase() ?? null);
+/** Host of an https URL; null for anything else (missing, malformed, another scheme). */
+const hostOf = (url: string | null) => { if (!url) return null; try { const u = new URL(url); return u.protocol === 'https:' && u.hostname ? u.hostname.toLowerCase() : null; } catch { return null; } };
 const clip = (s: string, max: number) => (s.length <= max ? { text: s, truncated: false } : { text: s.slice(0, max - 1) + '…', truncated: true });
 
 export async function assembleSnapshot(inp: AssembleInput): Promise<Assembled> {
@@ -90,9 +93,16 @@ export async function assembleSnapshot(inp: AssembleInput): Promise<Assembled> {
   for (const [k, v] of Object.entries(args)) if (!reg?.redact_args.includes(k)) argsSummary[k] = v;
 
   facts.amount_usd = num(args.amount_usd);
-  const destDomain = domainOf(str(args.to)) ?? str(args.remit_domain)?.toLowerCase() ?? null;
+  // A webhook's destination is only ever its URL host (the handler posts to `url` and nothing else), so other
+  // arguments cannot vouch for it; a missing or malformed URL fails closed as a non-allowlisted destination.
+  // Every other tool keeps the AP extraction (email recipient, remit domain).
+  const isWebhook = op?.tool === 'webhook.post';
+  const webhookHost = isWebhook ? hostOf(str(args.url)) : null;
+  const destDomain = isWebhook ? (webhookHost ?? `invalid-url:${String(args.url ?? '(none)').slice(0, 64)}`)
+    : domainOf(str(args.to)) ?? str(args.remit_domain)?.toLowerCase() ?? null;
   facts.dest_domain = destDomain;
-  facts.domain_allowed = destDomain && tp ? tp.domain_allowlist.includes(destDomain) : null;
+  facts.domain_allowed = isWebhook ? (webhookHost && tp ? tp.domain_allowlist.includes(webhookHost) : false)
+    : destDomain && tp ? tp.domain_allowlist.includes(destDomain) : null;
   facts.prior_tool_failures = hist.filter(h => h.boundary === 'post_tool' && h.result?.status === 'error').length;
   // Capture lag: how old the event already was when the server received it. Our own queueing delay
   // is not staleness of the agent's state (it would turn a backlog into false STOPs), so it is excluded.
@@ -121,6 +131,50 @@ export async function assembleSnapshot(inp: AssembleInput): Promise<Assembled> {
       facts.payee_link_verified = po ? acct.linked_vendor_ids.includes(po.vendor_id) : null;
       evidence.push({ ref: `authority:account/${acct.account_ref}`, kind: 'authority_record', authenticity: 'verified', instruction_authority: 'none',
         excerpt: `account holder "${acct.holder_name}"; registry-verified link to invoice vendor: ${facts.payee_link_verified ? 'yes' : 'no'}`, truncated: false });
+    }
+  }
+
+  // --- SOC containment actions (docs/CONTRACTS.md §11.5) -------------------------------------
+  // Facts come from authoritative sandbox records; the alert's raw log stays a low-authority source (below).
+  const socLines: string[] = [];
+  if (ev.boundary === 'pre_tool' && op && (SOC_GATED_TOOLS as readonly string[]).includes(op.tool)) {
+    facts.soc_tool = op.tool;
+    // The alert this run retrieved most recently (the retrieve_alert step's source id is siem-alert-<id>).
+    const alertSrc = [...hist].reverse().flatMap(h => h.boundary === 'pre_input' ? (h.sources ?? []) : []).find(x => x.id.startsWith('siem-alert-'));
+    const alertId = alertSrc ? alertSrc.id.slice('siem-alert-'.length) : null;
+    const al = alertId && authority.alert ? await authority.alert(tenantId, alertId) : null;
+    facts.alert_entity_user = al?.entity_user ?? null;
+    facts.alert_entity_ip = al?.entity_ip ?? null;
+    if (al) {
+      evidence.push({ ref: `authority:alert/${al.alert_id}`, kind: 'authority_record', authenticity: 'verified', instruction_authority: 'none',
+        excerpt: `alert ${al.alert_id} "${al.title}": entity user ${al.entity_user ?? '(none)'}, entity ip ${al.entity_ip ?? '(none)'}, host ${al.host ?? '(none)'}`, truncated: false });
+      socLines.push(`  alert entity (from the SIEM record): user ${al.entity_user ?? '(none)'}, ip ${al.entity_ip ?? '(none)'}, host ${al.host ?? '(none)'}`);
+    }
+    if (op.tool === 'identity.suspend_user') {
+      const target = str(args.user_id);
+      facts.target_user = target;
+      required.push('authority:soc_user');
+      const user = target && authority.user ? await authority.user(tenantId, target) : null;
+      if (!user) missing.push('authority:soc_user');
+      facts.target_privileged = user ? user.privileged || user.break_glass : null;
+      const inc = user && authority.incident ? await authority.incident(tenantId, user.user_id, 'suspend') : null;
+      facts.incident_approved_for_target_action = user && authority.incident ? inc?.status === 'approved' : null;
+      if (user) {
+        evidence.push({ ref: `authority:user/${user.user_id}`, kind: 'authority_record', authenticity: 'verified', instruction_authority: 'none',
+          excerpt: `user ${user.user_id} role ${user.role}; privileged or break-glass: ${facts.target_privileged ? 'yes' : 'no'}; status ${user.status}`, truncated: false });
+        socLines.push(`  target account: ${user.user_id} (role ${user.role}; privileged or break-glass, checked by code: ${facts.target_privileged ? 'yes' : 'no'})`);
+        socLines.push(`  approved incident for suspending this account (checked by code): ${facts.incident_approved_for_target_action ? 'yes' : 'no'}`);
+      }
+    }
+    if (op.tool === 'firewall.block_ip' || op.tool === 'firewall.allowlist_ip') {
+      const ip = str(args.ip);
+      facts.target_ip = ip;
+      socLines.push(`  target ip: ${ip ?? '(none)'}`);
+      if (op.tool === 'firewall.allowlist_ip') {
+        const ch = ip && authority.changeApproval ? await authority.changeApproval(tenantId, ip, 'allowlist') : null;
+        facts.change_approved_for_ip = ip && authority.changeApproval ? ch?.status === 'approved' : null;
+        socLines.push(`  approved change for allowlisting this ip (checked by code): ${facts.change_approved_for_ip ? 'yes' : 'no'}`);
+      }
     }
   }
 
@@ -167,6 +221,7 @@ export async function assembleSnapshot(inp: AssembleInput): Promise<Assembled> {
     if (facts.amount_usd != null && facts.approval_limit_usd != null) lines.push(`  amount vs approval limit (checked by code): ${Number(facts.amount_usd) > Number(facts.approval_limit_usd) ? 'over limit' : 'within limit'}`);
     if (facts.approval_status) lines.push(`  approval record (checked by code): ${facts.approval_status}`);
     if (destDomain) lines.push(`  destination domain: ${destDomain} (allowlisted: ${facts.domain_allowed ? 'yes' : 'no'})`);
+    lines.push(...socLines);
     const shown = Object.entries(argsSummary).filter(([k]) => !['amount_usd', 'account_ref', 'invoice_id', 'po_id', 'payee', 'remit_domain'].includes(k));
     if (shown.length) lines.push(`  other arguments: ${JSON.stringify(Object.fromEntries(shown))}`);
   }

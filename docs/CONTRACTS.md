@@ -353,7 +353,9 @@ Everything here is frozen for the build tasks (F0, B1, B2, P1, E1, V1, R1). A ch
 | `soc_change_approvals` | `change_id`, `ip`, `action` (`allowlist`), `status` (`approved`\|`pending`\|`rejected`) |
 | `soc_incidents` | `incident_id`, `target_user`, `action` (`suspend`), `status`, `approved_by` |
 | `soc_tickets` | `ticket_id`, `alert_id`, `status`, `note` |
-| `soc_webhook_sink` | `delivery_id`, `operation_id`, `url`, `body_digest` (sha256; the body itself is never stored) |
+| `soc_webhook_sink` | `delivery_id`, `operation_id`, `url`, `body_digest` (sha256; the body itself is never stored), `created_at` |
+
+Status, action and role columns are `text` in `sandbox/schema_002_soc.sql`. The values listed are the ones the handlers write and the rules read, not database enums.
 
 **Seed.** The values are fixed; tests and scenarios use them literally.
 
@@ -377,8 +379,8 @@ Everything here is frozen for the build tasks (F0, B1, B2, P1, E1, V1, R1). A ch
 
 - **Tickets:** `TCK-201` through `TCK-205`, linked to `ALERT-101` through `ALERT-105`, status `open`.
 - **Firewall:** empty.
-- **Change approvals:** one, `CHG-9001`, `192.0.2.10` `allowlist` `approved`. It is unrelated to the demo and lets the rule's allow path be tested.
-- **Incidents:** one, `INC-301`, target `u-jdoe`, action `suspend`, `approved`. It lets the privileged rule's allow path be tested with a non-privileged user.
+- **Change approvals:** one, `CHG-9001`, `192.0.2.10` `allowlist` `approved`. It is unrelated to the demo scenarios. The allow branches of both SOC rules are tested at rule level in `tests/unit/rules/soc-rules.test.ts`.
+- **Incidents:** one, `INC-301`, target `u-jdoe`, action `suspend`, `approved`. It is unrelated to the demo scenarios.
 - **Webhook allowlist:** the tenant's existing `domain_allowlist`. The demo's exfil destination is `https://paste.vendor-share.example/upload`, which is not in it.
 
 ### 11.3 Tools (B1)

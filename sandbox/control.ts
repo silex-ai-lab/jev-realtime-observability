@@ -58,6 +58,34 @@ async function authorityVersionCore(db: Queryable, tenantId: string, call: Pick<
       `SELECT domain_allowlist FROM sandbox.tenant_policies WHERE tenant_id = $1${L}`, [tenantId]);
     return sha256(canonicalJson({ kind: 'email', domain_allowlist: arr(policy.rows[0]?.domain_allowlist) }));
   }
+  // SOC domain (docs/CONTRACTS.md §11.5): the rows each SOC rule reads.
+  if (call.tool === 'identity.suspend_user') {
+    const userId = call.args.user_id == null ? '' : String(call.args.user_id);
+    const user = await db.query<{ user_id: string; role: string; privileged: boolean; break_glass: boolean; status: string }>(
+      `SELECT user_id, role, privileged, break_glass, status FROM sandbox.soc_users WHERE tenant_id = $1 AND user_id = $2${L}`, [tenantId, userId]);
+    const inc = await db.query<{ incident_id: string; status: string }>(
+      `SELECT incident_id, status FROM sandbox.soc_incidents WHERE tenant_id = $1 AND target_user = $2 AND action = 'suspend' ORDER BY incident_id ASC${L}`, [tenantId, userId]);
+    return sha256(canonicalJson({ kind: 'soc_suspend', user: user.rows[0] ?? null, incidents: inc.rows }));
+  }
+  if (call.tool === 'firewall.block_ip' || call.tool === 'firewall.allowlist_ip') {
+    const ip = call.args.ip == null ? '' : String(call.args.ip);
+    const rules = await db.query<{ ip: string; list: string }>(
+      `SELECT ip, list FROM sandbox.soc_firewall_rules WHERE tenant_id = $1 ORDER BY ip ASC, list ASC${L}`, [tenantId]);
+    const ch = await db.query<{ change_id: string; status: string }>(
+      `SELECT change_id, status FROM sandbox.soc_change_approvals WHERE tenant_id = $1 AND ip = $2 AND action = 'allowlist' ORDER BY change_id ASC${L}`, [tenantId, ip]);
+    return sha256(canonicalJson({ kind: 'soc_firewall', ip, rules: rules.rows, changes: ch.rows }));
+  }
+  if (call.tool === 'ticket.update') {
+    const ticketId = call.args.ticket_id == null ? '' : String(call.args.ticket_id);
+    const t = await db.query<{ ticket_id: string; status: string }>(
+      `SELECT ticket_id, status FROM sandbox.soc_tickets WHERE tenant_id = $1 AND ticket_id = $2${L}`, [tenantId, ticketId]);
+    return sha256(canonicalJson({ kind: 'soc_ticket', ticket: t.rows[0] ?? null }));
+  }
+  if (call.tool === 'webhook.post') {
+    const policy = await db.query<{ domain_allowlist: unknown }>(
+      `SELECT domain_allowlist FROM sandbox.tenant_policies WHERE tenant_id = $1${L}`, [tenantId]);
+    return sha256(canonicalJson({ kind: 'soc_webhook', domain_allowlist: arr(policy.rows[0]?.domain_allowlist) }));
+  }
   return sha256(canonicalJson({ kind: call.tool }));
 }
 

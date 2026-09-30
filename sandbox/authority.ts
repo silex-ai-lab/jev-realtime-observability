@@ -67,5 +67,48 @@ export function createAuthorityReader(db: Db): AuthorityReader {
       const x = r.rows[0];
       return x ? { message_id: x.message_id, to: x.to_addr, digest: x.body_digest } : null;
     },
+    // SOC domain (docs/CONTRACTS.md §11.3). Read-only; never writes. `alert` returns the raw_log, which
+    // the driver uses to build the pre_input excerpt (a source with no instruction authority).
+    async alert(tenantId, alertId) {
+      const r = await db.query<{ alert_id: string; title: string; entity_user: string | null; entity_ip: string | null; host: string | null; raw_log: string }>(
+        `SELECT alert_id, title, entity_user, entity_ip, host, raw_log FROM sandbox.soc_alerts WHERE tenant_id = $1 AND alert_id = $2`, [tenantId, alertId]);
+      const x = r.rows[0];
+      return x ? { alert_id: x.alert_id, title: x.title, entity_user: x.entity_user, entity_ip: x.entity_ip, host: x.host, raw_log: x.raw_log } : null;
+    },
+    async user(tenantId, userId) {
+      const r = await db.query<{ user_id: string; role: string; privileged: boolean; break_glass: boolean; status: 'active' | 'suspended'; host: string | null }>(
+        `SELECT user_id, role, privileged, break_glass, status, host FROM sandbox.soc_users WHERE tenant_id = $1 AND user_id = $2`, [tenantId, userId]);
+      const x = r.rows[0];
+      return x ? { user_id: x.user_id, role: x.role, privileged: x.privileged, break_glass: x.break_glass, status: x.status, host: x.host } : null;
+    },
+    async incident(tenantId, targetUser, action) {
+      const r = await db.query<{ incident_id: string; target_user: string; action: string; status: 'approved' | 'pending' | 'rejected'; approved_by: string | null }>(
+        `SELECT incident_id, target_user, action, status, approved_by FROM sandbox.soc_incidents WHERE tenant_id = $1 AND target_user = $2 AND action = $3 LIMIT 1`, [tenantId, targetUser, action]);
+      const x = r.rows[0];
+      return x ? { incident_id: x.incident_id, target_user: x.target_user, action: x.action, status: x.status, approved_by: x.approved_by } : null;
+    },
+    async changeApproval(tenantId, ip, action) {
+      const r = await db.query<{ change_id: string; ip: string; action: string; status: 'approved' | 'pending' | 'rejected' }>(
+        `SELECT change_id, ip, action, status FROM sandbox.soc_change_approvals WHERE tenant_id = $1 AND ip = $2 AND action = $3 LIMIT 1`, [tenantId, ip, action]);
+      const x = r.rows[0];
+      return x ? { change_id: x.change_id, ip: x.ip, action: x.action, status: x.status } : null;
+    },
+    async firewallLists(tenantId) {
+      const r = await db.query<{ ip: string; list: string }>(
+        `SELECT ip, list FROM sandbox.soc_firewall_rules WHERE tenant_id = $1 ORDER BY ip, list`, [tenantId]);
+      return { allow: r.rows.filter(x => x.list === 'allow').map(x => x.ip), deny: r.rows.filter(x => x.list === 'deny').map(x => x.ip) };
+    },
+    async ticket(tenantId, ticketId) {
+      const r = await db.query<{ ticket_id: string; status: string; alert_id: string }>(
+        `SELECT ticket_id, status, alert_id FROM sandbox.soc_tickets WHERE tenant_id = $1 AND ticket_id = $2`, [tenantId, ticketId]);
+      const x = r.rows[0];
+      return x ? { ticket_id: x.ticket_id, status: x.status, alert_id: x.alert_id } : null;
+    },
+    async webhookByOperation(tenantId, operationId) {
+      const r = await db.query<{ delivery_id: string; url: string; body_digest: string }>(
+        `SELECT delivery_id, url, body_digest FROM sandbox.soc_webhook_sink WHERE tenant_id = $1 AND operation_id = $2 LIMIT 1`, [tenantId, operationId]);
+      const x = r.rows[0];
+      return x ? { delivery_id: x.delivery_id, url: x.url, digest: x.body_digest } : null;
+    },
   };
 }

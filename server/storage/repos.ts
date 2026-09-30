@@ -225,7 +225,7 @@ export async function appendOutbox(q: Queryable, r: { tenant_id: string; kind: S
 /** Records with cursor > afterCursor for this tenant only, ascending, at most limit. */
 export async function readOutbox(q: Queryable, tenantId: string, afterCursor: string, limit: number): Promise<StreamRecord[]> {
   const r = await q.query<{ cursor: string; kind: string; ref_id: string; run_id: string | null; payload: unknown; at: unknown }>(
-    `SELECT cursor::text AS cursor, kind, ref_id, run_id, payload, at FROM outbox WHERE tenant_id = $1 AND cursor > $2::bigint ORDER BY cursor ASC LIMIT $3`,
+    `SELECT cursor::text AS cursor, kind, ref_id, run_id, payload, at FROM outbox WHERE tenant_id = $1 AND cursor > $2::bigint ORDER BY outbox.cursor ASC LIMIT $3`,   // outbox.cursor: the bigint column (the text alias would sort '10' before '9')
     [tenantId, afterCursor, limit],
   );
   return r.rows.map(x => ({ cursor: x.cursor, kind: x.kind as StreamKind, ref_id: x.ref_id, run_id: x.run_id, payload: x.payload as Record<string, unknown>, at: iso(x.at)! }));

@@ -70,6 +70,8 @@ export interface StartHarnessOptions {
   sourceMode?: AppOptions['sourceMode'];
   /** Sandbox fault injection (F1). Defaults true because the sandbox tests exercise F1 on purpose. */
   faultInjection?: boolean;
+  /** Test-only rule seam (docs/CONTRACTS.md §11.5), passed through to createApp. */
+  testDisabledRules?: string[];
 }
 
 export async function startGateAHarness(opts: StartHarnessOptions = {}): Promise<GateAHarness> {
@@ -92,6 +94,7 @@ export async function startGateAHarness(opts: StartHarnessOptions = {}): Promise
     worker: opts.worker ?? { autostart: true, leaseMs: 50, realtimeTtlMs: 2_000 },
     faultInjection: opts.faultInjection ?? true,
     port: opts.port ?? 0,
+    ...(opts.testDisabledRules ? { testDisabledRules: opts.testDisabledRules } : {}),
   };
   const app = await createApp(appOptions);
   return harnessFromApp(app, dataDir);

@@ -18,8 +18,14 @@ import type { RuleResult, RuleVerdict } from '../../contracts/decision.ts';
  *   snapshot_age_ms        number                          (as_of − occurred_at of the triggering event)
  *   stale_after_ms         number                          (authority: tenant policy)
  *   tool_known             boolean                         (tool present in registry)
+ * SOC domain (docs/CONTRACTS.md §11.5; absent for AP actions):
+ *   soc_tool               string|null                     (the candidate SOC tool)
+ *   target_privileged      boolean|null                    (authority: sandbox.soc_users, privileged or break-glass)
+ *   incident_approved_for_target_action  boolean|null      (authority: sandbox.soc_incidents)
+ *   change_approved_for_ip boolean|null                    (authority: sandbox.soc_change_approvals)
  */
-export const RULE_IDS = ['unknown_tool', 'stale_state', 'repeat_failure', 'amount_limit', 'domain_allowlist', 'approval_evidence'] as const;
+export const RULE_IDS = ['unknown_tool', 'stale_state', 'repeat_failure', 'amount_limit', 'domain_allowlist', 'approval_evidence',
+  'privileged_suspend_incident', 'allowlist_change_approval'] as const;
 export type RuleId = typeof RULE_IDS[number];
 
 const SEVERITY: Record<RuleVerdict, number> = { STOP: 4, BLOCK: 3, HOLD: 2, ALERT: 1, PASS: 0 };
@@ -72,6 +78,22 @@ function oneRule(id: RuleId, f: Record<string, Fact>): RuleResult {
       if (f.approval_status === 'approved') return result(id, 'PASS', 'payment has an approved approval', ['facts:approval_status'], 'sandbox.erp.approvals');
       return result(id, 'HOLD', `payment without an approved approval (approval_status=${f.approval_status})`, ['facts:approval_status'], 'sandbox.erp.approvals');
     }
+    case 'privileged_suspend_incident': {
+      const refs = ['facts:target_privileged', 'facts:incident_approved_for_target_action'];
+      if (f.soc_tool !== 'identity.suspend_user') return result(id, 'PASS', 'not an account suspension', ['facts:soc_tool'], 'sandbox.soc_incidents');
+      if (typeof f.target_privileged !== 'boolean') return result(id, 'HOLD', 'required fact missing: target_privileged', refs, 'sandbox.soc_users');
+      if (!f.target_privileged) return result(id, 'PASS', 'target account is not privileged', refs, 'sandbox.soc_users');
+      if (typeof f.incident_approved_for_target_action !== 'boolean') return result(id, 'HOLD', 'required fact missing: incident_approved_for_target_action', refs, 'sandbox.soc_incidents');
+      if (f.incident_approved_for_target_action) return result(id, 'PASS', 'an approved incident authorises suspending this privileged account', refs, 'sandbox.soc_incidents');
+      return result(id, 'HOLD', 'suspending a privileged account without an approved incident for this account and action', refs, 'sandbox.soc_incidents');
+    }
+    case 'allowlist_change_approval': {
+      const refs = ['facts:change_approved_for_ip'];
+      if (f.soc_tool !== 'firewall.allowlist_ip') return result(id, 'PASS', 'not a firewall allowlist change', ['facts:soc_tool'], 'sandbox.soc_change_approvals');
+      if (typeof f.change_approved_for_ip !== 'boolean') return result(id, 'HOLD', 'required fact missing: change_approved_for_ip', refs, 'sandbox.soc_change_approvals');
+      if (f.change_approved_for_ip) return result(id, 'PASS', 'an approved change authorises allowlisting this IP', refs, 'sandbox.soc_change_approvals');
+      return result(id, 'HOLD', 'allowlisting an IP without an approved change for it', refs, 'sandbox.soc_change_approvals');
+    }
   }
 }
 
@@ -81,9 +103,11 @@ function oneRule(id: RuleId, f: Record<string, Fact>): RuleResult {
  * domain_allowlist → BLOCK · approval_evidence (payment without approval_status 'approved') → HOLD.
  * A fact that is null where a rule needs it yields HOLD with reason "required fact missing", never PASS.
  */
-export function evaluateRules(snapshot: DecisionSnapshot): RuleResult[] {
+export function evaluateRules(snapshot: DecisionSnapshot, disabled: readonly string[] = []): RuleResult[] {
   const f = snapshot.facts as Record<string, Fact>;
-  return RULE_IDS.map(id => oneRule(id, f));
+  // `disabled` is a test-only seam (createApp testDisabledRules, docs/CONTRACTS.md §11.5): a disabled rule reports
+  // PASS with a reason saying so, so the probe negative control can show that the rule is what stops the action.
+  return RULE_IDS.map(id => disabled.includes(id) ? result(id, 'PASS', 'rule disabled (test-only seam)', [], 'test') : oneRule(id, f));
 }
 
 /** Most severe verdict: STOP > BLOCK > HOLD > ALERT > PASS. */

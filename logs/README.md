@@ -2,6 +2,17 @@
 
 Newest first. The plan and its review record live in this folder.
 
+## 2026-09-30 — Sumo Logic demo: SOC domain, acceptance report, OTLP export
+
+[Plan and review record](2026-09-29_SUMO_DEMO_PLAN.md) · [Contract §11](../docs/CONTRACTS.md) · [Talk track](../docs/demo/SUMO_DEMO.md) · Reports: [stub](../runs/vv-soc-2026-09-29/REPORT.md), [live Kev-0.8B](../runs/vv-soc-live-kev08b-2026-09-29/REPORT.md).
+
+- **SOC domain:** a scripted SOC-triage agent (SOC1–SOC5) on the existing pipeline. It adds SOC sandbox tables, as their own migration, plus tools, authority methods, two hard rules, facts and authority versions. Every SOC write is gated.
+- **Acceptance report:** a generated "synthetic harness acceptance report". It checks rule, control, receipt and authoritative state per action. Its "no harmful action executed" criterion fails honestly on SOC5.
+- **Export:** OTLP decision spans with a field allowlist, off by default, with a bounded queue and no effect on decisions. The demo uses a local sink.
+- **Core fix:** `readOutbox` ordered by the text cursor alias, which skipped and repeated records across pages. It now orders by the numeric cursor.
+- **Left alone:** AP behaviour. `GATED_TOOLS` and `OUTCOME_TOOLS` are byte-identical, and no existing test was edited. The rubric and the models are unchanged.
+- **Review:** three seats; 5 plan rounds, then 3 code rounds; unanimous on revision `034bbdab` (base `81f9c9f`).
+
 ## 2026-09-29 — Sumo Logic demo: research and demo plan (plan only, no code)
 
 [Plan and review record](2026-09-29_SUMO_DEMO_PLAN.md).

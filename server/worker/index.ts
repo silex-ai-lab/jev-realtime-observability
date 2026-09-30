@@ -26,6 +26,8 @@ export interface WorkerDeps {
   verifier?: OutcomeVerifier | null;
   /** Sandbox fault injection (F1): honour `attributes.fault` only when the deployment enables it. */
   faultInjection: boolean;
+  /** Test-only rule seam (docs/CONTRACTS.md §11.5); empty in every deployment. */
+  disabledRules?: readonly string[];
 }
 
 export interface Worker {
@@ -97,7 +99,7 @@ export function createWorker(d: WorkerDeps): Worker {
     const a = await assembleSnapshot({ tenantId, event: ev, history, authority: d.authority, judgeViewMaxTokens: policy.judge_view_max_tokens,
       judgeModel: d.judge?.config.model ?? 'none', now: new Date() });
     const tSnap = performance.now();
-    const rules = evaluateRules(a.snapshot);
+    const rules = evaluateRules(a.snapshot, d.disabledRules ?? []);
     const tRules = performance.now();
     const hardDecided = rules.some(r => r.verdict === 'STOP' || r.verdict === 'BLOCK' || r.verdict === 'HOLD');
     const evaluationId = `eval-${randomUUID()}`;
