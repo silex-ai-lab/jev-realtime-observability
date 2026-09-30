@@ -209,8 +209,9 @@ export async function getDecision(q: Queryable, tenantId: string, decisionId: st
 }
 
 export async function listDecisionsForEvent(q: Queryable, tenantId: string, eventId: string): Promise<PolicyDecision[]> {
-  const r = await q.query<{ body: unknown }>(`SELECT body FROM decisions WHERE tenant_id = $1 AND event_id = $2 ORDER BY created_at ASC`, [tenantId, eventId]);
-  return r.rows.map(x => x.body as PolicyDecision);
+  const r = await q.query<{ body: unknown; replay_of: string | null }>(`SELECT body, replay_of FROM decisions WHERE tenant_id = $1 AND event_id = $2 ORDER BY created_at ASC`, [tenantId, eventId]);
+  // replay_of lives in its own column; readers (the run timeline) need it to tell a replay from the original decision.
+  return r.rows.map(x => (x.replay_of ? { ...(x.body as PolicyDecision), replay_of: x.replay_of } : x.body as PolicyDecision));
 }
 
 // ---- outbox (SSE source of truth) ----

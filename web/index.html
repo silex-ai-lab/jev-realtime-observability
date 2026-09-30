@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/live.css">
+<link rel="stylesheet" href="css/runs.css">
 </head>
 <body class="view-runs">
 <header class="lv-top">
@@ -17,6 +18,7 @@
     <section class="lv-summary" id="runs-summary" data-runs-only aria-label="This session"><span class="lv-meta">No tool calls yet</span></section>
     <span class="lv-top-actions">
       <button type="button" class="waitbtn" id="waiting-btn" data-runs-only hidden><span class="n" id="waiting-n">0</span> waiting for a person</button>
+      <button type="button" class="btn ghost" id="whatif-open" data-runs-only title="Which recorded actions cross the thresholds you set (flags only)">What-if</button>
       <span class="menu-wrap" data-scenario-menu>
         <button type="button" class="btn primary" id="scenario-open" aria-expanded="false" aria-controls="scenario-menu">Run a scenario</button>
         <div class="scenario-menu" id="scenario-menu" hidden>
@@ -56,25 +58,8 @@
     </form>
   </section>
 
-  <div class="lv-runs-grid" data-runs-only>
-    <nav class="runs-list" aria-label="Runs">
-      <header><h2>Runs</h2><span class="lv-meta" id="runs-count"></span></header>
-      <div id="run-rows"><p class="lv-empty">No runs yet.</p></div>
-    </nav>
-    <section class="runs-main">
-      <div id="runs"><div class="empty-state"><h3>Nothing has run yet</h3><p>Start a scenario with <b>Run a scenario</b>. Each run appears on the left; its steps appear here.</p></div></div>
-    </section>
-  </div>
-
-  <aside class="drawer" id="runs-detail" hidden aria-label="Details">
-    <header><h2>Details</h2><button type="button" class="linkbtn" id="runs-detail-close">Close</button></header>
-  </aside>
-
-  <details class="lv-metrics" id="eng-metrics">
-    <summary>Engineering metrics <span class="lv-meta">· latency, coverage, baselines</span></summary>
-    <section class="lv-kpis" id="kpis"></section>
-  </details>
-
+  <!-- The Engineer grid comes first in the DOM: tests and tools that look up a stream row by [data-event-id]
+       must find it before a Runs-view step, which carries the same attribute (logs/2026-09-30_CONSOLE_UX_PLAN.md). -->
   <div class="lv-grid" data-engineer-only>
     <section class="card">
       <header><h2>Live stream</h2><span class="lv-meta" id="lag"></span></header>
@@ -85,6 +70,31 @@
       <div id="inspector" data-inspector><p class="lv-empty">Select a row.</p></div>
     </aside>
   </div>
+
+  <div class="lv-runs-grid" data-runs-only>
+    <nav class="runs-list" aria-label="Runs">
+      <header><h2>Runs</h2><span class="lv-meta" id="runs-count"></span></header>
+      <div id="run-rows"><p class="lv-empty">No runs yet.</p></div>
+    </nav>
+    <section class="runs-main">
+      <div id="runs"><div class="empty-state"><h3>Nothing has run yet</h3><p>Start a scenario with <b>Run a scenario</b>. Each run appears on the left; its steps appear here.</p></div></div>
+    </section>
+  </div>
+
+  <aside class="drawer whatif" id="whatif" hidden aria-label="What-if">
+    <header><h2>What-if: which recorded actions cross these thresholds?</h2><button type="button" class="linkbtn" data-whatif-close>Close</button></header>
+    <div class="whatif-body"></div>
+  </aside>
+
+  <aside class="drawer" id="runs-detail" hidden aria-label="Details">
+    <header><h2>Details</h2><button type="button" class="linkbtn" id="runs-detail-close">Close</button></header>
+  </aside>
+
+  <details class="lv-metrics" id="eng-metrics">
+    <summary>Engineering metrics <span class="lv-meta">· latency, coverage, baselines</span></summary>
+    <section class="lv-kpis" id="kpis"></section>
+  </details>
+
 
   <section class="card lv-reviews" id="reviews" data-reviews>
     <header><h2>Needs a person</h2><span class="lv-meta" id="review-count"></span>

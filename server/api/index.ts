@@ -30,6 +30,14 @@ export interface ApiDeps {
   subscribe: (fn: () => void) => () => void;
   startSandboxRun: (tenantId: string, scenario: string) => Promise<{ run_id: string }>;
   sandboxScenarios: string[];
+  /** Scenario metadata for the Runs view picker: {id, title, domain} in the same order as sandboxScenarios. */
+  sandboxScenarioMeta: Array<{ id: string; title: string; domain: string }>;
+  /** Tool impact by name, from rubrics/rubric-manifest.v1.json tool_registry. */
+  toolImpacts: Record<string, string>;
+  /** Impact assumed for tools not in the registry (unknown_tool_impact). */
+  unknownToolImpact: string;
+  /** The deployment's source mode, so the console can say which mode it is in before the first decision. */
+  sourceMode: string;
   /**
    * 'keys' (opt-in): every /v1 call needs a tenant API key with the right role.
    * 'none' (default): no login; every call acts as `defaultTenant` with every role. Only safe on a
@@ -144,13 +152,7 @@ export function createApi(d: ApiDeps): Server {
       if (body?.kind === 'model_reeval') return send(res, 200, await modelReeval(a.tenant_id, body.decision_ids));
       if (body?.kind === 'sandbox_reexec') {
         if (a.role !== 'admin') throw new HttpError(403, 'forbidden', 'sandbox re-execution needs the admin role');
-        const runs = await repos.listRuns(d.db, a.tenant_id, 500) as Array<{ run_id: string; scenario: string | null }>;
-        const run = runs.find(r => r.run_id === body.run_id);
-        if (!run) throw new HttpError(404, 'not_found', 'run not found');
-        if (!run.scenario || !d.sandboxScenarios.includes(run.scenario)) throw new HttpError(400, 'not_reexecutable', 'only scripted sandbox runs can be re-executed');
-        // A NEW run: new run id, new operation ids and idempotency keys; the original run is untouched (RFC §10).
-        const started = await d.startSandboxRun(a.tenant_id, run.scenario);
-        return send(res, 202, { kind: 'sandbox_reexec', of_run_id: run.run_id, run_id: started.run_id });
+        return send(res, 202, await sandboxReexec(a.tenant_id, body.run_id));
       }
       if (body?.kind !== 'policy_only') throw new HttpError(400, 'bad_kind', 'kind must be policy_only, model_reeval or sandbox_reexec');
       const v = validatePolicy(body.policy);
@@ -184,7 +186,7 @@ export function createApi(d: ApiDeps): Server {
 
     if (m === 'GET' && p === '/v1/sandbox/scenarios') {
       await auth(req, ['reader', 'admin']);
-      return send(res, 200, { scenario_ids: d.sandboxScenarios });
+      return send(res, 200, { scenario_ids: d.sandboxScenarios, scenarios: d.sandboxScenarioMeta, tools: d.toolImpacts, unknown_tool_impact: d.unknownToolImpact, source_mode: d.sourceMode });
     }
 
     if (m === 'POST' && p === '/v1/sandbox/runs') {
@@ -197,8 +199,27 @@ export function createApi(d: ApiDeps): Server {
       return send(res, 202, await d.startSandboxRun(a.tenant_id, body.scenario));
     }
 
+    // Run again (plan r7 C2'): its own admin route, so it also works with login off (the /v1/replays
+    // reader path resolves login-off callers to the reader role and would 403). Same logic as
+    // /v1/replays kind sandbox_reexec, which is kept for compatibility.
+    if (m === 'POST' && p === '/v1/sandbox/reexec') {
+      const a = await auth(req, ['admin']);
+      const body = await readJson(req) as { run_id?: string };
+      return send(res, 202, await sandboxReexec(a.tenant_id, body.run_id));
+    }
+
     if (m === 'GET' && d.webRoot && !p.startsWith('/v1/')) return serveStatic(res, d.webRoot, p);
     throw new HttpError(404, 'not_found', 'no such route');
+  }
+
+  /** Starts a NEW run of the same scripted scenario: new run id, new operation ids; the original run is untouched (RFC §10). */
+  async function sandboxReexec(tenantId: string, runId: string | undefined) {
+    const runs = await repos.listRuns(d.db, tenantId, 500) as Array<{ run_id: string; scenario: string | null }>;
+    const run = runs.find(r => r.run_id === runId);
+    if (!run) throw new HttpError(404, 'not_found', 'run not found');
+    if (!run.scenario || !d.sandboxScenarios.includes(run.scenario)) throw new HttpError(400, 'not_reexecutable', 'only scripted sandbox runs can be re-executed');
+    const started = await d.startSandboxRun(tenantId, run.scenario);
+    return { kind: 'sandbox_reexec', of_run_id: run.run_id, run_id: started.run_id };
   }
 
   /** Re-asks the judge on the stored snapshot (same judge view, same questions). New evaluation + new decision; originals untouched. */

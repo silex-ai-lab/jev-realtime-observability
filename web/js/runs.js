@@ -49,7 +49,7 @@ export function createRunsView(deps) {
     if (rec.kind === 'event') {
       const r = runOf(p.run_id);
       recOf(r, p.event_id).event = p;
-      if (p.boundary === 'run_started') r.scenario = p.attributes?.scenario ?? r.scenario;
+      if (p.boundary === 'run_started') { r.scenario = p.attributes?.scenario ?? r.scenario; r.goal = p.task_goal ?? r.goal; }
       if (p.boundary === 'run_finished') r.finished = true;
       if (p.boundary === 'post_tool' && p.operation_id) byOperation.set(p.operation_id, p.event_id);
       scheduleFetch(r);
@@ -72,6 +72,7 @@ export function createRunsView(deps) {
   function setReviews(list) { openReviews = Array.isArray(list) ? list : []; scheduleRender(); }
 
   /** Builds the ordered steps of one run from stream records plus the run detail. */
+  const modeOf = (decision, pageMode) => { const m = decision?.provenance?.enforcement_mode; return m === 'gate' || m === 'shadow' ? m : pageMode; };
   function stepsOf(r, mode) {
     const all = [...r.events.values()].filter(x => x.event).sort((a, b) => a.event.producer_seq - b.event.producer_seq);
     const post = new Map();   // operation_id → post_tool rec
@@ -89,12 +90,20 @@ export function createRunsView(deps) {
         const pt = ev.operation_id ? post.get(ev.operation_id) : null;
         const attrs = pt?.event?.attributes ?? {};
         const impact = tools[ev.tool] ?? (Object.keys(tools).length ? unknownImpact : null);
-        const kind = mode === 'shadow' ? 'ungated' : callKind({ mode: mode ?? 'gate', controlAction: attrs.control_action, impact });
-        steps.push({ kind, eventId: ev.event_id, postEventId: pt?.event?.event_id ?? null, tool: ev.tool, args: det.operation?.args ?? null,
+        // Each step keeps the mode its own decision was made in (plan r7 C1'); the page mode is only a fallback.
+        const stepMode = modeOf(decision, mode);
+        const kind = stepMode === 'shadow' ? 'ungated' : callKind({ mode: stepMode ?? 'gate', controlAction: attrs.control_action, impact });
+        steps.push({ kind, mode: stepMode, eventId: ev.event_id, postEventId: pt?.event?.event_id ?? null, tool: ev.tool, args: det.operation?.args ?? null,
           decision, receiptStatus: attrs.receipt_status, controlAction: attrs.control_action, impact,
           outcomes: pt ? pt.outcomes : [], signals: signalsLine(x.evaluations) });
       } else if (ev.boundary === 'post_generation') {
-        steps.push({ kind: 'statement', eventId: ev.event_id, text: det.text ?? null, decision, signals: signalsLine(x.evaluations) });
+        steps.push({ kind: 'statement', mode: modeOf(decision, mode), eventId: ev.event_id, text: det.text ?? null, decision, signals: signalsLine(x.evaluations) });
+      } else if (ev.boundary === 'post_tool') {
+        // A decision on a completed call is a finding after the fact. It never changes the call's receipt.
+        const paired = ev.operation_id && all.some(y => y.event.boundary === 'pre_tool' && y.event.operation_id === ev.operation_id);
+        if (!paired || (decision && decision.recommended !== 'NO_CONFIGURED_RISK'))
+          steps.push({ kind: 'finding', mode: modeOf(decision, mode), eventId: ev.event_id, tool: ev.tool, decision,
+            evidence: ev.attributes?.evidence ?? (ev.result_status ? `tool reported ${ev.result_status}` : null), signals: signalsLine(x.evaluations) });
       }
     }
     return steps;
@@ -123,7 +132,7 @@ export function createRunsView(deps) {
   const TONE_ICON = { ok: 'ran', stop: 'stop', warn: 'warn', fail: 'warn', pending: 'pending' };
   const chip = v => `<span class="step-verdict" data-tone="${esc(v.tone)}">${ICON[TONE_ICON[v.tone]] ?? ''}<span class="vt">${esc(v.text)}</span></span>`;
   // .step-verdict's text must be exactly lineVerdict().text: the icon is an SVG with no text.
-  const sigLine = s => (s.signals ? `<div class="step-signals"><span class="sub-label">${esc(s.signals.label)}</span> <span class="mono">${esc(s.signals.text)}</span></div>` : '');
+  const sigLine = s => (deps.signals !== false && s.signals ? `<div class="step-signals"><span class="sub-label">${esc(s.signals.label)}</span> <span class="mono">${esc(s.signals.text)}</span></div>` : '');
 
   function stepHtml(s, n, mode) {
     const node = kind => `<span class="step-node" data-node="${kind}">${ICON[kind]}</span>`;
@@ -134,8 +143,17 @@ export function createRunsView(deps) {
     }
     const d = s.decision;
     const details = (t, label) => `<button class="linkbtn" type="button" data-details="${t}" data-target="${esc(t === 'decision' ? s.eventId : s.postEventId)}">${label}</button>`;
+    if (s.kind === 'finding') {
+      const v = lineVerdict({ mode: s.mode ?? mode, kind: 'statement', recommended: d?.recommended ?? null, decidedBy: d?.decided_by });
+      const why = whyLine(d);
+      return `<li class="step" data-step-kind="finding" data-event-id="${esc(s.eventId)}" data-tool="${esc(s.tool ?? '')}" data-tone="${esc(v.tone)}">${node('source')}<div class="step-body">
+        <div class="step-line"><span class="step-label">Found</span><span class="step-call"><b class="mono">${esc(s.tool ?? 'after the call')}</b></span>${chip(v)}<span class="step-links">${d ? details('decision', 'details') : ''}</span></div>
+        ${s.evidence ? `<div class="step-evidence lv-meta">${esc(s.evidence)} · a finding after the call; it does not change whether the call ran</div>` : '<div class="step-evidence lv-meta">a finding after the call; it does not change whether the call ran</div>'}
+        ${why ? `<div class="step-why-wrap"><ul class="step-why">${why.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>${why.passedNote ? `<span class="step-why-passed">${esc(why.passedNote)}</span>` : ''}</div>` : ''}
+        ${sigLine(s)}</div></li>`;
+    }
     if (s.kind === 'statement') {
-      const v = lineVerdict({ mode, kind: 'statement', recommended: d?.recommended ?? null, decidedBy: d?.decided_by });
+      const v = lineVerdict({ mode: s.mode ?? mode, kind: 'statement', recommended: d?.recommended ?? null, decidedBy: d?.decided_by });
       const why = d && d.recommended !== 'NO_CONFIGURED_RISK' && (d.rule_results ?? []).some(x => x.verdict !== 'PASS') ? whyLine(d) : null;
       const ct = claimTimeLines(d);
       return `<li class="step" data-step-kind="statement" data-event-id="${esc(s.eventId)}">${node('statement')}<div class="step-body">
@@ -143,12 +161,12 @@ export function createRunsView(deps) {
         ${why ? `<ul class="step-why">${why.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>${why.passedNote ? `<span class="step-why-passed">${esc(why.passedNote)}</span>` : ''}` : ''}
         ${ct.length ? `<div class="step-claim-time"><span class="sub-label">At the time the agent said this:</span><ul>${ct.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}${sigLine(s)}</div></li>`;
     }
-    const v = lineVerdict({ mode, kind: s.kind, recommended: d?.recommended ?? null, decidedBy: d?.decided_by, receiptStatus: s.receiptStatus, controlAction: s.controlAction, impact: s.impact });
+    const v = lineVerdict({ mode: s.mode ?? mode, kind: s.kind, recommended: d?.recommended ?? null, decidedBy: d?.decided_by, receiptStatus: s.receiptStatus, controlAction: s.controlAction, impact: s.impact });
     const why = whyLine(d);
     const waiting = d && openReviews.some(t => t.decision_id === d.decision_id);
     const oc = s.outcomes.at(-1);
     const a = argText(s.args);
-    const outcomeLine = OUTCOME_TOOLS.has(s.tool) && s.receiptStatus === 'executed'
+    const outcomeLine = deps.outcomes !== false && OUTCOME_TOOLS.has(s.tool) && s.receiptStatus === 'executed'
       ? `<div class="step-outcome" data-outcome-state="${esc(oc?.state ?? 'pending')}"><span class="sub-label">Business result</span> <b>${esc(OUTCOME_TEXT[oc?.state] ?? oc?.state ?? 'pending')}</b> <span class="lv-meta">checked independently · “ran” means only that the call ran</span></div>` : '';
     return `<li class="step" data-step-kind="${esc(s.kind)}" data-event-id="${esc(s.eventId)}" data-tool="${esc(s.tool)}" data-tone="${esc(v.tone)}">${node('call')}<div class="step-body">
       <div class="step-line"><span class="step-call" title="${esc(a.full)}"><b class="mono">${esc(s.tool)}</b>${a.short ? ` <span class="arg mono">${esc(a.short)}</span>` : ''}</span>
@@ -173,14 +191,16 @@ export function createRunsView(deps) {
       const flagged = calls.filter(c => ['HOLD', 'BLOCK', 'STOP', 'REJECT', 'REVIEW', 'UNKNOWN'].includes(c.decision?.recommended)).length;
       const stoppedN = mode === 'shadow' ? flagged : sum.stoppedBySilex;
       const stoppedLabel = mode === 'shadow' ? 'would have been held or blocked' : 'held or blocked';
-      const tone = stoppedN ? 'stop' : sum.failed ? 'fail' : !r.finished ? 'pending' : calls.some(c => c.decision && c.decision.recommended !== 'NO_CONFIGURED_RISK') ? 'warn' : 'ok';
-      const title = titles[r.scenario] ?? r.scenario ?? 'Run';
+      const findings = steps.filter(x => x.kind === 'finding' && x.decision && x.decision.recommended !== 'NO_CONFIGURED_RISK');
+      const tone = stoppedN ? 'stop' : sum.failed ? 'fail' : !r.finished ? 'pending' : findings.length || calls.some(c => c.decision && c.decision.recommended !== 'NO_CONFIGURED_RISK') ? 'warn' : 'ok';
+      const title = titles[r.scenario] ?? r.goal ?? r.scenario ?? 'Run';
       const sel = r.runId === selectedRun;
-      rowsHtml.push(`<button type="button" class="run-row" data-run-row="${esc(r.runId)}" aria-current="${sel}" data-tone="${tone}"><i class="dot"></i><span class="rr-id">${esc(r.scenario ?? 'run')}</span><span class="rr-title">${esc(title)}</span><span class="rr-counts">${stoppedN ? `<span class="c stop">${stoppedN}</span>` : ''}<span class="c ran">${sum.ran}</span></span></button>`);
+      rowsHtml.push(`<button type="button" class="run-row" data-run-row="${esc(r.runId)}" aria-current="${sel}" data-tone="${tone}"><i class="dot"></i><span class="rr-id">${esc(r.scenario ?? '·')}</span><span class="rr-title">${esc(title)}</span><span class="rr-counts">${stoppedN ? `<span class="c stop">${stoppedN}</span>` : ''}<span class="c ran">${sum.ran}</span></span></button>`);
       return `<article class="run-card" data-run-id="${esc(r.runId)}" data-scenario="${esc(r.scenario ?? '')}"${sel ? ' data-selected' : ''}>
-        <header class="run-head"><div class="run-title"><span class="id-pill">${esc(r.scenario ?? 'run')}</span>${esc(title)}</div>
+        <header class="run-head"><div class="run-title">${r.scenario ? `<span class="id-pill">${esc(r.scenario)}</span>` : ''}${esc(title)}${deps.simulated ? '<span class="tag warn sim-tag">simulated</span>' : ''}</div>
+          ${deps.cardActions ? `<div class="run-actions">${deps.cardActions(r.runId, r)}</div>` : ''}
           <div class="run-stats" data-run-summary>this run: ${sum.calls} tool call${sum.calls === 1 ? '' : 's'} · ${stoppedN} ${stoppedLabel} · ${sum.ran} ran${sum.failed ? ` · ${sum.failed} failed` : ''}${sum.pending ? ` · ${sum.pending} pending` : ''}${r.finished ? '' : ' · running…'}</div></header>
-        <ol class="steps">${steps.map((s, i) => stepHtml(s, i + 1, mode)).join('')}</ol></article>`;
+        <ol class="steps">${steps.map((s, i) => stepHtml(s, i + 1, mode)).join('')}</ol>${deps.panelHtml ? deps.panelHtml(r.runId) : ''}</article>`;
     }).join('') : '<div class="empty-state"><h3>Nothing has run yet</h3><p>Start a scenario with <b>Run a scenario</b>. Each run appears on the left; its steps appear here.</p></div>';
     const list = document.querySelector('#run-rows');
     if (list) list.innerHTML = rowsHtml.join('') || '<p class="lv-empty">No runs yet.</p>';
@@ -218,7 +238,13 @@ export function createRunsView(deps) {
   root.addEventListener('click', e => {
     const b = e.target.closest?.('[data-details]');
     if (b) deps.onDetails(b.dataset.target);
+    const act = e.target.closest?.('[data-card-action]');
+    if (act && deps.onAction) deps.onAction(act.dataset.cardAction, act.closest('.run-card')?.dataset.runId, act);
   });
 
-  return { onRecord, setScenarioMeta, setReviews, render };
+  /** Run ids, newest first (What-if and the demo use it). */
+  /** Forget every run (the demo page re-feeds its whole simulated stream after each step). */
+  function reset() { runs.clear(); byOperation.clear(); }
+  const runIds = () => [...runs.values()].sort((a, b) => maxSeq(b) - maxSeq(a)).map(r => r.runId);
+  return { onRecord, setScenarioMeta, setReviews, render, runIds, reset, rerender: scheduleRender };
 }

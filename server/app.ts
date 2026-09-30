@@ -16,6 +16,7 @@ import { createOutcomeVerifier, type OutcomeVerifier } from './outcomes/index.ts
 import { ensureActivePolicy } from './storage/policies.ts';
 import { createControlVerifier } from '../sandbox/control.ts';
 import { SCENARIOS, scenarioIds } from '../sandbox/scenarios/index.ts';
+import { MANIFEST } from './state/index.ts';
 import { runScripted } from '../sandbox/drivers/scripted.ts';
 import type { Provenance } from '../contracts/common.ts';
 import { createOtlpDecisionExporter, type OtlpDecisionExporter } from './export/otlp.ts';
@@ -257,6 +258,10 @@ export async function createApp(opts: AppOptions): Promise<App> {
       return { run_id: runId };
     },
     sandboxScenarios: scenarioIds(),
+    sandboxScenarioMeta: SCENARIOS.map(s => ({ id: s.id, title: s.title, domain: s.domain ?? 'ap' })),
+    toolImpacts: Object.fromEntries(Object.entries(MANIFEST.tool_registry).map(([name, r]) => [name, r.impact] as const)),
+    unknownToolImpact: MANIFEST.unknown_tool_impact,
+    sourceMode: opts.sourceMode,
     authMode,
     defaultTenant: opts.tenants[0].tenant_id,
     preflight: gateMode ? { db, judge: gateJudge, authority, policy: activePolicy, faultInjection: opts.faultInjection ?? false, disabledRules: opts.testDisabledRules ?? [] } : null,

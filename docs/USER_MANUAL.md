@@ -272,7 +272,7 @@ A step whose evaluation answered anything shows the judge's signals in one quiet
 
 ### The Why line
 
-For any line whose decision is not "No objection", the line shows why: first the reasons of the rules that did not PASS, verbatim; otherwise the decision's own `reasons` with `decided_by` (for example a judge being unavailable, or the evidence gate). Then "(N other rule checks passed)" appears **only if** rule results exist, where N is the count of PASS results. When several rules failed, each failing reason is on its own line.
+For any line whose decision is not "No objection", the line shows why: first the reasons of the rules that did not PASS, verbatim; otherwise the decision's own `reasons` with `decided_by` (for example a judge being unavailable, or the evidence gate). Then "(N rule checks passed)" appears **only if** at least one rule result passed, where N is the count of PASS results. When several rules failed, each failing reason is on its own line.
 
 ### Claim-time lines
 
@@ -297,6 +297,19 @@ Wherever the Runs view says "waiting for a person", the full sentence is **alway
 ### Engineering metrics
 
 The latency, coverage and baseline tiles from the Engineer view move into a collapsed **Engineering metrics** line below the runs; they stay rendered and one click expands them.
+
+### Re-check, Run again and What-if
+
+The Runs view offers three actions that reuse recorded runs without changing their decisions. Each carries its honest label next to it.
+
+**Re-check with the current judge and policy** (`model_reeval`). Business scenario: "You switched the judge (for example to a fine-tuned Kev) or changed the policy. Re-assess recorded actions with the current judge and policy and see which decisions would change." It does not run a changed agent: it reuses the stored snapshot, questions and rule results, and actions decided by a hard rule do not depend on the judge. The panel shows the API's actual `judge_calls` (attempts, which may include retries or be 0 on not-sent paths), each step's before → after (or its error or skip, for example "no judge questions for this decision"), and the text: "New evaluations and replay decisions are recorded for audit; the original decisions are unchanged."
+
+**Run this scenario again** (`POST /v1/sandbox/reexec`). The wording next to the button: "Runs the same scripted scenario again as a new run. Its allowed sandbox writes happen again; it does not run a modified agent. The original run's records are unchanged." It needs the admin role; with login off this is automatic.
+
+**What-if** (`policy_only`). Business scenario: "Before you turn on a semantic check, see which recorded actions cross the thresholds you set. Whether a flag is right is for a person to judge; the review queue records that." There is no "wrongly flagged" claim. The panel has one slider per semantic question (pre-filled from the active policy) and a **Run what-if** button; the results table is grouped by run (step · today · with these thresholds · flagged question and value). "today" is read from the stored decision's own `semantic.hits`; "with these thresholds" comes from the replay result's `after.semantic.hits`. The summary reads "N actions would be flagged · M runs affected · 0 judge calls". Two honest labels are always visible:
+
+- "What-if flags only. In this build semantic checks are uncalibrated, so a threshold marks an action but never holds or blocks it. Enforcing it needs a calibration, which does not exist yet."
+- "Replay decisions are recorded for audit; live decisions are unchanged."
 
 ## 8. Outcome read-back (did it really happen?)
 
@@ -357,6 +370,8 @@ Answer what you can, then press **Allow** or **Deny**. This records one `human_r
 ![Simulated demo](manual/13-simulated-demo.png)
 
 This is the original click-through demo. Its judge, latencies and tenant are **simulated** in the browser, and the page says so in its banner. Use it to explain the idea; use the live console (`/`) to test the real system.
+
+The demo's **Live tab** now uses the same Runs layout as the console. A pure adapter (`web/demo/js/ui/runs-adapter.js`) maps the demo's simulated spans and verdict envelopes into the same record shapes, so the same run cards, step rail and one-line verdicts render. The mapping mirrors the live console: a tool call keeps the receipt and control its envelope action implies (`allow` → ran; `hold`/`deny` → did not run), `allow_and_alert` stays `allow` with the alert in the reasons, and the demo's per-tool mode maps each step to its own enforcement mode (`monitor` → shadow, `gate` → gate), so a mixed-mode run reads each step the way it was decided. A `post_tool` span such as S5's ERP read-back renders as a *finding after the fact* — it never turns an earlier call into "did not run". Every card carries a **simulated** tag and the header keeps the **SIMULATED** badge. Because simulated answers do drive REVIEW/BLOCK in the demo, the shared "judge signals (never block)" line is not shown for them; the simulated answers, threshold bands, three paths, cost, envelope and SIEM line stay in the demo's own simulated inspector (the details drawer).
 
 ## 13. Five-minute test of a deployment
 

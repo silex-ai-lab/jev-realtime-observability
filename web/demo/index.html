@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="../css/runs.css">
 </head>
 <body>
 <header class="jv-top">
@@ -63,6 +64,21 @@
       </div>
     </div>
 
+    <div class="lv-runs-grid demo-runs">
+      <nav class="runs-list" aria-label="Simulated runs">
+        <header><h2>Runs <span class="chip sim">simulated</span></h2><span class="lv-meta" id="runs-count"></span></header>
+        <div id="run-rows"><p class="lv-empty">Press Play or inject a scenario.</p></div>
+      </nav>
+      <section class="runs-main"><div id="runs"><div class="empty-state"><h3>Nothing has run yet</h3><p>Press <b>Play</b>, or inject a scenario above. Each simulated trace becomes a run; its steps appear here.</p></div></div></section>
+    </div>
+
+    <aside class="drawer demo-drawer" id="demo-detail" hidden aria-label="Simulated details">
+      <header><h2>Details <span class="chip sim">simulated</span></h2><button type="button" class="linkbtn" data-demo-close>Close</button></header>
+      <div class="jv-insp-body" id="demo-detail-body"></div>
+    </aside>
+
+    <details class="jv-engineer">
+      <summary>Span stream and decision inspector <span class="jv-meta">· the technical view of the same simulated spans</span></summary>
     <div class="jv-live">
       <div class="card">
         <header>
@@ -99,6 +115,7 @@
         </div>
       </aside>
     </div>
+    </details>
   </section>
 
   <!-- REPLAY -->

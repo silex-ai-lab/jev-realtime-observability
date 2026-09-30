@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>runs fixture booting</title>
+<link rel="stylesheet" href="../../web/css/live.css">
+<link rel="stylesheet" href="../../web/css/runs.css">
+</head>
+<body>
+<script type="module">
+// Load the production markup, then mock only the server boundary. No test hook in runs.js.
+// This follows live-evict.html's fetch/EventSource seam, with full run-timeline bodies.
+const nativeFetch = window.fetch.bind(window);
+try {
+  const source = await (await nativeFetch('../../web/index.html')).text();
+  const markup = new DOMParser().parseFromString(source, 'text/html');
+  markup.body.querySelectorAll('script').forEach(e => e.remove());
+  document.body.replaceChildren(...markup.body.childNodes);
+  for (const a of markup.body.attributes) document.body.setAttribute(a.name, a.value);
+  const query = new URLSearchParams(location.search);
+  const mode = query.get('mode') === 'shadow' ? 'shadow' : 'gate';
+  const swap = query.get('swap-receipts') === '1';
+  const provenance = { source_mode: `live_sandbox_${mode}`, enforcement_mode: mode,
+    judge_source: 'stub:fixture', tool_environment: 'sandbox' };
+  const tools = { 'payments.execute': 'payment', 'vendor.lookup': 'read', 'identity.suspend_user': 'write' };
+  const specs = mode === 'gate' ? [
+    { id: 'failed', rec: 'NO_CONFIGURED_RISK', ctl: 'allow', receipt: 'failed' },
+    { id: 'invalid', rec: 'NO_CONFIGURED_RISK', ctl: 'allow', receipt: 'not_executed' },
+    { id: 'contradiction', rec: 'HOLD', ctl: 'hold_for_approval', receipt: 'executed' },
+    { id: 'readStop', rec: 'STOP', read: true, receipt: 'executed' },
+    { id: 'readUnknown', rec: 'UNKNOWN', read: true, receipt: 'executed' },
+    // Defensive formatter state, not a claim that post_generation HOLD is reachable today.
+    { id: 'statement', rec: 'HOLD', statement: true },
+    { id: 'pending', rec: 'NO_CONFIGURED_RISK', ctl: 'allow' },
+    { id: 'unknown', rec: 'FUTURE_VALUE', ctl: 'allow', receipt: 'executed' },
+    { id: 'evidence', rec: 'HOLD', by: 'evidence_gate', ctl: 'hold_for_review', receipt: 'not_executed' },
+    { id: 'stopped', rec: 'HOLD', ctl: 'hold_for_approval', receipt: 'not_executed' },
+  ] : [
+    { id: 'alert', rec: 'ALERT', receipt: 'executed' },
+    { id: 'review', rec: 'REVIEW', by: 'semantic', receipt: 'executed' },
+    { id: 'unknownReview', rec: 'UNKNOWN', by: 'evidence_gate', receipt: 'executed' },
+  ];
+  const timelines = new Map();
+  const records = [];
+  let cursor = 0;
+  const baseTime = Date.now();
+  const enqueue = (kind, payload, runId) => records.push({ cursor: String(++cursor), kind, run_id: runId, payload });
+  for (const [index,spec] of specs.entries()) {
+    const timestamp = new Date(baseTime+index*1000).toISOString();
+    const runId = `run-fixture-${spec.id}`;
+    const scenario = `FIX-${spec.id}`;
+    const opId = `op-${spec.id}`;
+    const tool = spec.read ? 'vendor.lookup' : 'payments.execute';
+    const operation = { tool, operation_id: opId, args: spec.read ? {vendor_id:'V-118'} : {invoice_id:'INV-7731',amount_usd:100,payee:'Fixture vendor'}, args_digest:'sha256:fixture' };
+    const event = (suffix, boundary, seq, extra={}) => ({ schema_version:'1.0', tenant_id:'t-alpha',
+      event_id:`evt-${spec.id}-${suffix}`, run_id:runId, boundary, producer_id:'scripted_driver', producer_seq:seq,
+      trace_id:'0123456789abcdef0123456789abcdef', occurred_at:timestamp, received_at:timestamp, ingest_path:'sdk',
+      actor:{kind:'agent',id:'fixture-agent'}, attributes:{}, sources:[], ...extra });
+    const start = event('start','run_started',1,{task_goal:'Inspect the fixture action.',attributes:{scenario,driver:'scripted_driver'}});
+    const pre = event(spec.statement?'say':'pre', spec.statement?'post_generation':'pre_tool',2,
+      spec.statement ? {text:'The work is complete.'} : {operation,tool,operation_id:opId,tool_call_id:`call-${spec.id}`});
+    const by = spec.by ?? (spec.rec==='NO_CONFIGURED_RISK'?'default':'rule');
+    const nonPass = by==='rule' && ['HOLD','STOP'].includes(spec.rec);
+    const reasons = spec.statement ? ['authoritative outcomes at claim time: pending']
+      : spec.id==='evidence' ? ['missing evidence: authority:invoice']
+      : nonPass ? ['fixture approval is missing'] : spec.rec==='NO_CONFIGURED_RISK' ? [] : ['fixture decision reason'];
+    const rules = [{rule_id:'tool_known',verdict:'PASS',reason:'tool is known',evidence_refs:[],authoritative_source:'registry'},
+      {rule_id:'fixture_approval',verdict:nonPass?spec.rec:'PASS',reason:nonPass?'fixture approval is missing':'not applicable',evidence_refs:[],authoritative_source:'fixture'}];
+    const decision = {decision_id:`d-${spec.id}`,tenant_id:'t-alpha',event_id:pre.event_id,run_id:runId,
+      snapshot_id:`snap-${spec.id}`,evaluation_id:null,policy_version:'policy-a1',recommended:spec.rec,decided_by:by,
+      provenance,rule_results:rules,reasons,semantic:{calibrated:false,hits:[]},coverage_gaps:[],
+      would_have:null,enforced_action:spec.ctl??null,created_at:timestamp,
+      timings:{ingest_to_signal_ms:1,snapshot_ms:1,rules_ms:1,judge_http_rtt_ms:null,policy_ms:1}};
+    const timeline = [{event:start,evaluations:[],decisions:[]},{event:pre,evaluations:[],decisions:[decision]}];
+    enqueue('event',start,runId); enqueue('event',pre,runId); enqueue('decision',decision,runId);
+    if (spec.receipt) {
+      const receipt = swap ? spec.receipt==='executed'?'not_executed':spec.receipt==='not_executed'?'executed':spec.receipt : spec.receipt;
+      const post = event('post','post_tool',3,{operation,tool,operation_id:opId,tool_call_id:`call-${spec.id}`,
+        result:{status:receipt==='executed'?'ok':'error',http_status:receipt==='executed'?200:403,body:{}},
+        result_status:receipt==='executed'?'ok':'error', attributes:{receipt_status:receipt,
+          ...(spec.ctl?{control_action:spec.ctl,control_id:`ctl-${spec.id}`,sdk_preflight_ms:1}:{})}});
+      timeline.push({event:post,evaluations:[],decisions:[]}); enqueue('event',post,runId);
+    }
+    const finish = event('finish','run_finished',4,{attributes:{status:'finished'}});
+    timeline.push({event:finish,evaluations:[],decisions:[]}); enqueue('event',finish,runId);
+    timelines.set(runId,{run_id:runId,timeline});
+  }
+  const json = (body,status=200) => new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json'}});
+  window.fetch = async (input,init) => {
+    const u = new URL(typeof input==='string'?input:input instanceof Request?input.url:String(input), location.href);
+    const p = u.pathname;
+    if(p==='/v1/auth') return json({mode:'none'});
+    if(p==='/v1/judge') return json({configured:true,backend:'stub',judge_source:'stub:fixture',served_model:{run:'fixture'}});
+    if(p==='/v1/policies/active') return json({policy:{policy_version:'policy-a1',semantic:{mode:'experimental',bands:{}}}});
+    if(p==='/v1/stream/tokens') return json({token:'fixture-token',expires_in:60});
+    if(p==='/v1/sandbox/scenarios') return json({scenario_ids:specs.map(s=>`FIX-${s.id}`),scenarios:specs.map(s=>({id:`FIX-${s.id}`,title:s.id,domain:'ap'})),tools});
+    if(p==='/v1/replays' && init?.method==='POST'){
+      const body=JSON.parse(init.body);
+      if(body.kind==='model_reeval')return json({kind:'model_reeval',judge_calls:0,results:body.decision_ids.map(decision_id=>({decision_id,error:'no_judge_questions_for_this_decision'}))});
+      return json({error:{message:'unsupported fixture replay kind'}},400);
+    }
+    if(p==='/v1/reviews') return json({reviews:mode==='gate'?[{review_id:'review-stopped',decision_id:'d-stopped',run_id:'run-fixture-stopped',created_at:new Date(baseTime).toISOString(),body:{tool:'payments.execute',recommended:'HOLD',decided_by:'rule'}}]:[]});
+    if(p==='/v1/metrics') return json({capture_coverage:{numerator:0,denominator:0,value:null},outcomes:{},gate:null});
+    if(p==='/v1/runs') return json({runs:[...timelines.keys()].map(run_id=>({run_id,scenario:`FIX-${run_id.slice('run-fixture-'.length)}`}))});
+    if(p.startsWith('/v1/runs/')) return json(timelines.get(decodeURIComponent(p.slice('/v1/runs/'.length)))??{error:{message:'fixture run missing'}},timelines.has(decodeURIComponent(p.slice('/v1/runs/'.length)))?200:404);
+    if(p.startsWith('/v1/events/')) {
+      const id=decodeURIComponent(p.slice('/v1/events/'.length));
+      for(const run of timelines.values()){const e=run.timeline.find(x=>x.event.event_id===id);if(e)return json(e);}
+    }
+    // Assets are real. Unexpected API requests fail visibly rather than fabricating success.
+    if(!p.startsWith('/v1/')) return nativeFetch(input,init);
+    return json({error:{message:`unmocked fixture endpoint: ${p}`}},404);
+  };
+  window.EventSource = class {
+    constructor(){this.listeners={};this.closed=false;setTimeout(()=>this.emit(),100);}
+    addEventListener(kind,fn){(this.listeners[kind]??=[]).push(fn);}
+    close(){this.closed=true;}
+    emit(){if(this.closed)return;for(const rec of records)for(const fn of this.listeners[rec.kind]??[])fn({data:JSON.stringify(rec)});document.title='runs fixture ready';}
+  };
+  await import('../../web/js/live.js');
+} catch(error) {
+  document.title='runs fixture failed';
+  console.error(error);
+}
+</script>
+</body>
+</html>

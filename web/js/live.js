@@ -3,6 +3,8 @@
 // Two views over the same records: the Runs view (plain language, runs.js) and the Engineer view
 // (stream, inspector, KPI tiles). Both are always rendered; the toggle only switches visibility.
 import { createRunsView } from './runs.js';
+import { createRecheck } from './recheck.js';
+import { createWhatIf } from './whatif.js';
 import { decisionPart, executionPart, whyLine, callKind } from './verdict.js';
 const $ = (s, r = document) => r.querySelector(s);
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -70,9 +72,14 @@ scOpen?.addEventListener('click', e => { e.stopPropagation(); scMenu.hidden = !s
 document.addEventListener('click', e => { if (scMenu && !scMenu.hidden && !e.target.closest?.('[data-scenario-menu]')) { scMenu.hidden = true; scOpen?.setAttribute('aria-expanded', 'false'); } });
 scMenu?.addEventListener('click', e => { if (e.target.closest?.('[data-scenario]')) setTimeout(() => { scMenu.hidden = true; scOpen?.setAttribute('aria-expanded', 'false'); }, 150); });
 document.querySelector('#waiting-btn')?.addEventListener('click', () => { const r = document.querySelector('#reviews'); if (r) { r.open = true; r.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { returnInspector(); if (scMenu) scMenu.hidden = true; } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { returnInspector(); whatIf?.close(); if (scMenu) scMenu.hidden = true; } });
 document.querySelector('#runs-detail-close')?.addEventListener('click', returnInspector);
-const runsView = createRunsView({ api: p => api(p), mode: currentMode, onDetails: id => showDetails(id).catch(() => undefined) });
+const recheck = createRecheck({ api: (p, o) => api(p, o), rerender: () => runsView?.rerender(), canRun: () => authMode === 'none' || Boolean(keys.admin) });
+const runsView = createRunsView({ api: p => api(p), mode: currentMode, onDetails: id => showDetails(id).catch(() => undefined),
+  cardActions: recheck.cardActions, panelHtml: recheck.panelHtml, onAction: recheck.onAction });
+const whatIf = createWhatIf({ api: (p, o) => api(p, o), policy: () => activePolicy, runIds: () => runsView?.runIds() ?? [],
+  titles: () => Object.fromEntries(Object.entries(scenarioMeta).map(([k, v]) => [k, v.title])) });
+document.querySelector('#whatif-open')?.addEventListener('click', () => { returnInspector(); whatIf?.open(); });
 if (document.querySelector('[data-view]')) setView(view);
 
 async function api(path, { method = 'GET', body, role = 'reader' } = {}) {

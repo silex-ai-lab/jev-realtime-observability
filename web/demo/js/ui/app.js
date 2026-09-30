@@ -11,6 +11,11 @@ import { renderInspector } from './inspector.js';
 import { initReplay } from './replay.js';
 import { initStudio } from './studio.js';
 import { $, $$, esc, chip, decisionChip, deepClone, fmtClock, fmtMs, fmtPct, fmtUsd } from './util.js';
+// The Live tab shows the simulated traces in the live console's Runs layout (logs/2026-09-30_CONSOLE_UX_PLAN.md r7 C1'):
+// the pure adapter maps spans and envelopes to live-shape records, and the shared renderer draws them. Simulated
+// signals stay out of the shared line (signals: false); they live in the simulated inspector (the details drawer).
+import { createRunsView } from '../../../js/runs.js';
+import { toRunRecords, toRunDetail } from './runs-adapter.js';
 
 const params = new URLSearchParams(location.search);
 const seedParam = Number.parseInt(params.get('seed') ?? '', 10);
@@ -178,7 +183,33 @@ const TIP = {
 
 // Four headline numbers stay in view; the rest sit under "More metrics". Every tile keeps its data-kpi hook.
 const HEADLINE = new Set(['blocks', 'review_rate', 'coverage', 'p95']);
+function inspectorCtx() {
+  return { tenant: TENANT, seed: SEED, history: historyFor, policyFor: v => policies.get(v) ?? policy,
+    traceTitle: sp => titles.get(sp.trace_id) ?? titles.get(baseTrace(sp.trace_id)) ?? sp.trace_id };
+}
+function openDemoDetail(eventId) {
+  const spanId = String(eventId).replace(/-receipt$/, '');
+  const row = rows.find(r => r.span.span_id === spanId);
+  const drawer = $('#demo-detail'); if (!drawer || !row) return;
+  renderInspector($('#demo-detail-body'), row, inspectorCtx());
+  drawer.hidden = false;
+}
+const runsView = createRunsView({
+  api: async path => toRunDetail(decodeURIComponent(path.split('/').pop())) ?? { timeline: [] },
+  // The demo has no independent read-back, so the shared business-result line is off (it would stay 'pending').
+  mode: () => null, signals: false, outcomes: false, simulated: true, onDetails: openDemoDetail,
+});
+runsView?.setScenarioMeta({ scenarios: ALL_SCENARIOS.filter(t => t.scenario).map(t => ({ id: t.scenario, title: t.title, domain: 'ap' })) });
+function refreshRuns() {
+  if (!runsView) return;
+  runsView.reset();
+  for (const rec of toRunRecords(rows.map(r => r.span), rows.map(r => r.env), { titles })) runsView.onRecord(rec);
+}
+document.addEventListener('click', e => { if (e.target.closest?.('[data-demo-close]')) $('#demo-detail').hidden = true; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#demo-detail')) $('#demo-detail').hidden = true; });
+
 function renderKpis() {
+  refreshRuns();
   const envs = rows.map(r => r.env);
   const k = envs.length ? computeKpis(envs) : {};
   const tile = ([id, label, show, raw, sub]) => {

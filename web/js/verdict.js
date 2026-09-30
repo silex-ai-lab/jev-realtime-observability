@@ -73,7 +73,7 @@ export function lineVerdict({ mode, kind, recommended, decidedBy, receiptStatus,
 
 /**
  * Why line: reasons of the rules that did not PASS (verbatim); else the decision's own reasons with decided_by.
- * "(N rule checks passed)" only when rule results exist; N counts PASS results.
+ * "(N rule checks passed)" only when at least one rule result passed; N counts PASS results.
  */
 export function whyLine(decision) {
   if (!decision || decision.recommended === 'NO_CONFIGURED_RISK') return null;
@@ -82,7 +82,7 @@ export function whyLine(decision) {
   const passed = rules.filter(r => r.verdict === 'PASS').length;
   const reasons = failing.length ? failing.map(r => r.reason)
     : (Array.isArray(decision.reasons) && decision.reasons.length ? decision.reasons : [`decided by ${decision.decided_by ?? 'unknown'}`]);
-  return { reasons, source: failing.length ? 'rules' : (decision.decided_by ?? 'decision'), passedNote: rules.length ? `(${passed} rule checks passed)` : null };
+  return { reasons, source: failing.length ? 'rules' : (decision.decided_by ?? 'decision'), passedNote: passed ? `(${passed} rule check${passed === 1 ? '' : 's'} passed)` : null };
 }
 
 /** Claim-time lines for a statement: the decision's own reasons, verbatim, whatever the recommendation. */

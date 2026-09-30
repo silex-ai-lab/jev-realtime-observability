@@ -99,7 +99,8 @@ test('Why line: failing rule reasons first; else decision reasons (judge unavail
   const rule = whyLine({ recommended: 'HOLD', decided_by: 'rule', rule_results: [{ verdict: 'HOLD', reason: 'allowlisting an IP without an approved change for it' }, { verdict: 'PASS', reason: 'x' }, { verdict: 'PASS', reason: 'y' }], reasons: ['ignored'] })!;
   assert.deepEqual(rule, { reasons: ['allowlisting an IP without an approved change for it'], source: 'rules', passedNote: '(2 rule checks passed)' });
   const judge = whyLine({ recommended: 'HOLD', decided_by: 'judge_unavailable', rule_results: [{ verdict: 'PASS', reason: 'a' }], reasons: ['required judge answer unavailable'] })!;
-  assert.deepEqual(judge, { reasons: ['required judge answer unavailable'], source: 'judge_unavailable', passedNote: '(1 rule checks passed)' });
+  assert.deepEqual(judge, { reasons: ['required judge answer unavailable'], source: 'judge_unavailable', passedNote: '(1 rule check passed)' });
+  assert.equal(whyLine({ recommended: 'BLOCK', rule_results: [{ verdict: 'BLOCK', reason: 'x' }] })!.passedNote, null, 'no "0 rule checks passed" note');
   const gate = whyLine({ recommended: 'UNKNOWN', decided_by: 'evidence_gate', rule_results: [], reasons: ['missing evidence: authority:soc_user'] })!;
   assert.deepEqual(gate, { reasons: ['missing evidence: authority:soc_user'], source: 'evidence_gate', passedNote: null });
   const two = whyLine({ recommended: 'BLOCK', rule_results: [{ verdict: 'BLOCK', reason: 'a' }, { verdict: 'HOLD', reason: 'b' }] })!;
