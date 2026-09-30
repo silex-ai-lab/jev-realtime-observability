@@ -42,6 +42,26 @@ npm run server                    # http://127.0.0.1:8787 — live console at /,
    For a shared or remote deployment, set `AUTH_MODE=keys` and paste READER_KEY (and ADMIN_KEY to start runs).
 ```
 
+## Run the demo on a 24 GB Mac
+
+One Apple Silicon Mac with **24 GB** of memory runs the whole demo: the gate and watch-only consoles with the SOC and AP scenarios, the simulated `/demo/` page, and a local OTLP sink. It needs only the **Kev-0.8B** judge.
+- **Measured footprint:** the stack peaked at about 6 GB (`runs/mem-2026-09-30/footprint.txt`). Kev-0.8B peaks at 3.6 GB, and each console at about 1.2 GB.
+- **Not needed:** Kev-4B (16 GB peak when serving) and fine-tuning.
+
+**You need:** Node ≥ 23.6, `uv` with Python 3.12 or 3.13, git, free ports 8010 / 8790 / 8791 / 4318, and internet on the first run (npm packages and the Kev-0.8B weights).
+
+```bash
+git clone https://github.com/silex-ai-lab/jev-realtime-observability.git && cd jev-realtime-observability
+npm ci && npm run typecheck && npm test
+git clone https://github.com/jaredpalmer/kev.git ~/workplace/Silex/third_party/kev
+git -C ~/workplace/Silex/third_party/kev checkout 3e1cd3b && (cd ~/workplace/Silex/third_party/kev && uv sync --extra serve)
+bash scripts/demo-up.sh --reset     # Kev-0.8B on :8010, consoles on :8790 (watch-only) and :8791 (gate), sink on :4318
+# open http://127.0.0.1:8791/  → "Run a scenario" → SOC1…SOC5 ;  simulated page: http://127.0.0.1:8791/demo/index.html
+bash scripts/demo-down.sh           # add --kev to stop the judge too
+```
+
+All of it runs on 127.0.0.1 with login off. The prerequisites and what the script does are in the [`deploy-jev-observability`](skills/deploy-jev-observability/SKILL.md) skill ("Quick path"). The talk track is in [`docs/demo/SUMO_DEMO.md`](docs/demo/SUMO_DEMO.md), and reading the pages is covered in [`docs/USER_MANUAL.md`](docs/USER_MANUAL.md).
+
 ## Using the console
 
 [`docs/USER_MANUAL.md`](docs/USER_MANUAL.md) covers the whole page: connecting, the provenance header, the KPI tiles, every scenario and what it should show, the decision inspector, outcome read-back, replay and re-ask, gate mode, and a five-minute test of a deployment.

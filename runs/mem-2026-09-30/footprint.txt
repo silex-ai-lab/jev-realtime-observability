@@ -1,0 +1,40 @@
+# Memory footprint of the demo stack, measured 2026-09-30T16:44:46Z
+# host: Apple M4 Pro, 48 GB; tool: macOS footprint(1), phys_footprint (includes Metal/unified memory)
+# state: Kev-4B on :8009 and Kev-0.8B on :8010 after serving the eval and demo runs; three console servers (PGlite) with the demo data
+== kev-serve kev-4b (pid 37031)
+    phys_footprint: 12 MB
+    phys_footprint_peak: 12 MB
+== kev-serve kev-0.8b (pid 37033)
+    phys_footprint: 12 MB
+    phys_footprint_peak: 12 MB
+== kev-serve kev-4b (pid 37037)
+    phys_footprint: 9787 MB
+    phys_footprint_peak: 16 GB
+== kev-serve kev-0.8b (pid 37038)
+    phys_footprint: 3066 MB
+    phys_footprint_peak: 3658 MB
+== console server node server/main.ts (pid 40483, 127.0.0.1:8787)
+    phys_footprint: 509 MB
+    phys_footprint_peak: 837 MB
+== console server node server/main.ts (pid 59033, 127.0.0.1:8790)
+    phys_footprint: 470 MB
+    phys_footprint_peak: 1130 MB
+== console server node server/main.ts (pid 59034, 127.0.0.1:8791)
+    phys_footprint: 456 MB
+    phys_footprint_peak: 1114 MB
+
+# Demo stack alone, as started by scripts/demo-up.sh --reset and after SOC1-SOC5 + S9 (gate) and SOC2 + SOC5 (shadow), measured 2026-09-30T16:47:21Z
+== kev pid 53207 (npm
+run
+kev) ::  phys_footprint: 26 MB  phys_footprint_peak: 26 MB 
+== kev pid 53227 (uv) ::  phys_footprint: 12 MB  phys_footprint_peak: 12 MB 
+== kev pid 53234 (Python) ::  phys_footprint: 3053 MB  phys_footprint_peak: 3649 MB 
+== console-shadow pid 53799 (npm
+run
+server) ::  phys_footprint: 25 MB  phys_footprint_peak: 25 MB 
+== console-shadow pid 53819 (node) ::  phys_footprint: 324 MB  phys_footprint_peak: 1143 MB 
+== console-gate pid 53850 (npm
+run
+server) ::  phys_footprint: 26 MB  phys_footprint_peak: 26 MB 
+== console-gate pid 53871 (node) ::  phys_footprint: 355 MB  phys_footprint_peak: 1166 MB 
+== otlp-sink pid 53794 (node) ::  phys_footprint: 24 MB  phys_footprint_peak: 24 MB 

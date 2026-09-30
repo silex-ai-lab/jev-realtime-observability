@@ -1,6 +1,6 @@
 ---
 name: deploy-jev-observability
-description: Deploy jev-realtime-observability (the Jev-protocol agent observability server, its live console, and the local Kev judge) onto a new host, check it, and run a sandbox smoke test. Use when asked to deploy, install, set up, move or run this project on another machine or server (Linux with an NVIDIA GPU, or an Apple Silicon Mac), to enable gate mode, to point it at a real PostgreSQL, or to diagnose a deployment whose /readyz reports the judge or database as degraded.
+description: Deploy jev-realtime-observability (the Jev-protocol agent observability server, its live console, and the local Kev judge) onto a new host, check it, and run a sandbox smoke test. Use when asked to deploy, install, set up, move or run this project on another machine or server (Linux with an NVIDIA GPU, or an Apple Silicon Mac), to run the demo on one 24 GB Mac (Kev-0.8B, scripts/demo-up.sh), to enable gate mode, to point it at a real PostgreSQL, or to diagnose a deployment whose /readyz reports the judge or database as degraded.
 ---
 
 # Deploy jev-realtime-observability on another host
@@ -17,7 +17,7 @@ Every command below is run from the repo root unless stated. Helper scripts are 
 
 | Question | Default | Notes |
 |---|---|---|
-| Judge model | `jaredpalmer/kev-4b` | Kev's README lists it for a 32 GB Mac, an L40S or an H100 (it is too slow on an L4). `jaredpalmer/kev-0.8b` runs on an L4 or any Apple Silicon Mac. |
+| Judge model | `jaredpalmer/kev-4b` | Kev's README lists it for a 32 GB Mac, an L40S or an H100 (it is too slow on an L4). `jaredpalmer/kev-0.8b` runs on an L4 or any Apple Silicon Mac. **On a 24 GB Mac use Kev-0.8B**: serving Kev-4B was measured at a 16 GB peak footprint (`runs/mem-2026-09-30/footprint.txt`). The demo uses Kev-0.8B in any case. |
 | Shadow or gate | shadow (`SOURCE_MODE=live_sandbox_shadow`) | Gate mode enforces write and payment tools in the **sandbox only**. Read `docs/GATE.md` first. |
 | Storage | PGlite in `DATA_DIR` | Set `DATABASE_URL` for a real PostgreSQL. It runs the same migrations. Single replica only; no HA. |
 | Login (authentication) | **off** (`AUTH_MODE=none`) | With login off, anyone who can reach the port has full access (they can view everything and start runs), so the server refuses a non-loopback `HOST` unless `ALLOW_UNAUTHENTICATED_REMOTE=1`. **Set `AUTH_MODE=keys` for any shared or remote deployment.** |
@@ -28,6 +28,63 @@ Every command below is run from the repo root unless stated. Helper scripts are 
 - **The gate judge needs its own accelerator headroom.** On a shared, saturated GPU, gate preflights run out of their 400 ms judge budget and fail closed (benign payments are held). See `docs/GATE.md`.
 - **Hosted Jev:** `JUDGE_BACKEND=typesafe` with `TYPESAFE_API_KEY` uses TypeSafe's hosted Jev instead of Kev. That path is supported by config but has never been run against the real service, so smoke-test it before relying on it.
 - **Sandbox only.** No real money or real email is involved: the tools write to the `sandbox` schema. Do not point the gateway at production systems.
+
+## Quick path: run the demo on one Mac with 24 GB
+
+The demo (the live consoles with the SOC and AP scenarios, plus the simulated `/demo/` page) runs on **one Apple Silicon Mac with 24 GB of memory**.
+- **Judge:** it needs only the **Kev-0.8B** judge.
+- **Measured footprint:** the whole stack peaked at about 6 GB (`runs/mem-2026-09-30/footprint.txt`, macOS `footprint`, phys_footprint including unified/Metal memory).
+  - Kev-0.8B: 3.6 GB peak.
+  - Each console server: about 1.2 GB peak.
+  - The OTLP sink: under 0.1 GB.
+- **Not needed for the demo:** Kev-4B (16 GB peak when serving), fine-tuning, PostgreSQL and Docker.
+
+**Prerequisites** (check them with step 1's `check-host.sh`):
+
+| Need | Why | How |
+|---|---|---|
+| Apple Silicon Mac, macOS, 24 GB or more | Kev's Mac path is MLX; about 6 GB peak for the stack | — |
+| Node ≥ 23.6 | the server runs TypeScript natively | `brew install node` |
+| `uv`, and Python 3.12 or 3.13 | Kev runs under `uv` (`torch` has no 3.14 wheels) | `brew install uv` |
+| git | clone this repo and Kev | `xcode-select --install` or `brew install git` |
+| Internet on the first run | npm packages and the Kev-0.8B weights (Hugging Face) are downloaded once; later runs work offline with `HF_HUB_OFFLINE=1` | — |
+| Free ports 8010, 8790, 8791 and 4318 on 127.0.0.1 | judge, watch-only console, gate console, OTLP sink | `lsof -iTCP:8791 -sTCP:LISTEN` |
+| Free disk | models and caches (step 1 checks about 30 GB free) | — |
+
+**Steps:**
+
+```bash
+# 1. The code and its dependencies
+git clone https://github.com/silex-ai-lab/jev-realtime-observability.git && cd jev-realtime-observability
+npm ci && npm run typecheck && npm test        # expect 0 fail
+bash skills/deploy-jev-observability/scripts/check-host.sh
+
+# 2. Kev at the pinned commit (docs/THIRD_PARTY.md), outside this repo
+git clone https://github.com/jaredpalmer/kev.git ~/workplace/Silex/third_party/kev
+git -C ~/workplace/Silex/third_party/kev checkout 3e1cd3b
+(cd ~/workplace/Silex/third_party/kev && uv sync --extra serve)
+
+# 3. Start everything (the first start downloads the Kev-0.8B weights)
+bash scripts/demo-up.sh --reset                # KEV_DIR=/path/to/kev if you cloned it elsewhere
+
+# 4. Open http://127.0.0.1:8791/ (gate), http://127.0.0.1:8790/ (watch-only),
+#    http://127.0.0.1:8791/demo/index.html (simulated). "Run a scenario" → SOC1…SOC5.
+
+# 5. Stop (the judge keeps running; add --kev to stop it too)
+bash scripts/demo-down.sh
+```
+
+What `scripts/demo-up.sh` does:
+- checks Node, `node_modules`, `uv` and the Kev checkout;
+- reuses a Kev-0.8B already serving on 8010 (checking its identity), or starts one and waits up to 15 minutes for the first download;
+- starts `scripts/otlp-sink.mjs` on 4318;
+- starts a watch-only console on 8790 and a gate console on 8791, each with its own data dir under `.data/` (`--reset` re-seeds both), and the gate console exports to the sink.
+
+Everything binds to 127.0.0.1 with login off (`AUTH_MODE=none`). That is only safe on your own machine; see step 4 before sharing a console. Logs and pids are in `.data/demo/`. `docs/demo/SUMO_DEMO.md` has the talk track.
+
+**Do not on a 24 GB Mac:**
+- serve Kev-4B next to the demo;
+- run the Kev-4B fine-tune (`needs: gpu` in the work plan means 32 GB or more).
 
 ## 1. Check the host
 
