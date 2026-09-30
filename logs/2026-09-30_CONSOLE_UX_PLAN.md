@@ -1,4 +1,4 @@
-# Live console: plain-language results (plan r5)
+# Live console: plain-language results (plan r7)
 
 **Status:** plan r3, **approved unanimously** at the plan gate (herdr-agent-fleet).
 
@@ -357,3 +357,190 @@ At 1440 × 900 the prototype's page height is **913 px**, including the "Needs a
   - `coder-deepseek`: PLAN-APPROVED (non-blocking notes 1–4 carried into the build: assert the sentence text; restore the frozen claim-time label; **wire the U6 judge-signal line, which was never implemented**; document the shadow `wouldStop` count)
   - PLANNER (claude): PLAN-APPROVED
 - **The user** approved executing r5 ("可以执行").
+
+## Amendment r6: one layout for both pages; Replay and Policy what-if in the console (rejected, superseded by r7)
+
+**User decision (2026-09-30).** The user chose to give the demo page's Live tab the console's layout. They also asked that the demo page's good elements (Replay, Policy Studio) be absorbed into the console — only with a real business scenario that makes the function easy to understand.
+
+**What is real today** (checked in code):
+- `POST /v1/replays` supports three kinds:
+  - `policy_only`: re-decides stored decisions under a candidate policy, reusing the stored snapshot, rule results and signals, with **zero judge calls**, and records replay decisions with `replay_of`;
+  - `model_reeval`: re-asks the judge on the stored snapshot, a **real, budgeted model call**, at most 20 per request;
+  - `sandbox_reexec`: starts a **new run** of the same scripted scenario; the original is untouched.
+- The console already offers policy-only replay and re-ask per decision, buried in the Engineer inspector.
+- The policy's tunable parts are the semantic bands (`review_at` per question). In `experimental` mode a band only **flags** a signal (hit band `experimental_review`, reason "uncalibrated signals above experimental band (not acted on)") and never changes `recommended`. `calibrated` mode needs a calibration record, and none exists in this build (`validatePolicy` refuses it). So a Policy Studio in the console can honestly be a **what-if that flags**, not one that blocks.
+
+### C1. Demo page Live tab in the Runs layout (simulated)
+- The demo's simulated spans and verdict envelopes are mapped by a **pure adapter** (`web/demo/js/ui/runs-adapter.js`, unit-tested) into the live record shapes (events, decisions, post_tool receipts) and rendered by the **same** `web/js/runs.js` and `verdict.js`: runs list, rail, one-line steps.
+- **Mapping:**
+  - ALLOW → NO_CONFIGURED_RISK; ALERT → ALERT; REVIEW → REVIEW; HOLD → HOLD with decided_by; BLOCK / STOP → BLOCK / STOP.
+  - The simulated gateway action becomes the receipt: allow → executed; hold or deny → not_executed.
+  - The simulated mode maps as monitor → shadow wording, gate → gate wording.
+- **Always labelled simulated:** every card carries a "simulated" tag, and the header keeps the SIMULATED badge.
+- **Demo-only material** (threshold bands, three paths, cost, envelope, SIEM line) opens in the details drawer through the existing demo inspector.
+- **Other tabs:** Replay, Policy Studio and About stay, restyled only.
+
+### C2. Console "Re-check" (from the demo's Replay)
+- **Business scenario:** "You changed the agent or swapped the judge model. Before you ship, re-check recorded runs and see which decisions change."
+- **Two actions on the selected run card:**
+  - **"Re-check with the current judge"** runs `model_reeval` on the run's decisions (at most 20; one real model call each). The panel shows, per step, "before → after", and states "N judge calls made". The originals are unchanged.
+  - **"Run this scenario again"** runs `sandbox_reexec`. The new run appears in the runs list; the original is untouched.
+- **Wording:** a changed line reads "changed: No objection → Flagged". Unchanged lines are summarised ("5 unchanged").
+- Admin rights are needed where the API requires them. With login off this is automatic.
+
+### C3. Console "What-if" (from the demo's Policy Studio)
+- **Business scenario:** "Before you turn on a semantic check, see which of your recorded actions it would have flagged, and which it would have wrongly flagged."
+- **Demo line:** "At `goal_deviation` ≥ 0.45, which runs are flagged? SOC5's mass suspension, but not SOC1's routine block?" The values come from the live records, not from the plan.
+- **UI:** a **What-if** panel (header button next to Run a scenario) with one slider per semantic question, pre-filled from the active policy, and the **Run what-if** button.
+  - It runs `policy_only` over the recorded tool-call and statement decisions (at most 500, newest first).
+  - The results table is grouped by run: step · today · with these thresholds · flagged question and value.
+  - A summary: "N actions would be flagged · M runs affected · 0 judge calls".
+- **Honest labels, always visible in the panel:**
+  - "What-if flags only. In this build semantic checks are uncalibrated, so a threshold marks an action but never holds or blocks it. Enforcing it needs a calibration, which does not exist yet."
+  - "Replay decisions are recorded for audit; live decisions are unchanged."
+- **Not in scope:** saving, publishing or activating a policy (the lifecycle API exists, but its UI is a separate decision).
+
+### Build, owners, acceptance
+
+| ID | Owner | Task | Files |
+|---|---|---|---|
+| W1 | planner | C2 and C3 in the console; C1 wiring on the demo page | `web/index.html`, `web/js/live.js`, `web/js/runs.js`, `web/js/whatif.js` (new), `web/css/live.css`, `web/demo/index.html`, `web/demo/js/ui/app.js`, `web/demo/css/app.css` |
+| W2 | deepseek | The C1 adapter (pure) and its unit tests, against the mapping above; docs | `web/demo/js/ui/runs-adapter.js` (new), `tests/unit/web/demo-adapter.test.ts` (new), `docs/USER_MANUAL.md` (Re-check, What-if, demo page), `docs/demo/SUMO_DEMO.md` (a what-if beat after SOC5) |
+| R3 | reviewer-codex | Probes | `tests/probe/ui-runs-probes.ts`, `tests/probe/demo-probes.ts` |
+
+**R3 acceptance:**
+- **Re-check:** re-checking a SOC run reports its judge-call count equal to the number of re-evaluated decisions, and the original decisions are unchanged in `GET /v1/runs/:id`.
+- **Run again:** a new run appears and the old one stays.
+- **What-if:**
+  - with thresholds from the fixture judge, the table lists exactly the decisions whose stored signal ≥ threshold, recomputed independently in the probe;
+  - "0 judge calls" is shown;
+  - no live decision changes;
+  - the honest label is rendered visibly.
+- **Demo Live tab:** it renders run cards with the "simulated" tag; every step's text follows the mapping; no JS errors; 390 px has no horizontal scroll.
+- **Regression:** everything from r5 still passes.
+
+**Claim discipline:**
+- What-if never says "blocked" or "would block"; it says "would flag".
+- Re-check states that it makes real model calls.
+- The demo cards never drop the "simulated" label.
+
+## Amendment r7 (supersedes r6): corrected contracts for C1, C2 and C3
+
+r6's intent is unchanged: one layout for both pages, plus Re-check and What-if in the console. r7 fixes the contracts both seats rejected.
+
+### C1'. Demo page Live tab: a boundary-aware adapter
+
+`web/demo/js/ui/runs-adapter.js` (pure, unit-tested) turns the demo's simulated spans and envelopes (`web/demo/js/engine/router.js`) into live-shape records.
+
+**Steps by boundary:**
+
+| Demo span | Step it becomes | Receipt |
+|---|---|---|
+| `pre_tool` | a **tool call** | from the table below |
+| `pre_input` | a **source read**; `sources[].trust = retrieved` (or anything other than `user` / `system`) gets the "untrusted text from outside" label, and the demo has no `instruction_authority`, so this is the mapping | none |
+| `post_generation` | a **statement** | none |
+| `post_tool` (e.g. S5's `erp.payment_status` read-back) | a **finding after the fact**, with its own decision and its evidence line: tool result status, and read-back posted = true/false | **never** a receipt; it never makes an earlier call "did not run" |
+
+**Pre_tool action → receipt and control** (every action `router.js` emits):
+
+| Envelope action | Receipt | Control |
+|---|---|---|
+| `allow` | executed | allow |
+| `allow_and_alert` | executed | allow (flag: ALERT) |
+| `hold_for_review` | not_executed | hold_for_review |
+| `hold_for_approval` | not_executed | hold_for_approval |
+| `deny` | not_executed | deny |
+| `stop_and_handover` | not_executed | deny (STOP) |
+| `review_ticket` on a pre_tool (not expected; defensive) | executed, marked as a finding | — |
+| any other value | "result: <value>" | — |
+
+**Decision mapping:**
+- ALLOW → NO_CONFIGURED_RISK; ALERT, REVIEW, HOLD, BLOCK and STOP keep their names.
+- The envelope's `decided_by` and `reasons` carry over (the Why line), and rule hits become `rule_results`.
+
+**Per-step mode.**
+- The shared renderer now reads each decision's own `provenance.enforcement_mode` when present, and falls back to the page mode only when a decision has none.
+- The adapter sets it per envelope: monitor → shadow, gate → gate. So mixed per-tool modes and a mode changed later in Policy Studio keep each recorded step's original meaning.
+- In monitor mode every action is `allow` or `allow_and_alert` → executed, with "Would …" wording.
+- Real console decisions already carry `provenance`, so their behaviour is unchanged.
+
+**Simulated signals** stay out of the shared line.
+- The shared renderer takes an option `signals: false`, which the demo sets. The real console's "judge signals (uncalibrated, never block)" line is therefore never shown for simulated answers, which **do** drive REVIEW or BLOCK in the demo.
+- Simulated answers, threshold bands, three paths, cost, envelope and SIEM line stay in the demo's own simulated inspector (the details drawer).
+- A simulated semantic block shows its reason on the Why line, for example "exfil 0.91 ≥ block 0.80 (simulated)", from the envelope's `reasons`.
+
+**Labels:** every demo run card carries a "simulated" tag, and the header keeps the SIMULATED badge.
+
+**New step kind in the shared renderer:** "finding" (a decision on a completed boundary, rendered with the statement wording "Flagged" / "Recommended: open an investigation"). In the real console it also shows post_tool decisions whose recommendation is not the default; those were not rendered before.
+
+### C2'. Console "Re-check" and "Run again": what they really do
+
+**Re-check with the current judge and policy** (`model_reeval`):
+- **Business scenario:** "You switched the judge (for example to a fine-tuned Kev) or changed the policy. Re-assess recorded actions with the current judge and policy and see which decisions would change."
+- **What it does not do:** it does not run a changed agent. It reuses the stored snapshot, questions and rule results, and actions decided by a hard rule do not depend on the judge.
+- **The panel shows:**
+  - the API's actual `judge_calls` (attempts, which may include retries or be 0 on not-sent paths);
+  - per step: before → after, or the error or skip (for example "no judge questions for this decision");
+  - the text "New evaluations and replay decisions are recorded for audit; the original decisions are unchanged."
+
+**Run this scenario again** (`sandbox_reexec`):
+- **Wording, visible next to the button:** "Runs the same scripted scenario again as a new run. Its allowed sandbox writes happen again; it does not run a modified agent. The original run's records are unchanged."
+- **Auth fix (DeepSeek found this):** in login-off mode, `/v1/replays` resolves the role as reader, so `sandbox_reexec` returned 403. r7 moves it to its own admin route, **`POST /v1/sandbox/reexec`** (`{ run_id }`, `auth(req, ['admin'])`, the same body and logic), tested in both auth modes. `/v1/replays` `kind: sandbox_reexec` stays as it is for compatibility.
+
+### C3'. Console "What-if": crossing thresholds, not correctness
+
+- **Business scenario:** "Before you turn on a semantic check, see which recorded actions cross the thresholds you set. Whether a flag is right is for a person to judge; the review queue records that."
+- There is no "wrongly flagged" claim.
+- The SOC5 / SOC1 contrast is posed as a question answered from the stored values ("at 0.45, which of SOC1's and SOC5's actions cross?"), including when the judge does not separate them.
+- **Columns:** "today" is read from the stored decision's own `semantic.hits`, via `GET /v1/runs/:id` decisions. "With these thresholds" comes from the `policy_only` replay result's `after.semantic.hits`.
+- The honest labels are as in r6 ("flags only … never holds or blocks … needs a calibration, which does not exist yet"; "replay decisions are recorded for audit; live decisions are unchanged"), always visible.
+
+### Owners (r7)
+
+| ID | Owner | Files |
+|---|---|---|
+| W1 | planner | `web/js/runs.js` (per-step mode, finding kind, `signals` option, simulated tag), `web/js/live.js`, `web/index.html`, `web/css/live.css`, `web/js/whatif.js` (new), `web/js/recheck.js` (new), `web/demo/index.html`, `web/demo/js/ui/app.js`, `web/demo/css/app.css` |
+| W2 | deepseek | `web/demo/js/ui/runs-adapter.js` (new) + `tests/unit/web/demo-adapter.test.ts` (new): every row of both C1' tables, S5's post_tool finding, monitor mode, `allow_and_alert`, a mixed-mode run, a simulated semantic block with its reason; `server/api/index.ts` (the new `POST /v1/sandbox/reexec` route only) + `tests/integration/sandbox-reexec-route.test.ts` (new; both auth modes); docs `docs/USER_MANUAL.md`, `docs/demo/SUMO_DEMO.md` |
+| R3 | reviewer-codex | `tests/probe/ui-runs-probes.ts`, `tests/probe/demo-probes.ts`, `tests/probe/runs-fixture.html` |
+
+**R3 acceptance (r7):**
+- **Re-check:**
+  - with the one-attempt stub judge, `judge_calls` equals the number of successful rows;
+  - a hard-rule or no-question step shows its skip or error row;
+  - the originals are unchanged in `GET /v1/runs/:id`.
+- **Run again:** it works with login off; a new run appears; the original records are unchanged; the new run's sandbox effects are observed, not hidden.
+- **What-if:**
+  - the flagged set equals an independent recomputation from stored signals versus thresholds;
+  - "0 judge calls" is shown;
+  - live decisions are unchanged;
+  - the labels are rendered visibly.
+- **Demo Live tab:**
+  - mixed modes render per step;
+  - a simulated semantic block shows its reason and no "never block" line;
+  - S5's read-back renders as a finding while its payment still reads "ran";
+  - "simulated" is on every card;
+  - no JS errors; no horizontal scroll at 390 px.
+- **Regression:** everything from r5 still passes.
+
+### Round-6 objections → changes
+
+| # | Objection (who) | Change |
+|---|---|---|
+| 1 | Incomplete, boundary-blind receipt mapping; a finding on a completed boundary must not become "did not run"; `trust`, not `instruction_authority` (Codex #1, DeepSeek #2) | C1' tables cover every router action and every boundary; the new "finding" kind; sources map from `trust` |
+| 2 | One page-wide mode, and the "never block" signal label is wrong for simulated blocks (Codex #2, DeepSeek note) | Per-decision `provenance.enforcement_mode`; `signals: false` on the demo; simulated material stays in the simulated inspector; tests for mixed modes and a simulated block |
+| 3 | Re-check overstated (not a changed agent; attempts ≠ decisions; skips) (Codex #3, DeepSeek note) | C2' wording, actual `judge_calls`, skip and error rows, audit-write sentence; acceptance scoped to a one-attempt stub plus an error case |
+| 4 | Run again: the sandbox writes happen again (Codex #4); it 403s with login off (DeepSeek #1, verified at `server/api/index.ts:57,150,154`) | Visible wording; new admin route `POST /v1/sandbox/reexec` tested in both auth modes; acceptance observes the new run's effects |
+| 5 | "Wrongly flagged" implies correctness labels that do not exist (Codex #5, DeepSeek #3) | C3' shows crossing thresholds only; correctness is left to a person and the review queue; the SOC5/SOC1 question is answered from stored values |
+
+### Outcome of r6 and r7
+- **r6:** PLAN-REJECTED by both seats (5 objections, answered in the table above).
+- **r7:** approved by all three.
+  - `reviewer-codex`: PLAN-APPROVED
+  - `coder-deepseek`: PLAN-APPROVED
+  - PLANNER (claude): PLAN-APPROVED
+- **The user** asked to build once the review passed.
+- **DeepSeek's r7 notes, carried into the build:**
+  1. `allow_and_alert` keeps `control_action: 'allow'`; the alert shows only through the reasons and the simulated inspector.
+  2. The DOM contract gains `data-step-kind="finding"`.
+  3. What-if reads the original (non-`replay_of`) decision from `GET /v1/runs/:id`.
+  4. Demo `decided_by`: `rule` → "rule"; `jev`, `fallback` and `policy` keep their names, so a non-rule HOLD reads "Held for review" by design.
