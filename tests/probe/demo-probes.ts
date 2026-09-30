@@ -146,6 +146,94 @@ async function demoRunsProbe(url:string,kind:'mixed'|'semantic'|'finding'):Promi
   }
   assert.deepEqual(p.errors,[]);return `${kind}: independent simulated engine outcomes, tags, no shared signals, clean mobile layout`;
 }
+// Domain probes use the public controls; engine imports provide expectations,
+// while the pinned verdict table prevents engine/UI agreement from being vacuous.
+async function loadDemo(url: string, query: string) {
+  const p = await ensureBrowser();
+  await p.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+  await p.send('Page.navigate', { url: url + query });
+  await waitFor(() => p.eval<boolean>('return document.readyState==="complete"&&!!window.__jevDemo?.ready'), 'domain ready', 10_000);
+  return p;
+}
+async function domainContents(p: Cdp, domain: 'ap'|'soc') {
+  const actual = await p.eval<{tools:string[],rules:string[],questions:string[],agents:string[],inject:string[],replayQuestions:string[],pressed:string[]}>(`return {
+    tools:[...document.querySelectorAll('[data-tool-mode]')].map(e=>e.dataset.toolMode),
+    rules:[...document.querySelectorAll('#studio-rules [data-rule]')].map(e=>e.dataset.rule),
+    questions:[...document.querySelectorAll('#studio-battery [data-question]')].map(e=>e.dataset.question),
+    agents:[...document.querySelectorAll('#f-agent option')].map(e=>e.value).filter(Boolean),
+    inject:[...document.querySelectorAll('#inject [data-inject]')].map(e=>e.dataset.inject),
+    replayQuestions:[...new Set([...document.querySelectorAll('#replay-thr [data-threshold]')].map(e=>e.dataset.threshold.split('.')[0]))],
+    pressed:[...document.querySelectorAll('.jv-domain [aria-pressed="true"]')].map(e=>e.dataset.domain)
+  }`);
+  const expected = await p.eval<typeof actual>(`const {DOMAINS,SHARED_RULES}=await import('./js/engine/domains.js');const {BATTERY}=await import('./js/engine/types.js');const d=DOMAINS[${JSON.stringify(domain)}];return {tools:Object.keys(d.tools),rules:[...d.rules,...SHARED_RULES].map(r=>r[0]),questions:BATTERY.map(q=>q.id),agents:[d.agent],inject:d.inject.map(r=>r[0]),replayQuestions:BATTERY.filter(q=>q.type==='noul'&&d.questions.includes(q.id)).map(q=>q.id),pressed:[d.id]}`);
+  for (const key of Object.keys(expected) as Array<keyof typeof actual>) assert.deepEqual([...actual[key]].sort(), [...expected[key]].sort(), domain+' '+key);
+  assert.equal(await p.eval<string>('return window.__jevDemo.domain'), domain);
+  assert.ok(await p.eval<string>('return document.querySelector("#lede[data-lede]").textContent'));
+}
+async function domainSwitchProbe(url: string) {
+  const p = await loadDemo(url, '?seed=19&autoplay=0&domain=ap');
+  for (const [from,to] of [['ap','soc'],['soc','ap']] as const) {
+    await domainContents(p, from);
+    await p.eval<void>(`document.querySelector('[data-tab="studio"]').click();const e=document.querySelector('[data-tool-mode]');e.value='monitor';e.dispatchEvent(new Event('change',{bubbles:true}));`);
+    assert.ok(await p.eval<boolean>('return Object.values(window.__jevDemo.policy().tools).some(t=>t.mode==="monitor")'), 'Studio edit applied before reload');
+    await p.eval<void>(`document.querySelector('.jv-domain [data-domain="${to}"]').click()`);
+    await waitFor(() => p.eval<boolean>(`return window.__jevDemo?.ready&&window.__jevDemo.domain==='${to}'`), 'switched domain', 10_000);
+    assert.deepEqual(await p.eval<string[]>('const q=new URLSearchParams(location.search);return [q.get("seed"),q.get("autoplay"),q.get("domain")]'), ['19','0',to]);
+    await domainContents(p, to);
+    assert.equal(await p.eval<number>('return window.__jevDemo.log().length'), 0, 'old session cleared');
+    assert.equal(await p.eval<boolean>('return Object.values(window.__jevDemo.policy().tools).every(t=>t.mode==="gate")'), true, 'Studio edit reset');
+    await p.eval<void>('window.__jevDemo.flush();document.querySelector("[data-tab=replay]").click()');
+    assert.ok(await p.eval<number>('return window.__jevDemo.log().length')>0,'flushed stream is nonempty');
+    assert.ok(await p.eval<number>('return document.querySelectorAll("#replay-span option").length')>0,'Replay is nonempty');
+    await waitFor(()=>p.eval<boolean>('return document.querySelectorAll(".run-card").length>0'),'flushed run cards',10_000);
+    assert.equal(await p.eval<boolean>(`return window.__jevDemo.log().every(e=>e.agent==='${to}-agent')&&[...document.querySelectorAll('.run-card')].every(e=>e.dataset.runId.startsWith('${to==='soc'?'T-S':'T-'}'))`),true,'stream contains chosen agent only');
+    assert.equal(await p.eval<boolean>(`return [...document.querySelectorAll('#replay-span option')].every(e=>${to==='soc'?"e.value.startsWith('T-SOC')||e.value.startsWith('T-SB')":"!e.value.startsWith('T-SOC')&&!e.value.startsWith('T-SB')"})`),true,'Replay contains chosen domain only');
+    assert.deepEqual(p.errors, []);
+  }
+  await loadDemo(url, '?domain=unknown&autoplay=0');await domainContents(p,'ap');
+  return 'bidirectional reload after Studio edits; query preservation, isolated sessions/tools/agents/Replay, unknown falls back to AP';
+}
+async function socProbe(url:string,id:string) {
+  const p=await loadDemo(url,'?domain=soc&seed=7&autoplay=0');
+  await domainContents(p,'soc');
+  await p.eval<void>(`document.querySelector('#inject [data-inject="${id}"]').click()`);
+  await waitFor(()=>p.eval<boolean>(`return !!document.querySelector('.run-card[data-scenario="${id}"] .step-verdict')`),'SOC card',10_000);
+  const data=await p.eval<{calls:Array<{span_id:string,decision:string,decided_by:string,reasons:string[],tool:{name:string}}>,expected:unknown[],actual:unknown[]}>(`const {scenarioById,TENANT}=await import('./js/engine/scenarios.js');const {runStream}=await import('./js/engine/router.js');
+    const spans=scenarioById('${id}').spans.map((s,i)=>({...structuredClone(s),trace_id:s.trace_id+'~i1',span_id:s.span_id+'~i1',parent_span_id:s.parent_span_id?s.parent_span_id+'~i1':null,t_ms:i*40}));
+    const expected=runStream(spans,{tenant:TENANT,policy:window.__jevDemo.policy(),seed:7});
+    const actual=window.__jevDemo.log();const tuple=e=>[e.span_id,e.decision,e.action,e.decided_by,e.reasons,e.alert,e.rule_hits.map(h=>h.id)];
+    return {calls:actual.filter(e=>e.boundary==='pre_tool'),expected:expected.map(tuple),actual:actual.map(tuple)};`);
+  assert.deepEqual(data.actual,data.expected,'independently rerouted scenario envelopes');
+  const table:Record<string,string[][]>={
+    SOC1:[['siem.search','ALLOW','policy'],['firewall.block_ip','ALLOW','policy'],['ticket.update','ALLOW','policy']],
+    SOC2:[['siem.search','ALLOW','policy'],['firewall.allowlist_ip','HOLD','rule'],['ticket.update','ALLOW','policy']],
+    SOC3:[['siem.search','ALLOW','policy'],['identity.suspend_user','HOLD','rule']],
+    SOC4:[['siem.search','ALLOW','policy'],['webhook.post','BLOCK','rule']],
+    SOC5:[['siem.search','ALLOW','policy'],['identity.suspend_user','ALLOW','policy'],['identity.suspend_user','REVIEW','jev'],['identity.suspend_user','REVIEW','jev']]
+  };
+  assert.deepEqual(data.calls.map(e=>[e.tool.name,e.decision,e.decided_by]),table[id],'pinned plan outcomes');
+  await p.eval<void>(`document.querySelector('.run-row[data-run-row="T-${id}~i1"]').click()`);
+  for(const call of data.calls){
+    const text=await p.eval<{verdict:string,why:string}>(`const e=document.querySelector('.run-card[data-selected] .step[data-event-id="${call.span_id}"]');return {verdict:e?.querySelector('.step-verdict')?.textContent.trim()||'',why:e?.querySelector('.step-why')?.textContent||''}`);
+    const line=call.decision==='ALLOW'?'No objection · ran':call.decision==='BLOCK'?'Blocked · did not run':call.decision==='HOLD'?'Held for approval · did not run':'Held for review · did not run';
+    assert.equal(text.verdict,(call.tool.name==='siem.search'?'read-only · ':'')+line,call.span_id);for(const reason of call.reasons)assert.ok(text.why.includes(reason),'reason visible '+call.span_id);
+  }
+  assert.equal(await p.eval<boolean>('return [...document.querySelectorAll(".run-card")].every(e=>[...e.querySelectorAll(".tag")].some(t=>/simulated/i.test(t.textContent)))'),true);
+  assert.equal(await p.eval<number>('return document.querySelectorAll(".run-card .step-signals").length'),0);
+  const lede=await p.eval<string>('return document.querySelector("#lede").textContent');assert.match(lede,/live console.*uncalibrated/);assert.match(lede,/synthetic scores.*threshold policy/);
+  if(id==='SOC2'){
+    await p.eval<void>(`document.querySelector('[data-tab="replay"]').click();const s=document.querySelector('#replay-span');s.value='${data.calls[1].span_id}';s.dispatchEvent(new Event('change'));for(const e of document.querySelectorAll('#replay-thr [data-threshold]')){e.value=e.dataset.threshold.endsWith('review_threshold')?'0':'0.01';e.dispatchEvent(new Event('input',{bubbles:true}));}document.querySelector('[data-replay-run]').click();`);
+    assert.deepEqual(await p.eval<string[]>('return [document.querySelector("#replay-before").dataset.decision,document.querySelector("#replay-after").dataset.decision]'),['HOLD','HOLD']);
+    assert.match(await p.eval<string>('return document.querySelector("#replay-note").textContent'),/no threshold reaches this decision/);
+  }
+  for(const tab of ['live','replay','studio','about'])for(const width of [1440,390]){
+    await p.send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width===390});
+    await p.eval<void>(`document.querySelector('[data-tab="${tab}"]').click();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));`);
+    assert.equal(await p.eval<boolean>('return document.documentElement.scrollWidth<=innerWidth+1'),true,`${id} ${tab} ${width}px overflow`);
+  }
+  assert.match(await p.eval<string>('return document.querySelector("[data-panel=about]").textContent'),/synthetic scores.*threshold policy/i);
+  assert.deepEqual(p.errors,[]);return 'button injection, independent envelopes and pinned verdicts/reasons, simulated tags and caveat; all tabs at 1440/390px'+(id==='SOC2'?'; hard-rule Replay invariant':'');
+}
 async function cleanupBrowser(){page?.ws.close();browser?.ws.close();chrome?.kill();}
 let h:Awaited<ReturnType<typeof startGateAHarness>>|undefined;
 try{
@@ -168,6 +256,8 @@ try{
     return 'selected panel, visible SIMULATED badge, clean JS, no horizontal scroll at 1440 and 390px';
   });
   for(const kind of ['mixed','semantic','finding'] as const)await probe('DEMO-RUNS-'+kind,()=>demoRunsProbe(h!.url('/demo/index.html'),kind));
+  await probe('DEMO-DOMAIN-SWITCH',()=>domainSwitchProbe(h!.url('/demo/index.html')));
+  for(const id of ['SOC1','SOC2','SOC3','SOC4','SOC5'])await probe('DEMO-'+id,()=>socProbe(h!.url('/demo/index.html'),id));
 }catch(e){const status=e instanceof SkipProbe?'SKIP':'FAIL';results.push({id:'BOOT',status,detail:String(e)});console.log(`${status} BOOT — ${String(e)}`);}
 finally{await cleanupBrowser();await h?.close();}
 console.log(`\n${results.filter(r=>r.status==='PASS').length} PASS · ${results.filter(r=>r.status==='SKIP').length} SKIP · ${results.filter(r=>r.status==='FAIL').length} FAIL`);
