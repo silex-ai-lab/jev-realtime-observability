@@ -176,3 +176,57 @@ h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: v
   .cmp { grid-template-columns: minmax(0, 1fr); }
   .jv-back { margin-left: 0; }
 }
+
+/* ---- r5 visual system (logs/2026-09-30_CONSOLE_UX_PLAN.md, Amendment r5 B): same language as the live console ---- */
+:root { --shadow-sm: 0 1px 2px rgba(22,28,45,.06), 0 1px 1px rgba(22,28,45,.04); --shadow-md: 0 8px 28px rgba(22,28,45,.10);
+  --r-lg: 14px; --r-md: 10px; --r-sm: 7px; }
+body { background: #f3f4f7; }
+.jv-top { padding: 12px 24px 0; position: sticky; top: 0; z-index: 20; }
+.jv-brand { font-size: 15px; letter-spacing: .04em; }
+.jv-badge { background: rgba(166,106,20,.25); color: #ffe2b0; border: 1px solid rgba(240,180,90,.35); }
+.jv-tabs { margin-top: 10px; }
+.jv-tabs button { padding: 9px 14px; font-size: 13px; }
+main { padding-top: 16px; }
+.jv-lede { font-size: 13px; margin: 0 0 12px; }
+
+/* Four headline numbers as a row of compact tiles; the rest under "More metrics". */
+.jv-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 8px; }
+.jv-kpi { border-radius: var(--r-md); box-shadow: var(--shadow-sm); padding: 10px 14px; }
+.jv-kpi .k { font-size: 10.5px; letter-spacing: .06em; }
+.jv-kpi .v { font-size: 22px; letter-spacing: -.01em; }
+.jv-kpis.more { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 8px 0 4px; }
+.jv-more { margin-bottom: 12px; }
+.jv-more > summary { cursor: pointer; color: var(--muted); font-size: 12.5px; padding: 2px 2px 4px; }
+
+/* One compact toolbar. */
+.jv-controls { border-radius: var(--r-lg); box-shadow: var(--shadow-sm); padding: 8px 12px; gap: 6px 10px; margin-bottom: 12px; }
+.jv-controls .btn { padding: 4px 9px; font-size: 12.5px; border-radius: var(--r-sm); }
+.jv-controls .btn.primary { font-weight: 600; }
+.jv-controls [data-inject] { background: var(--soft); border-color: transparent; }
+.jv-controls [data-inject]:hover { background: var(--lav); border-color: transparent; }
+
+/* Stream and inspector each scroll inside their own card, so the page itself stays about one screen. */
+.card { border-radius: var(--r-lg); box-shadow: var(--shadow-sm); }
+.card > header { padding: 10px 14px; }
+.card > h2, .card > header h2 { font-size: 11px; font-weight: 700; letter-spacing: .07em; }
+.jv-stream { max-height: calc(100vh - 330px); min-height: 280px; }
+.jv-insp { top: 110px; }
+.jv-insp-body { max-height: calc(100vh - 170px); padding: 16px 18px; }
+.jv-insp-head { margin-bottom: 10px; }
+.jv-title { font-size: 16px; font-weight: 650; letter-spacing: -.01em; }
+.jv-verdict .big { font-size: 18px; font-weight: 750; padding: 5px 12px; border-radius: 999px; letter-spacing: .02em; }
+.jv-why { margin: 2px 0 10px; padding: 0; list-style: none; display: grid; gap: 3px; }
+.jv-why li { position: relative; padding-left: 14px; font-size: 13.5px; }
+.jv-why li::before { content: ''; position: absolute; left: 2px; top: .62em; width: 6px; height: 1px; background: var(--muted); }
+.jv-tech { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+.jv-tech > summary { cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 600; }
+.jv-tech > summary .jv-meta { font-weight: 400; margin-left: 6px; }
+.chip { border-radius: 999px; padding: 2px 8px; }
+
+@media (max-width: 900px) {
+  .jv-kpis, .jv-kpis.more { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .jv-top { position: static; }
+  .jv-stream { max-height: 420px; }
+  .jv-insp-body { max-height: none; }
+}
+.jv-controls [data-play][aria-pressed="true"] { background: var(--blue2); border-color: var(--blue2); color: #fff; }

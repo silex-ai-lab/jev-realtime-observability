@@ -117,15 +117,23 @@ export function renderInspector(el, row, ctx) {
       span.readback ? `tool result ${esc(span.result?.status)} · ERP read-back posted = ${esc(span.readback.posted)}` : 'No read-back on this span.'));
   }
 
+  // The one-line "why": the deciding rule's reason, else the policy's reasons, else what was checked.
+  const why = ruleHits.length ? ruleHits.map(h => h.reason ?? RULE_TEXT[h.id] ?? h.id)
+    : (env.reasons ?? []).length ? env.reasons : [env.decision === 'ALLOW' ? 'No hard rule hit and no threshold crossed.' : `Decided by ${env.decided_by}.`];
   el.innerHTML = `
-    <p class="jv-title">${esc(span.name)} ${span.scenario ? chip(span.scenario, 'sc') : ''}</p>
-    <div class="jv-meta">${esc(ctx.traceTitle(span))} · ${esc(env.trace_id)} / ${esc(env.span_id)} · ${chip(env.boundary, 'b')}</div>
-    <div class="jv-verdict" style="margin-top:10px">
+    <div class="jv-insp-head">
+      <p class="jv-title">${esc(span.name)} ${span.scenario ? chip(span.scenario, 'sc') : ''}</p>
+      <div class="jv-meta">${esc(ctx.traceTitle(span))} · ${chip(env.boundary, 'b')}</div>
+    </div>
+    <div class="jv-verdict">
       <span class="big ${esc(env.decision)}" data-decision="${esc(env.decision)}">${esc(env.decision)}</span>
       <div><div>decided by <b>${esc(env.decided_by)}</b>${env.alert ? ' · <b>alert</b>' : ''}</div>
       <div class="jv-meta">simulated added gate latency <b>${fmtMs(env.decision_latency_ms)}</b> · risk ${esc(env.risk?.label ?? '—')}</div></div>
     </div>
+    <ul class="jv-why" data-why>${why.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
     ${notes.join('')}
+    <details class="jv-tech"><summary>Technical details <span class="jv-meta">decision order · Jev answers · three paths · envelope</span></summary>
+    <div class="jv-meta" style="margin:6px 0 2px">${esc(env.trace_id)} / ${esc(env.span_id)}</div>
     <ol class="pipe">${pipe.join('')}</ol>
 
     <h3>Jev answers ${jevOk ? '' : '· none'}</h3>
@@ -145,5 +153,6 @@ export function renderInspector(el, row, ctx) {
       env.jev_on_critical_path ? '' : 'Off the critical path here, so the Jev time was not added to the gate.'}</p>
 
     <details><summary>Verdict envelope (JSON)</summary><pre class="json" data-envelope>${esc(JSON.stringify(env, null, 2))}</pre></details>
-    <details><summary>SIEM line (JSONL)</summary><pre class="json" data-siem>${esc(toSiemLine(env))}</pre></details>`;
+    <details><summary>SIEM line (JSONL)</summary><pre class="json" data-siem>${esc(toSiemLine(env))}</pre></details>
+    </details>`;
 }

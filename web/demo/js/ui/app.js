@@ -176,15 +176,21 @@ const TIP = {
   cost: '$0.042 per M input tokens (vendor list price quoted in the report), output free; token counts simulated.',
 };
 
+// Four headline numbers stay in view; the rest sit under "More metrics". Every tile keeps its data-kpi hook.
+const HEADLINE = new Set(['blocks', 'review_rate', 'coverage', 'p95']);
 function renderKpis() {
   const envs = rows.map(r => r.env);
   const k = envs.length ? computeKpis(envs) : {};
-  $('#kpis').innerHTML = KPI_DEFS.map(([id, label, show, raw, sub]) => {
+  const tile = ([id, label, show, raw, sub]) => {
     const val = raw(k);
     return `<div class="jv-kpi" data-kpi="${id}" data-value="${val ?? ''}" title="${esc(TIP[id])}">
       <div class="k">${esc(label)}</div><div class="v">${envs.length ? esc(show(k)) : '—'}</div>
       <div class="s">${esc(typeof sub === 'function' ? sub(k) : sub)}</div></div>`;
-  }).join('');
+  };
+  $('#kpis').innerHTML = KPI_DEFS.filter(d => HEADLINE.has(d[0])).map(tile).join('');
+  const more = $('#kpis-more');
+  if (more) more.innerHTML = KPI_DEFS.filter(d => !HEADLINE.has(d[0])).map(tile).join('');
+  else $('#kpis').innerHTML += KPI_DEFS.filter(d => !HEADLINE.has(d[0])).map(tile).join('');
 }
 
 // ---- wiring -------------------------------------------------------------
