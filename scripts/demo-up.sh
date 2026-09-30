@@ -59,12 +59,16 @@ else
 fi
 
 # 4. The two consoles
-JUDGE="JUDGE_BASE_URL=http://127.0.0.1:8010 JUDGE_EXPECTED_RUN=$KEV_RUN AUTH_MODE=none HOST=127.0.0.1"
+# Each console gets its own PGlite directory and the local Kev judge, whatever the calling shell exports:
+# an inherited DATABASE_URL would put both consoles on one database, and an inherited JUDGE_BACKEND would contradict Kev.
+[ -n "${DATABASE_URL:-}" ] && say "note: ignoring DATABASE_URL from this shell; the demo consoles use .data/demo-gate and .data/demo-shadow"
+[ -n "${JUDGE_BACKEND:-}" ] && [ "$JUDGE_BACKEND" != kev-local ] && say "note: ignoring JUDGE_BACKEND=$JUDGE_BACKEND from this shell; the demo uses the local Kev judge"
+JUDGE="JUDGE_BACKEND=kev-local JUDGE_BASE_URL=http://127.0.0.1:8010 JUDGE_MODEL=kev-latest JUDGE_EXPECTED_RUN=$KEV_RUN GATE_JUDGE_MODEL=kev-latest AUTH_MODE=none HOST=127.0.0.1"
 start_console() {   # start_console <name> <port> <extra env…>
   local name="$1" port="$2"; shift 2
   if listening "$port"; then say "$name console: port $port already in use, reusing it"; return; fi
   # shellcheck disable=SC2086
-  nohup env $JUDGE "$@" PORT="$port" DATA_DIR=".data/demo-$name" npm run server > "$STATE/console-$name.log" 2>&1 < /dev/null &
+  nohup env -u DATABASE_URL -u TYPESAFE_API_KEY $JUDGE "$@" PORT="$port" DATA_DIR=".data/demo-$name" npm run server > "$STATE/console-$name.log" 2>&1 < /dev/null &
   echo $! > "$STATE/console-$name.pid"
   wait_for 120 "the $name console on $port" curl -sf -m 2 "http://127.0.0.1:$port/readyz" -o /dev/null
 }

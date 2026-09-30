@@ -21,8 +21,13 @@ export function createRunsView(deps) {
   const byOperation = new Map();   // operation_id → post_tool event_id (to join outcomes and receipts)
   let tools = {}, unknownImpact = 'payment', titles = {}, domains = {}, openReviews = [];
   let renderTimer = null;
+  // Retention: the view keeps the newest MAX_RUNS runs (plus the run the viewer selected). Older runs are forgotten,
+  // timers included, so a long session does not grow memory; their late records are ignored, not resurrected.
+  const evicted = new Set();
+  let evictedCount = 0;
 
   const runOf = runId => {
+    if (evicted.has(runId)) return null;
     let r = runs.get(runId);
     if (!r) { r = { runId, events: new Map(), detail: new Map(), fetchTimer: null, finished: false, scenario: null }; runs.set(runId, r); }
     return r;
@@ -48,6 +53,7 @@ export function createRunsView(deps) {
     const p = rec.payload ?? {};
     if (rec.kind === 'event') {
       const r = runOf(p.run_id);
+      if (!r) return;
       recOf(r, p.event_id).event = p;
       if (p.boundary === 'run_started') { r.scenario = p.attributes?.scenario ?? r.scenario; r.goal = p.task_goal ?? r.goal; }
       if (p.boundary === 'run_finished') r.finished = true;
@@ -180,8 +186,12 @@ export function createRunsView(deps) {
   let selectedRun = null;
   function render() {
     const mode = deps.mode();
-    const ordered = [...runs.values()].sort((a, b) => maxSeq(b) - maxSeq(a)).slice(0, MAX_RUNS);
-    if (!selectedRun || !runs.has(selectedRun) || autoFollow) selectedRun = (ordered.find(followable) ?? ordered[0])?.runId ?? null;
+    const sorted = [...runs.values()].sort((a, b) => maxSeq(b) - maxSeq(a));
+    if (!selectedRun || !runs.has(selectedRun) || autoFollow) selectedRun = (sorted.slice(0, MAX_RUNS).find(followable) ?? sorted[0])?.runId ?? null;
+    const ordered = sorted.slice(0, MAX_RUNS);
+    const pinned = sorted.slice(MAX_RUNS).find(r => r.runId === selectedRun);
+    if (pinned) ordered.push(pinned);   // a manually selected older run stays on screen until the viewer picks another
+    for (const r of sorted.slice(MAX_RUNS)) if (r !== pinned) evict(r);
     const allCalls = [], rowsHtml = [];
     root.innerHTML = ordered.length ? ordered.map(r => {
       const steps = stepsOf(r, mode);
@@ -207,6 +217,13 @@ export function createRunsView(deps) {
     const cnt = document.querySelector('#runs-count'); if (cnt) cnt.textContent = ordered.length ? String(ordered.length) : '';
     renderSummary(summarize(allCalls), mode, allCalls);
   }
+  function evict(r) {
+    clearTimeout(r.fetchTimer);
+    for (const x of r.events.values()) if (x.event?.boundary === 'post_tool' && x.event.operation_id) byOperation.delete(x.event.operation_id);
+    runs.delete(r.runId); evictedCount++;
+    evicted.add(r.runId);
+    if (evicted.size > 5000) evicted.delete(evicted.values().next().value);
+  }
   let autoFollow = true;   // follow the newest run until the viewer picks one
   // deps.followable(run): which runs auto-follow may jump to. The demo passes scenario runs only, so its background traffic
   // does not take over the card a viewer is looking at.
@@ -224,7 +241,7 @@ export function createRunsView(deps) {
       sum.failed ? n('failed', sum.failed, 'failed', 'fail') : '',
       sum.didNotRunOther ? n('didNotRunOther', sum.didNotRunOther, 'did not run (other)', 'warn') : '',
       sum.pending ? n('pending', sum.pending, 'pending', 'neutral') : '',
-    ].join('') + `<span hidden>${n('didNotRun', sum.didNotRun, '', '')}${n('waiting', openReviews.length, '', '')}</span>`;
+    ].join('') + (evictedCount ? `<span class="lv-meta" data-window>counts cover the ${MAX_RUNS} most recent runs</span>` : '') + `<span hidden>${n('didNotRun', sum.didNotRun, '', '')}${n('waiting', openReviews.length, '', '')}</span>`;
     const wb = document.querySelector('#waiting-btn'), wn = document.querySelector('#waiting-n');
     if (wb && wn) { wn.textContent = String(openReviews.length); wb.hidden = openReviews.length === 0; }
   }
@@ -247,7 +264,7 @@ export function createRunsView(deps) {
 
   /** Run ids, newest first (What-if and the demo use it). */
   /** Forget every run (the demo page re-feeds its whole simulated stream after each step). */
-  function reset() { runs.clear(); byOperation.clear(); }
+  function reset() { for (const r of runs.values()) clearTimeout(r.fetchTimer); runs.clear(); byOperation.clear(); evicted.clear(); evictedCount = 0; }
   const runIds = () => [...runs.values()].sort((a, b) => maxSeq(b) - maxSeq(a)).map(r => r.runId);
   return { onRecord, setScenarioMeta, setReviews, render, runIds, reset, rerender: scheduleRender };
 }

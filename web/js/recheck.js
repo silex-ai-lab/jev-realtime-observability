@@ -49,7 +49,8 @@ export function createRecheck(deps) {
       });
       panels.set(runId, { html: `<div class="recheck-result">
         <div class="recheck-head"><b>Re-check with the current judge and policy</b> <span class="lv-meta"><span data-judge-calls>${esc(r.judge_calls)}</span> judge call${r.judge_calls === 1 ? '' : 's'} made · ${changed} changed · ${unchanged} unchanged · ${skipped} skipped</span></div>
-        <ul class="recheck-rows">${rows.join('')}</ul>
+        <ul class="recheck-rows">${rows.join('')}</ul>${steps.length > pick.length ? `
+        <p class="lv-meta" data-recheck-omitted>Only the first ${pick.length} of ${steps.length} decided steps were re-checked (the replay API takes 20 at a time).</p>` : ''}
         <p class="lv-meta" data-audit-note>${esc(AUDIT_NOTE)} It re-assesses the recorded actions; it does not run a changed agent.</p></div>` });
     } catch (e) {
       panels.set(runId, { html: `<div class="recheck-result"><p class="note bad">Re-check failed: ${esc(e.message)}</p></div>` });
