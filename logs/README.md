@@ -2,6 +2,14 @@
 
 Newest first. The plan and its review record live in this folder.
 
+## 2026-09-29 — Sumo Logic demo: research and demo plan (plan only, no code)
+
+[Plan and review record](2026-09-29_SUMO_DEMO_PLAN.md).
+
+- **What:** research on Sumo Logic's agent products (Dojo AI, SOC Analyst Agent, MCP Server, LLM Observability), where they meet Silex, and a plan for a "Poisoned telemetry" demo. The demo adds a scripted SOC domain on the existing Jev pipeline: SOC1–SOC5, a synthetic acceptance report, and OTLP export of decisions.
+- **Left alone:** all code. The build is a separate run.
+- **Review:** three seats, 5 plan rounds, unanimous on plan r5. The DeepSeek seat moved to `deepseek-v4-pro` after `deepseek-reasoner` fell back to another model in round 1; this is recorded in the plan.
+
 ## 2026-09-29 — Work plan batch 2: label export, sampler, review panel, fine-tune rerun
 
 [Plan and review record](2026-09-29_WORKPLAN_BATCH2_PLAN.md) · [API contract §10.4](../docs/CONTRACTS.md) · [Rerun report](../runs/eval-2026-09-29-ft-rerun/REPORT.md).
