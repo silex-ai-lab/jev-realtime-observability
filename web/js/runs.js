@@ -181,7 +181,7 @@ export function createRunsView(deps) {
   function render() {
     const mode = deps.mode();
     const ordered = [...runs.values()].sort((a, b) => maxSeq(b) - maxSeq(a)).slice(0, MAX_RUNS);
-    if (!selectedRun || !runs.has(selectedRun) || autoFollow) selectedRun = ordered[0]?.runId ?? null;
+    if (!selectedRun || !runs.has(selectedRun) || autoFollow) selectedRun = (ordered.find(followable) ?? ordered[0])?.runId ?? null;
     const allCalls = [], rowsHtml = [];
     root.innerHTML = ordered.length ? ordered.map(r => {
       const steps = stepsOf(r, mode);
@@ -208,6 +208,9 @@ export function createRunsView(deps) {
     renderSummary(summarize(allCalls), mode, allCalls);
   }
   let autoFollow = true;   // follow the newest run until the viewer picks one
+  // deps.followable(run): which runs auto-follow may jump to. The demo passes scenario runs only, so its background traffic
+  // does not take over the card a viewer is looking at.
+  const followable = r => (deps.followable ? deps.followable(r) : true);
   const maxSeq = r => Math.max(0, ...[...r.events.values()].map(x => (x.event ? Date.parse(x.event.received_at) || 0 : 0)));
 
   function renderSummary(sum, mode, calls) {
@@ -228,7 +231,7 @@ export function createRunsView(deps) {
 
   document.querySelector('#run-rows')?.addEventListener('click', e => {
     const b = e.target.closest?.('[data-run-row]'); if (!b) return;
-    selectedRun = b.dataset.runRow; autoFollow = selectedRun === [...runs.values()].sort((a, c) => maxSeq(c) - maxSeq(a))[0]?.runId; render();
+    selectedRun = b.dataset.runRow; autoFollow = selectedRun === [...runs.values()].filter(followable).sort((a, c) => maxSeq(c) - maxSeq(a))[0]?.runId; render();
   });
   root.addEventListener('click', e => {
     const x = e.target.closest?.('[data-expand]');

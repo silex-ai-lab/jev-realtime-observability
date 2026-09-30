@@ -198,6 +198,8 @@ const runsView = createRunsView({
   api: async path => toRunDetail(decodeURIComponent(path.split('/').pop())) ?? { timeline: [] },
   // The demo has no independent read-back, so the shared business-result line is off (it would stay 'pending').
   mode: () => null, signals: false, outcomes: false, simulated: true, onDetails: openDemoDetail,
+  // Follow the scripted scenarios, not the background payments, so an injected scenario stays on screen.
+  followable: r => !!r.scenario,
 });
 runsView?.setScenarioMeta({ scenarios: ALL_SCENARIOS.filter(t => t.scenario).map(t => ({ id: t.scenario, title: t.title, domain: 'ap' })) });
 function refreshRuns() {
