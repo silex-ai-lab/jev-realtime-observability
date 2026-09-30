@@ -4,6 +4,8 @@
 // outcome for a span: a scenario label, not a benchmark (plan §2).
 
 import { makeRng } from './rng.js';
+import { traceFor, root, lbl } from './trace.js';
+import { SOC_SCENARIOS, makeSocBackground } from './scenarios-soc.js';
 
 // Hard-rule constants for the fictional tenant. Deliberately NOT part of the
 // policy object: no threshold edit can change them (plan §4, R p.13 hard veto).
@@ -14,6 +16,21 @@ export const TENANT = Object.freeze({
   domain_allowlist: ['northwind.example', 'bank.northwind.example', 'erp.northwind.example'],
   stale_after_ms: 5000,
   repeat_failure_n: 3,
+  // SOC authority data (logs/2026-09-30_DEMO_SOC_PLAN.md §2), copied from sandbox/seed.ts. Code, not policy.
+  soc_users: Object.freeze({
+    'u-jdoe':     { role: 'analyst', privileged: false, break_glass: false, host: 'h-09' },
+    'u-admin-02': { role: 'domain-admin', privileged: true, break_glass: false, host: 'h-01' },
+    'u-h17-a':    { role: 'engineer', privileged: false, break_glass: false, host: 'h-17' },
+    'u-h17-b':    { role: 'engineer', privileged: false, break_glass: false, host: 'h-17' },
+    'u-h17-c':    { role: 'engineer', privileged: false, break_glass: false, host: 'h-17' },
+  }),
+  soc_incidents: Object.freeze([{ id: 'INC-301', target_user: 'u-jdoe', action: 'suspend', status: 'approved' }]),
+  soc_change_approvals: Object.freeze([{ id: 'CHG-9001', ip: '192.0.2.10', action: 'allowlist', status: 'approved' }]),
+  // ticket → alert. TCK-201…205 from sandbox/seed.ts SOC_TICKETS; TCK-301…340 → ALERT-201…240 for the background runs.
+  soc_tickets: Object.freeze(Object.fromEntries([
+    ...[1, 2, 3, 4, 5].map(i => [`TCK-20${i}`, `ALERT-10${i}`]),
+    ...Array.from({ length: 40 }, (_, i) => [`TCK-${301 + i}`, `ALERT-${201 + i}`]),
+  ])),
 });
 
 export const AGENT = 'ap-agent';
@@ -29,27 +46,7 @@ export const BACKGROUND_TRACES = 40; // size of the normal-traffic generator; KP
 const PO_4410 = { id: 'PO-4410', vendor_id: 'V-118', vendor: 'Pacific Paper Co.', amount_usd: 8420, status: 'approved' };
 const APR = id => ({ id, approver: 'finance.approver@northwind.example', status: 'approved' });
 
-function trace(id, scenario, title, spans) {
-  return {
-    trace_id: id, scenario, title,
-    spans: spans.map((s, i) => ({
-      trace_id: id,
-      span_id: `${id}-s${i + 1}`,
-      parent_span_id: i === 0 ? null : `${id}-s1`,
-      agent: AGENT,
-      boundary: null,
-      sources: [],
-      tool: null, result: null, readback: null, text: null, context: {},
-      age_ms: 120,
-      label: null,
-      scenario,
-      ...s,
-    })),
-  };
-}
-
-const root = (name, text) => ({ kind: 'invoke_agent', name, text });
-const lbl = (expected, decided_by) => ({ expected, decided_by });
+const trace = traceFor(AGENT);
 
 export const SCENARIOS = Object.freeze([
   trace('T-S1', 'S1', 'Normal: read an approved PO, look up the vendor, pay it', [
@@ -170,7 +167,11 @@ export const FAULT_SCENARIOS = Object.freeze([
 ]);
 
 export const ALL_SCENARIOS = Object.freeze([...SCENARIOS, ...FAULT_SCENARIOS]);
-export const scenarioById = id => ALL_SCENARIOS.find(t => t.scenario === id) ?? null;
+export { SOC_SCENARIOS };
+const EVERY = [...ALL_SCENARIOS, ...SOC_SCENARIOS];
+export const scenarioById = id => EVERY.find(t => t.scenario === id) ?? null;
+/** The scripted scenarios of one agent: 'ap' (S1–S6, F1) or 'soc' (SOC1–SOC5). */
+export const scenariosFor = domain => (domain === 'soc' ? SOC_SCENARIOS : ALL_SCENARIOS);
 
 // Normal background traffic: payments within limit, approved, payee matches,
 // allowlisted remit domain; plus drafted summaries grounded in the given evidence.
@@ -224,11 +225,12 @@ export function makeBackground(seed, n = BACKGROUND_TRACES) {
  * positions, flattened to spans with a simulated clock (t_ms). Deterministic in seed.
  * F1 is not in the stream; the UI injects it (and any scenario) on demand.
  */
-export function buildStream(seed, { background = BACKGROUND_TRACES } = {}) {
-  const bg = makeBackground(seed, background);
-  const at = { 3: 'S1', 8: 'S2', 14: 'S3', 20: 'S4', 26: 'S5', 32: 'S6' };
+export function buildStream(seed, { background = BACKGROUND_TRACES, domain = 'ap' } = {}) {
+  const soc = domain === 'soc';
+  const bg = soc ? makeSocBackground(seed, background) : makeBackground(seed, background);
+  const at = soc ? { 3: 'SOC1', 9: 'SOC2', 16: 'SOC3', 23: 'SOC4', 30: 'SOC5' } : { 3: 'S1', 8: 'S2', 14: 'S3', 20: 'S4', 26: 'S5', 32: 'S6' };
   const traces = [];
-  bg.forEach((t, i) => { if (at[i]) traces.push(scenarioById(at[i])); traces.push(t); });
+  bg.forEach((t, i) => { const sc = at[i] && scenarioById(at[i]); if (sc) traces.push(sc); traces.push(t); });
   const r = makeRng(String(seed), 'clock');
   let t = 0;
   const spans = [];

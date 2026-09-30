@@ -218,3 +218,11 @@ Typecheck and `npm test` must be green.
 | 6 | Pin the reason strings (DeepSeek #4) | Pinned and tested. |
 | 7 | `prior_same_action` wording (DeepSeek #5) | Only earlier non-read calls of the same tool count. |
 | s | Suggestions (Codex): wording on calibration; span ids seed the jitter; probe the switch both ways and keep query parameters; the metadata handoff | All taken. |
+
+### Plan gate outcome
+- **r1:** PLAN-REJECTED by `reviewer-codex` (2 objections) and `coder-deepseek` (1 blocking objection plus 4 grounding items). The table above answers them.
+- **r2:** approved by all three. `reviewer-codex`: PLAN-APPROVED. `coder-deepseek`: PLAN-APPROVED. PLANNER (claude): PLAN-APPROVED.
+- **DeepSeek's r2 notes, carried into the build:**
+  - background tickets must resolve through the same lookup that `target_matches_alert` reads;
+  - `goalDeviationP`'s null branch stays the literal 0.10 base.
+- **F0 decision on the first note:** `TENANT.soc_tickets` also holds the background range, `TCK-301`…`TCK-340` → `ALERT-201`…`ALERT-240`, which is deterministic and seed-independent. The SOC background uses those ids.
