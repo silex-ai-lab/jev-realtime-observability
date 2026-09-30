@@ -2,6 +2,20 @@
 
 Newest first. The plan and its review record live in this folder.
 
+## 2026-09-30 — Console Runs view, Re-check / Run again / What-if, demo page on the same layout
+
+[Plan and review record](2026-09-30_CONSOLE_UX_PLAN.md) · [User manual §7](../docs/USER_MANUAL.md).
+
+- **Runs view:** the console opens on a master–detail Runs view: one card per run and one plain-language line per step, from two independent parts (decision · receipt). The Engineer view stays rendered underneath (the Runs | Engineer toggle). Each step keeps the mode its own decision was made in; a post-tool decision is a *finding* and never turns a call into "did not run".
+- **Actions on a run card:**
+  - **Re-check with the current judge and policy** (`model_reeval`, real judge call attempts, up to 20 steps);
+  - **Run this scenario again**, through the new admin route `POST /v1/sandbox/reexec`, which shares the sandbox rate budget;
+  - **What-if** (`policy_only`, 0 judge calls), which flags only: semantic thresholds never hold or block.
+- **Demo page:** its Live tab uses the same Runs view through a pure adapter. Every card is tagged "simulated". It follows scripted scenarios, not background traffic.
+- **Core fix:** `listDecisionsForEvent` returns `replay_of`, so replay decisions can be told apart from originals.
+- **24 GB:** `scripts/demo-up.sh` / `demo-down.sh` run the whole demo on Kev-0.8B (about 6 GB measured). The consoles ignore an inherited `DATABASE_URL`.
+- **Review:** three seats. The plan took r1–r7, where r4 and r6 were rejected. The code took 3 rounds and ended unanimous on `e6f7118` (base `85123cf`).
+
 ## 2026-09-30 — Sumo Logic demo: SOC domain, acceptance report, OTLP export
 
 [Plan and review record](2026-09-29_SUMO_DEMO_PLAN.md) · [Contract §11](../docs/CONTRACTS.md) · [Talk track](../docs/demo/SUMO_DEMO.md) · Reports: [stub](../runs/vv-soc-2026-09-29/REPORT.md), [live Kev-0.8B](../runs/vv-soc-live-kev08b-2026-09-29/REPORT.md).

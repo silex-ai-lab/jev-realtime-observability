@@ -544,3 +544,30 @@ r6's intent is unchanged: one layout for both pages, plus Re-check and What-if i
   2. The DOM contract gains `data-step-kind="finding"`.
   3. What-if reads the original (non-`replay_of`) decision from `GET /v1/runs/:id`.
   4. Demo `decided_by`: `rule` → "rule"; `jev`, `fallback` and `policy` keep their names, so a non-rule HOLD reads "Held for review" by design.
+
+## Code gate (r5 + r7 build), base `85123cf`
+
+**Integration fix before review:** the Runs view's `.step[data-event-id]` elements came first in the DOM, so the generic `[data-event-id]` lookups in `run-probes` P2 and `soc-probes` found a Runs step instead of the Engineer stream row (P2 and 3 of 7 SOC checks timed out). The Engineer grid now precedes the Runs grid in `web/index.html`; no probe was edited.
+
+**Found in the screenshots (not by a review):** on the demo page the background payments took over the selected card seconds after "Inject S3". `runs.js` gains an optional `followable(run)`; the demo follows scenario runs only (`d39bf99`).
+
+| Round | Revision | reviewer-codex | coder-deepseek | Changes |
+|---|---|---|---|---|
+| r1 | `f8dc1ce` | IMPL-CHANGES (3) | IMPL-APPROVED (6 suggestions) | Codex: a selected run older than the newest 50 left the detail pane blank; the pills claimed session totals over a 50-run window while run state grew without bound; `demo-up.sh` consoles inherited `DATABASE_URL` and `JUDGE_BACKEND`. Fixed in `651b7b6`: a retention window (newest 50 plus a pinned selection; evicted runs free state and timers and are not resurrected), the pills say "counts cover the 50 most recent runs", `env -u DATABASE_URL -u TYPESAFE_API_KEY` and a pinned Kev backend (checked with a sentinel `DATABASE_URL`), and Re-check discloses its 20-step limit. DeepSeek's suggestions went into `74fef08`: Run again shares the 30/min sandbox budget, "judge call attempts", and a What-if guard with no policy. |
+| r2 | `651b7b6` | IMPL-APPROVED (2 suggestions) | — | `e6f7118`: the label names a pinned older run; the manual states the 5000-eviction tombstone horizon. |
+| r3 | `e6f7118` | IMPL-APPROVED | IMPL-APPROVED | — |
+
+- **PLANNER (claude):** IMPL-APPROVED on `e6f7118`. Reviewed diff hash `git diff 85123cf e6f7118 | git hash-object --stdin` = `��`.
+- **Results at `e6f7118`:**
+  - typecheck clean;
+  - `npm test`: 264 tests, 260 pass, 0 fail, 4 skip;
+  - with `TEST_DATABASE_URL` (PostgreSQL 17.11), at `f8dc1ce`: 260 pass, 0 fail, 1 skip;
+  - `npm run probe` (Kev-0.8B): 8/8;
+  - soc-probes: 7/7;
+  - ui-runs-probes: 29/29;
+  - demo-probes: 7/7.
+- **Follow-ups (non-blocking, not done):**
+  1. `/v1/sandbox/reexec` takes its rate slot before looking up the run, so a 404 or 400 still uses a slot.
+  2. The compatibility `/v1/replays kind: sandbox_reexec` path still bypasses the sandbox budget.
+  3. What-if now reaches the view's retained window (≤ 50 runs plus a pinned one), not 500; pulling run ids from the server would widen it.
+  4. Separate stop and watch counters for mixed-mode demo runs.
