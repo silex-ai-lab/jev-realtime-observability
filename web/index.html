@@ -9,20 +9,40 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/live.css">
 </head>
-<body>
+<body class="view-runs">
 <header class="lv-top">
   <div class="lv-row">
-    <span class="lv-brand">SILEX <small>Live agent risk console · Jev-protocol judge</small></span>
-    <a class="lv-link" href="demo/index.html">Simulated demo →</a>
+    <span class="lv-brand">SILEX <small>Agent risk console</small></span>
+    <span class="mode-pill" id="mode-pill" data-mode="unknown"><i class="dot"></i><span>Mode…</span></span>
+    <section class="lv-summary" id="runs-summary" data-runs-only aria-label="This session"><span class="lv-meta">No tool calls yet</span></section>
+    <span class="lv-top-actions">
+      <button type="button" class="waitbtn" id="waiting-btn" data-runs-only hidden><span class="n" id="waiting-n">0</span> waiting for a person</button>
+      <span class="menu-wrap" data-scenario-menu>
+        <button type="button" class="btn primary" id="scenario-open" aria-expanded="false" aria-controls="scenario-menu">Run a scenario</button>
+        <div class="scenario-menu" id="scenario-menu" hidden>
+          <div class="lv-controls">
+            <span class="lv-meta">A scripted agent; its tools really run in the sandbox.</span>
+            <span id="scenario-buttons"></span>
+            <span class="lv-meta" id="run-status"></span>
+          </div>
+        </div>
+      </span>
+      <span class="lv-views" role="group" aria-label="View">
+        <button type="button" class="vbtn" data-view="runs" aria-pressed="true">Runs</button>
+        <button type="button" class="vbtn" data-view="engineer" aria-pressed="false">Engineer</button>
+      </span>
+    </span>
   </div>
+  <p class="lv-mode" id="mode-sentence">Mode: shown after the first decision arrives.</p>
   <!-- The four provenance dimensions (RFC §2). Filled from server records, never assumed. -->
-  <div class="lv-prov" id="prov">
+  <div class="lv-prov" id="prov" data-engineer-only>
     <span class="pv" data-provenance="source_mode"><b>source</b> <i>—</i></span>
     <span class="pv" data-provenance="judge_source"><b>judge</b> <i>—</i></span>
     <span class="pv" data-provenance="tool_environment"><b>tools</b> <i>—</i></span>
     <span class="pv" data-provenance="enforcement_mode"><b>enforcement</b> <i>—</i></span>
+    <a class="lv-link" href="demo/index.html">Simulated demo →</a>
   </div>
-  <p class="lv-note" id="judge-note">The judge speaks TypeSafe's System One (Jev) protocol. Unless the judge line says <code>typesafe:</code>, the model answering is <b>not</b> TypeSafe's Jev.</p>
+  <p class="lv-note" id="judge-note" data-engineer-only>The judge speaks TypeSafe's System One (Jev) protocol. Unless the judge line says <code>typesafe:</code>, the model answering is <b>not</b> TypeSafe's Jev.</p>
 </header>
 
 <main>
@@ -36,15 +56,26 @@
     </form>
   </section>
 
-  <section class="lv-kpis" id="kpis"></section>
+  <div class="lv-runs-grid" data-runs-only>
+    <nav class="runs-list" aria-label="Runs">
+      <header><h2>Runs</h2><span class="lv-meta" id="runs-count"></span></header>
+      <div id="run-rows"><p class="lv-empty">No runs yet.</p></div>
+    </nav>
+    <section class="runs-main">
+      <div id="runs"><div class="empty-state"><h3>Nothing has run yet</h3><p>Start a scenario with <b>Run a scenario</b>. Each run appears on the left; its steps appear here.</p></div></div>
+    </section>
+  </div>
 
-  <section class="card lv-controls">
-    <span class="lv-meta">Sandbox run (real tool execution in the sandbox schema, scripted driver):</span>
-    <span id="scenario-buttons"></span>
-    <span class="lv-meta" id="run-status"></span>
-  </section>
+  <aside class="drawer" id="runs-detail" hidden aria-label="Details">
+    <header><h2>Details</h2><button type="button" class="linkbtn" id="runs-detail-close">Close</button></header>
+  </aside>
 
-  <div class="lv-grid">
+  <details class="lv-metrics" id="eng-metrics">
+    <summary>Engineering metrics <span class="lv-meta">· latency, coverage, baselines</span></summary>
+    <section class="lv-kpis" id="kpis"></section>
+  </details>
+
+  <div class="lv-grid" data-engineer-only>
     <section class="card">
       <header><h2>Live stream</h2><span class="lv-meta" id="lag"></span></header>
       <div class="lv-stream" id="stream"><p class="lv-empty">Connect, then start a sandbox run.</p></div>
@@ -56,9 +87,10 @@
   </div>
 
   <section class="card lv-reviews" id="reviews" data-reviews>
-    <header><h2>Review queue</h2><span class="lv-meta" id="review-count"></span>
-      <button class="btn" type="button" id="review-sample" data-review-sample title="Open review tasks for the most informative decisions (admin)">Sample for review</button></header>
-    <p class="lv-rv-note">Held and review decisions wait here for a person. Answering records <b>labels</b> for training and evaluation. It <b>does not release</b> or execute a held action, and it never changes the decision.</p>
+    <header><h2>Needs a person</h2><span class="lv-meta" id="review-count"></span>
+      <button class="btn" type="button" id="review-sample" data-review-sample title="Open review tasks for the most informative decisions (admin)">Sample for review</button>
+      </header>
+    <p class="lv-rv-note" data-review-note>Held and review decisions wait here for a person. Answering records labels for training; it does not approve, release or run the action, and it never changes the decision.</p>
     <div class="lv-rv-grid">
       <div class="lv-rv-list" id="review-list" data-review-list><p class="lv-empty">No open reviews.</p></div>
       <div class="lv-rv-detail" id="review-detail" data-review-detail><p class="lv-empty">Select a review.</p></div>

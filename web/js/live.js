@@ -1,5 +1,9 @@
 // Live console. Renders only server records (events, evaluations, decisions) from the persisted
 // SSE outbox; it computes no verdicts. Keys live in this module's memory only.
+// Two views over the same records: the Runs view (plain language, runs.js) and the Engineer view
+// (stream, inspector, KPI tiles). Both are always rendered; the toggle only switches visibility.
+import { createRunsView } from './runs.js';
+import { decisionPart, executionPart, whyLine, callKind } from './verdict.js';
 const $ = (s, r = document) => r.querySelector(s);
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ESC[c]);
@@ -17,6 +21,59 @@ const evicted = new Set();     // event_ids of evicted rows: their late evaluati
 let serverMetrics = null;
 let cursor = '0', es = null, selected = null, lastAt = null, judgeInfo = null, activePolicy = null;
 const counts = { expired: 0, gaps: 0 };
+
+// ---- views --------------------------------------------------------------------------------
+const currentMode = () => {
+  const m = document.querySelector('[data-provenance="enforcement_mode"] i')?.textContent;
+  return m === 'gate' ? 'gate' : m === 'shadow' ? 'shadow' : null;
+};
+const MODE_SENTENCE = {
+  gate: '<b>Gate mode:</b> Silex checks each write action before it runs. Held or blocked calls do not run. Judge signals are shown but never block (uncalibrated).',
+  shadow: '<b>Watch-only mode:</b> Silex records what it would decide; nothing is stopped. Judge signals are shown but never block (uncalibrated).',
+};
+function renderModeSentence() {
+  const el = document.querySelector('#mode-sentence'); if (!el) return;
+  const m = currentMode();
+  if (m) el.innerHTML = MODE_SENTENCE[m];
+  const pill = document.querySelector('#mode-pill');
+  if (pill && m) { pill.dataset.mode = m; pill.querySelector('span').textContent = m === 'gate' ? 'Gate mode' : 'Watch-only'; }
+}
+let view = 'runs';
+try { if (localStorage.getItem('jev.view') === 'engineer') view = 'engineer'; } catch { /* storage unavailable: default view */ }
+function setView(v) {
+  view = v;
+  document.body.classList.toggle('view-runs', v === 'runs');
+  document.body.classList.toggle('view-engineer', v === 'engineer');
+  for (const b of document.querySelectorAll('[data-view]')) b.setAttribute('aria-pressed', String(b.dataset.view === v));
+  const metrics = document.querySelector('#eng-metrics'); if (metrics) metrics.open = v === 'engineer';
+  // The inspector card lives in the Engineer grid; the Runs view borrows it for Details and gives it back here.
+  if (v === 'engineer') returnInspector();
+  for (const d of document.querySelectorAll('#inspector details.tech')) d.open = v === 'engineer';
+  try { localStorage.setItem('jev.view', v); } catch { /* per-viewer convenience only */ }
+}
+for (const b of document.querySelectorAll('[data-view]')) b.addEventListener('click', () => setView(b.dataset.view));
+const inspectorCard = () => document.querySelector('#inspector')?.closest('aside');
+function returnInspector() {
+  const card = inspectorCard(), grid = document.querySelector('.lv-grid');
+  if (card && grid && card.parentElement !== grid) grid.appendChild(card);
+  const det = document.querySelector('#runs-detail'); if (det) det.hidden = true;
+  document.body.classList.remove('drawer-open');
+}
+async function showDetails(eventId) {
+  const det = document.querySelector('#runs-detail'), card = inspectorCard();
+  if (det && card) { det.appendChild(card); det.hidden = false; document.body.classList.add('drawer-open'); }
+  await inspect(eventId);
+}
+// Scenario menu (Runs view): the [data-scenario] buttons live inside it, with their titles.
+const scOpen = document.querySelector('#scenario-open'), scMenu = document.querySelector('#scenario-menu');
+scOpen?.addEventListener('click', e => { e.stopPropagation(); scMenu.hidden = !scMenu.hidden; scOpen.setAttribute('aria-expanded', String(!scMenu.hidden)); });
+document.addEventListener('click', e => { if (scMenu && !scMenu.hidden && !e.target.closest?.('[data-scenario-menu]')) { scMenu.hidden = true; scOpen?.setAttribute('aria-expanded', 'false'); } });
+scMenu?.addEventListener('click', e => { if (e.target.closest?.('[data-scenario]')) setTimeout(() => { scMenu.hidden = true; scOpen?.setAttribute('aria-expanded', 'false'); }, 150); });
+document.querySelector('#waiting-btn')?.addEventListener('click', () => { const r = document.querySelector('#reviews'); if (r) { r.open = true; r.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { returnInspector(); if (scMenu) scMenu.hidden = true; } });
+document.querySelector('#runs-detail-close')?.addEventListener('click', returnInspector);
+const runsView = createRunsView({ api: p => api(p), mode: currentMode, onDetails: id => showDetails(id).catch(() => undefined) });
+if (document.querySelector('[data-view]')) setView(view);
 
 async function api(path, { method = 'GET', body, role = 'reader' } = {}) {
   const key = keys[role] ?? keys.reader;
@@ -74,6 +131,7 @@ async function openStream() {
 function onRecord(rec) {
   cursor = rec.cursor; lastAt = Date.now();
   const p = rec.payload;
+  runsView?.onRecord(rec);
   // A new decision may have opened a review task; a review record means one was resolved.
   if (rec.kind === 'decision' || rec.kind === 'review') scheduleReviews();
   if (rec.kind === 'review') return;
@@ -104,6 +162,7 @@ function onRecord(rec) {
 function setProv(k, v) {
   const el = document.querySelector(`[data-provenance="${k}"] i`);
   if (el) el.textContent = v;
+  if (k === 'enforcement_mode') renderModeSentence();
   if (k === 'judge_source') {
     const typesafe = String(v).startsWith('typesafe:');
     el?.parentElement.classList.toggle('warn', !typesafe);
@@ -237,15 +296,29 @@ setInterval(() => { $('#lag').textContent = lastAt ? `last record ${Math.round((
 // ---- scenarios --------------------------------------------------------------------------
 const FALLBACK_SCENARIOS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'F1'];
 let scenarioIds = FALLBACK_SCENARIOS;
+let scenarioMeta = {};   // id → { title, domain } when the server sends it
+let toolImpacts = {}, unknownImpact = 'payment';
+const DOMAIN_LABEL = { soc: 'Security operations', ap: 'Accounts payable' };
 async function loadScenarioIds() {
-  try { const r = await api('/v1/sandbox/scenarios'); if (Array.isArray(r.scenario_ids) && r.scenario_ids.length) scenarioIds = r.scenario_ids; }
-  catch { scenarioIds = FALLBACK_SCENARIOS; }
+  try {
+    const r = await api('/v1/sandbox/scenarios');
+    if (Array.isArray(r.scenario_ids) && r.scenario_ids.length) scenarioIds = r.scenario_ids;
+    if (Array.isArray(r.scenarios)) scenarioMeta = Object.fromEntries(r.scenarios.map(x => [x.id, x]));
+    runsView?.setScenarioMeta(r);
+    if (r.tools && typeof r.tools === 'object') toolImpacts = r.tools;
+    if (r.unknown_tool_impact) unknownImpact = r.unknown_tool_impact;
+    if (r.source_mode) setProv('enforcement_mode', r.source_mode === 'live_sandbox_gate' ? 'gate' : 'shadow');
+  } catch { scenarioIds = FALLBACK_SCENARIOS; }
   renderScenarioButtons();
 }
 function renderScenarioButtons() {
   const ids = scenarioIds;
   const canRun = authMode === 'none' || Boolean(keys.admin);
-  $('#scenario-buttons').innerHTML = ids.map(id => `<button class="btn" data-scenario="${id}" ${canRun ? '' : 'disabled title="needs an admin key"'}>${id}</button>`).join(' ');
+  const btn = id => `<button class="btn sc" data-scenario="${id}" ${canRun ? '' : 'disabled title="needs an admin key"'}><b>${esc(id)}</b>${scenarioMeta[id]?.title ? ` <span class="sc-title">${esc(scenarioMeta[id].title)}</span>` : ''}</button>`;
+  const groups = {};
+  for (const id of ids) (groups[scenarioMeta[id]?.domain ?? (id.startsWith('SOC') ? 'soc' : 'ap')] ??= []).push(id);
+  $('#scenario-buttons').innerHTML = ['soc', 'ap', ...Object.keys(groups).filter(g => g !== 'soc' && g !== 'ap')].filter(g => groups[g])
+    .map(g => `<div class="sc-group" data-domain="${esc(g)}"><span class="sc-label">${esc(DOMAIN_LABEL[g] ?? g)}</span>${groups[g].map(btn).join(' ')}</div>`).join('');
   for (const b of document.querySelectorAll('[data-scenario]')) b.addEventListener('click', async () => {
     try { const r = await api('/v1/sandbox/runs', { method: 'POST', body: { scenario: b.dataset.scenario }, role: 'admin' }); $('#run-status').textContent = `started ${r.run_id}`; }
     catch (e) { $('#run-status').textContent = `run failed: ${e.message}`; }
@@ -313,7 +386,8 @@ async function inspect(eventId) {
   if (d && activePolicy) out.push(replayBlock(d));
   if (d && (rt ?? diag)) out.push(`<p><button class="btn" data-model-reeval>Re-ask the judge on this frozen snapshot (a new, real model call)</button></p><div id="reeval-out"></div>`);
   if (d) out.push(`<details><summary>Decision record (JSON)</summary><pre class="json">${esc(JSON.stringify(d, null, 2))}</pre></details>`);
-  $('#inspector').innerHTML = out.join('');
+  const plain = plainSummary(ev, d, r);
+  $('#inspector').innerHTML = `${out[0]}${plain}<details class="tech"${view === 'engineer' ? ' open' : ''}><summary>Technical details</summary>${out.slice(1).join('')}</details>`;
   $('#inspector [data-replay-run]')?.addEventListener('click', () => runReplay(d));
   $('#inspector [data-model-reeval]')?.addEventListener('click', async () => {
     try {
@@ -354,6 +428,7 @@ function scheduleReviews() { clearTimeout(reviewTimer); reviewTimer = setTimeout
 
 async function loadReviews() {
   const { reviews } = await api('/v1/reviews?status=open&limit=200');
+  runsView?.setReviews(reviews);
   $('#review-count').textContent = `${reviews.length} open`;
   $('#review-sample').disabled = !canResolve();
   const list = $('#review-list');
@@ -438,3 +513,26 @@ $('#review-sample').addEventListener('click', async () => {
 });
 
 renderKpis();
+
+// ---- plain summary at the top of the inspector (Runs view wording, verdict.js) ---------------------
+function plainSummary(ev, d, r) {
+  const mode = currentMode() ?? 'gate';
+  const lines = [];
+  if (ev.boundary === 'pre_tool' || ev.boundary === 'post_generation') {
+    const post = ev.operation_id ? [...rows.values()].find(x => x.event?.boundary === 'post_tool' && x.event.operation_id === ev.operation_id) : null;
+    const impact = toolImpacts[ev.tool] ?? (Object.keys(toolImpacts).length ? unknownImpact : null);
+    const kind = ev.boundary === 'post_generation' ? 'statement' : mode === 'shadow' ? 'ungated' : callKind({ mode, impact, controlAction: post?.event?.attributes?.control_action });
+    const p1 = decisionPart({ mode, kind, recommended: d?.recommended ?? null, decidedBy: d?.decided_by });
+    lines.push(`<p class="plain-line"><b>Silex decided:</b> ${esc(p1.text)}</p>`);
+    const why = whyLine(d);
+    if (why) lines.push(`<ul class="step-why">${why.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>${why.passedNote ? `<span class="step-why-passed">${esc(why.passedNote)}</span>` : ''}`);
+  }
+  if (ev.boundary === 'post_tool') {
+    const p2 = executionPart(ev.attributes?.receipt_status);
+    lines.push(`<p class="plain-line"><b>What happened to the call:</b> ${esc(p2.text)}${ev.attributes?.control_action ? ` <span class="lv-meta">(gate control: ${esc(ev.attributes.control_action.replace(/_/g, ' '))})</span>` : ''}</p>`);
+    const oc = (r.outcomes ?? []).at(-1);
+    if (['payments.execute', 'email.send'].includes(ev.tool) && ev.attributes?.receipt_status === 'executed')
+      lines.push(`<p class="plain-line"><b>Business result:</b> ${esc(oc ? oc.state.replace(/_/g, ' ') : 'pending')}</p>`);
+  }
+  return lines.length ? `<div class="plain" data-plain-summary>${lines.join('')}</div>` : '';
+}

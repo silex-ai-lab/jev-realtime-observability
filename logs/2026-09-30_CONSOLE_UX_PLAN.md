@@ -1,4 +1,4 @@
-# Live console: plain-language results (plan r3)
+# Live console: plain-language results (plan r5)
 
 **Status:** plan r3, **approved unanimously** at the plan gate (herdr-agent-fleet).
 
@@ -248,3 +248,112 @@ Round 2: DeepSeek PLAN-APPROVED; Codex PLAN-REJECTED with two objections.
   | Business result | `.step-outcome[data-outcome-state]` |
   | Review note | `[data-review-note]`, on a waiting step and in the review queue header |
   | Details | `[data-details="decision"]` and `[data-details="outcome"]` open the existing inspector |
+
+## Amendment r4: compact layout (user feedback, 2026-09-30) — rejected, superseded by r5
+
+**Feedback on the first build:** "too much information on screen; you have to scroll a lot; make the page simple". Screenshots of that build are in the planner's scratch directory (`show-gate-overview.png`, `final2-gate-detail.png`, `show-shadow-overview.png`). With six runs, the gate page was about 2,650 px tall, and 4,000 px with every run open.
+
+**What does not change:**
+- the two wording tables and the step kinds (§2);
+- the Why-line precedence, the claim-time lines, the business-result line and the review note (U6–U10);
+- the Engineer view;
+- every DOM hook in the Build record contract. R1's probes keep working.
+
+This amendment changes **layout and density only**.
+
+**Target:** with the six demo runs, the gate page's Runs view fits in about one laptop screen (≤ 1,000 px tall at 1440 px wide), with the newest run open.
+
+| # | Change | How |
+|---|---|---|
+| C1 | One compact header | The mode sentence, the provenance chips and the judge note become one row plus one line. The "Login is off" banner becomes a small chip in the header; its full text is in the chip's tooltip and in the existing `#auth-off` element (kept, visually hidden in the Runs view). |
+| C2 | Summary inside the header | The session summary strip (`#runs-summary`, same `data-count` hooks) moves into the header row as compact counts. |
+| C3 | Compact scenario picker | One row per domain of short id chips (`[data-scenario]` buttons, the id only). The title appears as the tooltip and, on hover or focus, in a single description line under the chips. |
+| C4 | Runs: one line per run | Every run renders as one header line: id · title · the run's counts (`[data-run-summary]`) · the worst verdict tone as a coloured dot. **Only the newest run is open**; others open on click. Previously the three newest were open. |
+| C5 | Steps: one line each | Step number · the call (tool plus its key argument only, the rest in the tooltip) · the verdict chip on the **same line**. The Why line (held, blocked or flagged calls), the claim-time lines (statements) and the business result each take one short second line, indented. |
+| C6 | Untrusted text truncated | One line with an ellipsis, labelled "text from outside (untrusted)", with "show" to expand. The full text stays in `.step-untrusted`, clamped with CSS. |
+| C7 | Details on click | The Details / Result details links become one small "details" link at the end of the line. The `[data-details="decision"]` and `[data-details="outcome"]` hooks are kept (the result link only where a post_tool exists). |
+| C8 | Short review note | On a waiting step: a small "waiting for a person" chip; hovering shows the full text. The full sentence "Answering the review records labels for training; it does not approve, release or run the action." stays in the DOM on that step as `[data-review-note]` and is shown in full once, in the "Needs a person" panel header. |
+| C9 | "Needs a person" panel | Collapsed to one line ("2 waiting for a person", open on click) when not empty, hidden when empty. The review detail pane appears only when a review is selected. |
+| C10 | Contradiction note (R1 found this defect) | The "records disagree, see Details" note moves out of `.step-verdict` into its own `.step-contradiction` element. `.step-verdict` text is then exactly `lineVerdict().text`, as the contract says. |
+
+**Acceptance for r4:**
+- **R1 unchanged:** probes pass, with any selector updates limited to C8's visible-text change. The review note is asserted through `[data-review-note]` and the panel header.
+- **New size check (a probe):** after the six demo runs in gate mode, the Runs view's `document.documentElement.scrollHeight` is ≤ 1,100 px at 1440 × 900, and no horizontal scroll at 390 px.
+- `npm run probe`, `soc-probes` and `live-evict` still pass unchanged.
+- The planner attaches before and after screenshots.
+
+## Amendment r5: compact, designed layout; the demo page too (supersedes r4)
+
+**User feedback, in order:**
+1. Too much information; you have to scroll a lot; make it simple.
+2. Pay attention to the page's look; it needs design sense.
+3. The demo page can be changed as well.
+
+**Round-4 objections (both seats):** the review note became hover-only or collapsible, which violates §4 ("always visible where a person is asked to act"). r5 keeps it **visibly rendered** on every waiting step and in the "Needs a person" header. It never sits only in a tooltip or collapsed content.
+
+**Prototype.** The layout below exists as a working prototype: a scratch copy of  whose API calls go to the running gate console, with the real records of the six demo runs. It is not repo code. Screenshots:
+- `/private/tmp/claude-501/-Users-bytedance/a11a239d-7fef-4313-a402-b15da7b65f5d/scratchpad/proto-gate-overview.png`: the newest run (S9);
+- `/private/tmp/claude-501/-Users-bytedance/a11a239d-7fef-4313-a402-b15da7b65f5d/scratchpad/proto-soc2-detail.png`: SOC2 selected, a held call waiting for a person;
+- `/private/tmp/claude-501/-Users-bytedance/a11a239d-7fef-4313-a402-b15da7b65f5d/scratchpad/proto-menu-detail.png`: the scenario menu open;
+- before (r3 build): `/private/tmp/claude-501/-Users-bytedance/a11a239d-7fef-4313-a402-b15da7b65f5d/scratchpad/show-gate-overview.png`; the demo page before: `/private/tmp/claude-501/-Users-bytedance/a11a239d-7fef-4313-a402-b15da7b65f5d/scratchpad/demo-before-overview.png`.
+
+At 1440 × 900 the prototype's page height is **913 px**, including the "Needs a person" section; the r3 build was 2,655 px.
+
+### A. Live console: layout and visual design
+
+| # | Element | Design |
+|---|---|---|
+| L1 | Header (dark, sticky) | One row: brand · **mode pill** (Gate mode = blue dot, Watch-only = amber dot) · session numbers as pills (`#runs-summary`, `data-count` hooks unchanged; gate: tool calls / stopped / ran; shadow: tool calls / would stop / ran; failed, other and pending appear only when non-zero) · a **"N waiting for a person"** pill (hidden at 0; it scrolls to the section) · **Run a scenario** (primary) · Runs / Engineer toggle. Second row: the U1 mode sentence, in quiet text. The provenance chips and judge note stay in the header in the Engineer view (hidden in the Runs view, still in the DOM). |
+| L2 | Scenario menu | "Run a scenario" opens a popover listing every scenario **with its title**, grouped by domain. The `[data-scenario]` buttons live inside it. In the Engineer view the same buttons show inline as before. |
+| L3 | Master–detail | Left: a sticky **runs list**, one row per run (`.run-row[data-run-row]`): a status dot (tone of the run's worst line), the scenario id, the title (ellipsised; full in the card), and count badges (stopped, ran). Right: the **selected run's card**. The newest run is selected automatically until the viewer picks one. Every `.run-card` stays in the DOM; only the selected one is displayed (`[data-selected]`). |
+| L4 | Run card | Title row: id pill + scenario title (18 px, 650 weight) + the `[data-run-summary]` line. Steps form a **vertical rail** with a 28 px node per step (icons: person = task, document = read, code = tool call, speech = statement); the node takes the line's tone. |
+| L5 | Step line | One line: label or call (tool in mono, **key argument**, full args in the tooltip) · verdict pill (tone colour + inline SVG icon + the exact `lineVerdict().text`) · quiet "details" / "result" links. Second lines only when needed, indented under the line: the Why reasons (any decision other than "No objection", including the "Decision: <raw>" fallback) with "(N rule checks passed)"; the claim-time lines; the business result; the waiting note. **Key argument rule:** the first present of `ip, user_id, ticket_id, alert_id, url` (shown as its host), `invoice_id, to, vendor_id, po_id`; otherwise none, and the full args stay in the tooltip. |
+| L6 | Untrusted text | The label "untrusted text from outside" is its own tag and never truncated. The excerpt is one ellipsised line with "show" to expand; the full text is in the DOM (`.step-untrusted`). |
+| L7 | Waiting step | A "waiting for a person" tag **plus the full sentence as visible text** on the same line: "Answering the review records labels for training; it does not approve, release or run the action." (`[data-review-note]`). |
+| L8 | Needs a person | A normal section below the runs. Its header note is **always visible**: "Held and review decisions wait here for a person. Answering records labels for training; it does not approve, release or run the action, and it never changes the decision." The list shows only when something waits; the detail pane only when a review is selected. |
+| L9 | Details | "details" / "result" open a right-side **drawer** with the existing inspector: the plain summary first, "Technical details" collapsed. Esc or Close returns the inspector card to the Engineer grid. |
+| L10 | Engineering metrics | A quiet collapsed line below the runs. |
+| L11 | Visual system | The existing tokens (Inter, IBM Plex Mono, the palette in `live.css` / `demo/css/app.css`), plus: radii 14 / 10 / 7; two shadows (sm for cards, md for popovers); an 8 px spacing grid; tone colours used only for status (green ran/allowed, red stopped, amber flagged/recommended/untrusted, violet waiting/failed, blue mode/brand); uppercase 11 px labels for sections; tabular numbers. |
+| L12 | Wording (small change to §2) | The "⛔" character is removed from the part-1 texts ("Held for approval", "Held for review", "Blocked"). The UI draws the icon, so the text no longer carries one. Everything else in both tables is unchanged. F0's unit tests are updated to match. |
+| L13 | Contradiction note | `.step-contradiction` sits next to the verdict pill, not inside it (the defect R1 found). |
+
+### B. Demo page (`web/demo/`): the same visual system, same content
+
+- **Header:** the same dark header as L1 (brand, the **SIMULATED** badge kept and prominent, tabs), and the same pill styling.
+- **Live tab:**
+  - the seven KPI tiles become **four headline pills** (blocks, holds, human-review rate, pre-tool coverage) plus a collapsed "More metrics" section with the rest;
+  - the controls become one compact toolbar;
+  - stream rows use the verdict-pill style;
+  - the inspector shows a plain one-line verdict and the deciding reason first, with the pipeline steps and the Jev answers under a collapsed "Technical details".
+- **Replay, Policy Studio and About:** the visual system only (cards, typography, pills); no content changes.
+- **Claim discipline:** every "simulated" label stays; nothing on the page may suggest a real judge or real latency.
+
+### Build and acceptance
+
+| ID | Owner | Task | Files |
+|---|---|---|---|
+| V1 | planner | Port the prototype into the repo; update F0 for L12 | `web/index.html`, `web/js/live.js`, `web/js/runs.js`, `web/js/verdict.js` (+ `.d.ts`), `web/css/live.css`, `tests/unit/web/verdict.test.ts` |
+| V2 | planner | The demo page redesign (B) | `web/demo/index.html`, `web/demo/css/app.css`, `web/demo/js/ui/*.js` (presentation only; `web/demo/js/engine/*` untouched) |
+| R2 | reviewer-codex (build slice) | Update R1 to the r5 layout (L12 text, L3 selection, L13), and add probes | `tests/probe/ui-runs-probes.ts`, `tests/probe/runs-fixture.html`, `tests/probe/demo-probes.ts` (new) |
+| D2 | deepseek | Docs for the new layout | `docs/USER_MANUAL.md` (the "Reading a run" section), `docs/demo/SUMO_DEMO.md` (run-book clicks) |
+
+**R2 probes:**
+- **Size:** after the six demo runs in gate mode at 1440 × 900, `scrollHeight` ≤ 1,000 px.
+- **Review note visibility:** the note must be **rendered visibly** — non-zero box, not `display:none` / `visibility:hidden`, inside the viewport after scrolling it into view — on a waiting step and in the "Needs a person" header, at 1440 px and at 390 px.
+- **Other checks:**
+  - selecting a run row shows its card;
+  - the scenario menu buttons start runs;
+  - Esc closes the drawer;
+  - no JS errors;
+  - no horizontal scroll at 390 px.
+- **Demo page:** each tab renders without JS errors; the SIMULATED badge is visible; no horizontal scroll at 390 px.
+
+**Regression:** `npm test`, `npm run probe`, `soc-probes` and `live-evict` all pass unchanged.
+
+### Outcome of r4 and r5
+- **r4:** PLAN-REJECTED by both seats (the review note became hover-only or collapsible).
+- **r5:** approved by all three.
+  - `reviewer-codex`: PLAN-APPROVED
+  - `coder-deepseek`: PLAN-APPROVED (non-blocking notes 1–4 carried into the build: assert the sentence text; restore the frozen claim-time label; **wire the U6 judge-signal line, which was never implemented**; document the shadow `wouldStop` count)
+  - PLANNER (claude): PLAN-APPROVED
+- **The user** approved executing r5 ("可以执行").

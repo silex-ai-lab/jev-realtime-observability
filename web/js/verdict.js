@@ -27,7 +27,7 @@ export function decisionPart({ mode, kind, recommended, decidedBy }) {
   if (kind === 'statement') return { text: 'Recommended: open an investigation', level: 'flag' };
   if (kind === 'gated') {
     const txt = block ? 'Blocked' : what === 'hold for approval' ? 'Held for approval' : 'Held for review';
-    return { text: `⛔ ${txt}`, level: 'stop' };
+    return { text: txt, level: 'stop' };
   }
   // Ungated: nothing enforces the recommendation. Shadow mode says so in the header, so "Would …" is enough there.
   return mode === 'shadow' ? { text: `Would ${what}`, level: 'flag' } : { text: `Recommended: ${what} (not enforced)`, level: 'flag' };
@@ -101,4 +101,20 @@ export function summarize(calls) {
     else s.pending++;
   }
   return s;
+}
+
+/**
+ * Judge-signal line (plan U6): the judge's answers for a step, always labelled uncalibrated and non-blocking.
+ * Uses the realtime evaluation, else a diagnostic one. Noul → raw probability, score → score, choice → choice.
+ * Returns null when no evaluation answered anything.
+ */
+export function signalsLine(evaluations) {
+  const list = Array.isArray(evaluations) ? evaluations : [];
+  const ev = list.find(e => e.kind === 'realtime' && e.signals && Object.keys(e.signals).length)
+    ?? list.find(e => e.kind === 'diagnostic' && e.signals && Object.keys(e.signals).length);
+  if (!ev) return null;
+  const fmt = s => (typeof s.raw_probability === 'number' ? s.raw_probability.toFixed(2)
+    : typeof s.score === 'number' ? `score ${s.score.toFixed(2)}` : s.choice != null ? String(s.choice) : '—');
+  const parts = Object.entries(ev.signals).map(([q, s]) => `${q} ${fmt(s ?? {})}`);
+  return { label: `judge signals (uncalibrated, never block${ev.kind === 'diagnostic' ? '; diagnostic, after the decision' : ''})`, text: parts.join(' · ') };
 }

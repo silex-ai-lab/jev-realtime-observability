@@ -12,3 +12,4 @@ export function lineVerdict(x: LineInput): { text: string; tone: string; contrad
 export function whyLine(decision: Decision | null | undefined): { reasons: string[]; source: string; passedNote: string | null } | null;
 export function claimTimeLines(decision: Decision | null | undefined): string[];
 export function summarize(calls: Array<{ receiptStatus?: string; controlAction?: string }>): { calls: number; ran: number; didNotRun: number; stoppedBySilex: number; didNotRunOther: number; failed: number; pending: number };
+export function signalsLine(evaluations: Array<{ kind?: string; signals?: Record<string, { raw_probability?: number | null; score?: number | null; choice?: string | null }> }> | null | undefined): { label: string; text: string } | null;
