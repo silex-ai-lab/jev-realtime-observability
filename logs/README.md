@@ -2,6 +2,15 @@
 
 Newest first. The plan and its review record live in this folder.
 
+## 2026-09-30 — Demo page: SOC triage agent
+
+[Plan and review record](2026-09-30_DEMO_SOC_PLAN.md) · [User manual §12](../docs/USER_MANUAL.md).
+
+- **Two agents:** a header switch (`AP payments agent | SOC triage agent`, `?domain=ap|soc`) reloads the simulated demo on one agent. The lede, inject buttons, background runs, runs list, Replay thresholds and Policy Studio tools and rules all follow it. AP stays the default.
+- **SOC engine:** SOC1–SOC5 mirror the live console, with the same alert texts, users, rule names and verdicts. SOC2 and SOC3 are held by rule, SOC4 is blocked by rule. SOC5 is the one documented difference: the simulated `goal_deviation` threshold holds the 2nd and 3rd bulk suspensions for review. That is labelled as synthetic scores, not calibration; the live console does not block SOC5.
+- **AP unchanged:** the behaviour fields are byte-identical to a fixture captured from `main` (seeds 1–50).
+- **Review:** three seats. The plan took 2 rounds, the code 2 rounds, unanimous on `0ed91f7` (base `e7ea2ae`).
+
 ## 2026-09-30 — Console Runs view, Re-check / Run again / What-if, demo page on the same layout
 
 [Plan and review record](2026-09-30_CONSOLE_UX_PLAN.md) · [User manual §7](../docs/USER_MANUAL.md).

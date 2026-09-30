@@ -226,3 +226,27 @@ Typecheck and `npm test` must be green.
   - background tickets must resolve through the same lookup that `target_matches_alert` reads;
   - `goalDeviationP`'s null branch stays the literal 0.10 base.
 - **F0 decision on the first note:** `TENANT.soc_tickets` also holds the background range, `TCK-301`…`TCK-340` → `ALERT-201`…`ALERT-240`, which is deterministic and seed-independent. The SOC background uses those ids.
+
+## Build and code gate (base `e7ea2ae`)
+
+- **Slices, in order:**
+  - F0 by the planner (`ade4545`), with the AP fixture captured beforehand (`93c1165`, re-captured with `alert` in `e999e53`);
+  - D1 by DeepSeek and P1 by the planner, landed together (`127d6fc`);
+  - P2, Codex's 13 demo probes (`00a1449`).
+- **Found in screenshots (not by a review):** the Studio battery table overflowed its half-width card. Boundaries and features moved to a muted line under each question (P1).
+
+| Round | Revision | reviewer-codex | coder-deepseek | Changes |
+|---|---|---|---|---|
+| r1 | `00a1449` | IMPL-CHANGES (1) | IMPL-APPROVED (3 notes) | **Codex:** `?domain=__proto__`, `constructor` or `toString` resolved to inherited properties and broke initialization. Fixed with an own-key lookup and a regression test. **DeepSeek:** each agent was asked the other's question (payee_mismatch on SOC, goal_deviation on AP); `QUESTIONS_BY_AGENT` fixes it, and AP answers are now exactly as on `main`. **DeepSeek:** SOC4 wording now says "canary token". **Codex (suggestions):** comments fixed; approval-release tests added. |
+| r2 | `0ed91f7` | IMPL-APPROVED (1 suggestion) | IMPL-APPROVED | — |
+
+- **PLANNER (claude):** IMPL-APPROVED on `0ed91f7`. Code diff hash (`git diff e7ea2ae 0ed91f7 -- ':!logs' | git hash-object --stdin`): `��`.
+- **Results at `0ed91f7`:**
+  - typecheck clean;
+  - `npm test`: 277 tests, 273 pass, 0 fail, 4 skip;
+  - demo-probes: 13/13;
+  - the AP fixture holds on behaviour fields for seeds 1–50.
+- **Correction to §2:** with `QUESTIONS_BY_AGENT`, AP `answers` and `risk` do not change after all. Only `features` (two keys, null or 0 for AP) and `tokens_in`/`cost_usd` do.
+- **Follow-ups (non-blocking, not done):**
+  1. `QUESTIONS_BY_AGENT` lookup should use `Object.hasOwn` too, since an inherited-name agent would throw. The demo's agents are fixed, so this cannot happen on the page.
+  2. The run summary on the demo page counts only actual stops. Separate stop and watch counters remain open from the console gate.
