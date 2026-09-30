@@ -230,3 +230,21 @@ Round 2: DeepSeek PLAN-APPROVED; Codex PLAN-REJECTED with two objections.
 ## Build record
 
 - **Review base:** `BASE=85123cf` (main). Work happens on branch `console-runs-view`.
+- **F0 done:** `web/js/verdict.js` (+ `.d.ts`) with 11 unit tests (`tests/unit/web/verdict.test.ts`), committed as `5d7de64`.
+- **Runs view DOM contract** (frozen for R1; the page renders exactly these hooks):
+
+  | Element | Hook |
+  |---|---|
+  | View toggle | `body.view-runs` or `body.view-engineer`; buttons `[data-view="runs"]`, `[data-view="engineer"]` (default: runs). The Engineer view elements stay in the DOM in both. |
+  | Header sentence | `#mode-sentence` |
+  | Summary strip | `#runs-summary`, with `[data-count="calls|ran|didNotRun|stoppedBySilex|didNotRunOther|failed|pending|waiting"]` whose text is the number |
+  | Scenario buttons | still `[data-scenario]`; title text in `.sc-title`; groups in `[data-domain="soc|ap"]` |
+  | Runs list | `#runs`; one `.run-card[data-run-id][data-scenario]` per run, newest first; `.run-title`; `[data-run-summary]` |
+  | Step lines | `.step[data-step-kind="task|source|gated|ungated|statement"][data-event-id]` in producer order; calls also carry `[data-tool]` |
+  | Verdict | `.step-verdict[data-tone]`, whose text is exactly `lineVerdict().text`; `[data-contradiction="true"]` when shown |
+  | Why | `.step-why li` (the reasons), `.step-why-passed` |
+  | Claim time | `.step-claim-time li` |
+  | Untrusted source | `.step-untrusted` (quoted excerpt) |
+  | Business result | `.step-outcome[data-outcome-state]` |
+  | Review note | `[data-review-note]`, on a waiting step and in the review queue header |
+  | Details | `[data-details="decision"]` and `[data-details="outcome"]` open the existing inspector |
