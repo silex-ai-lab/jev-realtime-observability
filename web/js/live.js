@@ -42,7 +42,7 @@ async function connect() {
     activePolicy = (await api('/v1/policies/active')).policy;
     setProv('judge_source', judgeInfo.judge_source ?? (judgeInfo.configured ? 'unreachable' : 'none'));
     $('#conn-status').textContent = `connected · judge ${judgeInfo.configured ? judgeInfo.backend : 'not configured'}`;
-    renderScenarioButtons();
+    await loadScenarioIds();
     await openStream();
     connected = true;
     await loadReviews();
@@ -235,8 +235,15 @@ setInterval(async () => { if (!connected) return; try { serverMetrics = await ap
 setInterval(() => { $('#lag').textContent = lastAt ? `last record ${Math.round((Date.now() - lastAt) / 1000)} s ago` : ''; }, 1000);
 
 // ---- scenarios --------------------------------------------------------------------------
+const FALLBACK_SCENARIOS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'F1'];
+let scenarioIds = FALLBACK_SCENARIOS;
+async function loadScenarioIds() {
+  try { const r = await api('/v1/sandbox/scenarios'); if (Array.isArray(r.scenario_ids) && r.scenario_ids.length) scenarioIds = r.scenario_ids; }
+  catch { scenarioIds = FALLBACK_SCENARIOS; }
+  renderScenarioButtons();
+}
 function renderScenarioButtons() {
-  const ids = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'F1'];
+  const ids = scenarioIds;
   const canRun = authMode === 'none' || Boolean(keys.admin);
   $('#scenario-buttons').innerHTML = ids.map(id => `<button class="btn" data-scenario="${id}" ${canRun ? '' : 'disabled title="needs an admin key"'}>${id}</button>`).join(' ');
   for (const b of document.querySelectorAll('[data-scenario]')) b.addEventListener('click', async () => {

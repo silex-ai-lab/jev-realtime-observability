@@ -182,6 +182,11 @@ export function createApi(d: ApiDeps): Server {
     }
     if (m === 'GET' && p === '/v1/stream') return stream(req, res, url);
 
+    if (m === 'GET' && p === '/v1/sandbox/scenarios') {
+      await auth(req, ['reader', 'admin']);
+      return send(res, 200, { scenario_ids: d.sandboxScenarios });
+    }
+
     if (m === 'POST' && p === '/v1/sandbox/runs') {
       const a = await auth(req, ['admin']);
       const body = await readJson(req) as { scenario?: string };

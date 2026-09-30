@@ -10,7 +10,7 @@ import { digestOf } from '../contracts/canonical.ts';
 import type { ControlDecision, ExecutionReceipt } from '../contracts/decision.ts';
 import type { ToolCall, ToolExecution, ToolGateway, ToolGatewayOptions } from './index.ts';
 import { TOOL_NAMES, dispatchTool, type ToolOutcome } from './tools/index.ts';
-import { GATED_TOOLS, verifyControlInTx } from './control.ts';
+import { isGatedTool, verifyControlInTx } from './control.ts';
 import { appendOutbox } from '../server/storage/repos.ts';
 
 /**
@@ -102,7 +102,7 @@ export function createToolGateway(db: Db, opts?: ToolGatewayOptions): ToolGatewa
       return { receipt: prior.rows[0].receipt as ExecutionReceipt, result: prior.rows[0].result as ToolExecution['result'] };
     }
 
-    const gated = gate && (GATED_TOOLS as readonly string[]).includes(call.tool);
+    const gated = gate && isGatedTool(call.tool);
     if (gated) {
       // Cheap, lock-free pre-check (advisory only; fast-fail before opening a transaction).
       if (requireControl) {

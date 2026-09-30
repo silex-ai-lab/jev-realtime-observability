@@ -1,6 +1,7 @@
 // GET /v1/metrics (CONTRACTS §8.5, RFC §11.1). Computed from stored records only; every ratio
 // carries its numerator and denominator so nothing reads as a bare percentage.
 import type { Queryable } from '../storage/db.ts';
+import { ALL_GATED_TOOLS } from '../../sandbox/control.ts';
 import type { EvaluationRecord } from '../../contracts/judge.ts';
 import type { PolicyDecision } from '../../contracts/decision.ts';
 
@@ -41,7 +42,7 @@ export async function computeMetrics(q: Queryable, tenantId: string, runId: stri
     `SELECT count(*)::int n FROM evaluation_jobs j JOIN events v ON v.tenant_id = j.tenant_id AND v.event_id = j.event_id WHERE j.tenant_id = $1${runId ? ' AND v.run_id = $2' : ''} AND j.status = 'expired'`, params);
 
   // Gate C (CONTRACTS §9.5). "prevented" is only a not_executed receipt under a non-allow control (RFC §2).
-  const gated = await q.query<{ operation_id: string }>(`SELECT operation_id FROM gateway_attempts WHERE tenant_id = $1${runFilter} AND tool IN ('payments.execute', 'email.send')`, params);
+  const gated = await q.query<{ operation_id: string }>(`SELECT operation_id FROM gateway_attempts WHERE tenant_id = $1${runFilter} AND tool = ANY($${params.length + 1})`, [...params, [...ALL_GATED_TOOLS]]);
   const receipts = await q.query<{ operation_id: string; status: string; control_action: string | null }>(
     `SELECT r.operation_id, r.body->>'status' AS status, c.body->>'action' AS control_action
        FROM execution_receipts r LEFT JOIN control_decisions c ON c.tenant_id = r.tenant_id AND c.control_id = r.body->>'control_id'

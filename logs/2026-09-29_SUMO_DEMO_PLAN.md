@@ -236,6 +236,11 @@ These answers settle the §8 questions. They change no task, file list or accept
 - **Round 1.** The DeepSeek seat was started with `-m deepseek/deepseek-reasoner`. That id is no longer in OpenCode's model list: `opencode models deepseek` lists `deepseek-flash` and `deepseek-v4-pro`. OpenCode silently ran its default, **MiMo-V2.6-Flash**, so the round-1 "DeepSeek" review did not count as the DeepSeek seat's verdict. Its concrete, verified findings were used as input and are marked (MiMo) below.
 - **From round 2.** The seat runs `deepseek/deepseek-v4-pro`, DeepSeek's current flagship. The provider is unchanged, and the pane shows "DeepSeek V4 Pro".
 
+## Build record
+
+- **Review base:** `BASE=81f9c9f` (main). Work happens on branch `sumo-demo`; nothing merges to `main` before the Step 7 code gate.
+- **F0:** done, alone. `npm test`: 210 tests, 206 pass, 0 fail, 4 skip, with no existing test edited. `npm run probe` against Kev-0.8B: 8/8 PASS. CONTRACTS §11 frozen.
+
 ## Round-1 objections → changes
 
 | # | Objection (who) | Change |

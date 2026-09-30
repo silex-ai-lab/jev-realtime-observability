@@ -12,6 +12,11 @@ import { canonicalJson, digestOf, sha256 } from '../contracts/canonical.ts';
 
 /** The write and payment tools a control gates (docs/CONTRACTS.md §9). Read tools are never gated. */
 export const GATED_TOOLS = ['payments.execute', 'email.send'] as const;
+/** SOC domain (docs/CONTRACTS.md §11): every SOC write tool is gated. */
+export const SOC_GATED_TOOLS = ['identity.suspend_user', 'firewall.block_ip', 'firewall.allowlist_ip', 'ticket.update', 'webhook.post'] as const;
+/** Every gated tool across domains: the gateway, the driver and the gate metrics use this one set. */
+export const ALL_GATED_TOOLS: readonly string[] = [...GATED_TOOLS, ...SOC_GATED_TOOLS];
+export const isGatedTool = (tool: string): boolean => ALL_GATED_TOOLS.includes(tool);
 
 const arr = (v: unknown): string[] => {
   if (Array.isArray(v)) return v.map(String);

@@ -15,7 +15,13 @@
     "vendor.lookup":      { "impact": "read",    "moves_data": false, "redact_args": [] },
     "erp.payment_status": { "impact": "read",    "moves_data": false, "redact_args": [] },
     "email.send":         { "impact": "write",   "moves_data": true,  "redact_args": ["body"] },
-    "payments.execute":   { "impact": "payment", "moves_data": true,  "redact_args": ["account_number"] }
+    "payments.execute":   { "impact": "payment", "moves_data": true,  "redact_args": ["account_number"] },
+    "siem.search":           { "impact": "read",  "moves_data": false, "redact_args": [] },
+    "identity.suspend_user": { "impact": "write", "moves_data": false, "redact_args": [] },
+    "firewall.block_ip":     { "impact": "write", "moves_data": false, "redact_args": [] },
+    "firewall.allowlist_ip": { "impact": "write", "moves_data": false, "redact_args": [] },
+    "ticket.update":         { "impact": "write", "moves_data": false, "redact_args": [] },
+    "webhook.post":          { "impact": "write", "moves_data": true,  "redact_args": ["body"] }
   },
   "unknown_tool_impact": "payment"
 }

@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { createCapture } from '../../sdk/index.ts';
 import type { AuthorityReader, ToolGateway } from '../index.ts';
 import type { Scenario } from '../scenarios/index.ts';
-import { GATED_TOOLS } from '../control.ts';
+import { isGatedTool } from '../control.ts';
 
 export interface DriverDeps {
   baseUrl: string;
@@ -23,7 +23,7 @@ export async function runScripted(d: DriverDeps, sc: Scenario, runId = `run-${sc
   const faultAttrs: Record<string, string> = sc.fault ? { fault: sc.fault } : {};
   try {
     const goal = sc.steps.find(s => s.kind === 'task');
-    await cap.emit('run_started', { actor: { kind: 'user', id: 'finance-user' }, task_goal: goal?.kind === 'task' ? goal.goal : undefined,
+    await cap.emit('run_started', { actor: { kind: 'user', id: sc.actor ?? 'finance-user' }, task_goal: goal?.kind === 'task' ? goal.goal : undefined,
       attributes: { driver: 'scripted_driver', scenario: sc.id, ...faultAttrs } });
     for (const s of sc.steps) {
       if (s.kind === 'task') continue;
@@ -35,10 +35,18 @@ export async function runScripted(d: DriverDeps, sc: Scenario, runId = `run-${sc
           attributes: { ...faultAttrs } });
         continue;
       }
+      if (s.kind === 'retrieve_alert') {
+        const al = d.authority.alert ? await d.authority.alert(d.tenantId, s.alert_id) : null;
+        const excerpt = al ? `Alert ${al.alert_id}: ${al.title}. Raw log: ${al.raw_log}` : `Alert ${s.alert_id} not found.`;
+        // Authentic (it really came from the SIEM) yet without instruction authority: log text an attacker can write into.
+        await cap.emit('pre_input', { sources: [{ id: `siem-alert-${s.alert_id}`, producer: 'sandbox.siem', authenticity: 'verified', instruction_authority: 'none', excerpt }],
+          attributes: { ...faultAttrs } });
+        continue;
+      }
       if (s.kind === 'say') { await cap.emit('post_generation', { text: s.text, attributes: { ...faultAttrs } }); continue; }
       const op = cap.operation(s.tool, s.args);
       const callId = `call-${randomUUID().slice(0, 12)}`;
-      const gated = Boolean(d.gate) && (GATED_TOOLS as readonly string[]).includes(op.tool);
+      const gated = Boolean(d.gate) && isGatedTool(op.tool);
       let control = null, gateAttrs: Record<string, string | number> = {};
       if (gated) {
         // The preflight records the pre_tool event itself and returns a control bound to exactly this call.

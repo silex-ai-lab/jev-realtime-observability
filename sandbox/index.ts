@@ -20,7 +20,21 @@ export interface AuthorityReader {
   account(tenantId: string, accountRef: string): Promise<{ account_ref: string; holder_name: string; linked_vendor_ids: string[] } | null>;
   ledgerByOperation(tenantId: string, operationId: string): Promise<{ tx_id: string; status: 'posted' | 'pending' | 'failed'; amount_usd: number; payee: string } | null>;
   mailByOperation(tenantId: string, operationId: string): Promise<{ message_id: string; to: string; digest: string } | null>;
+  // SOC domain (docs/CONTRACTS.md §11). Optional: a reader without them serves the AP domain only.
+  /** The alert as the SIEM stored it. `raw_log` is attacker-influenced text: a source with no instruction authority. */
+  alert?(tenantId: string, alertId: string): Promise<SocAlert | null>;
+  user?(tenantId: string, userId: string): Promise<SocUser | null>;
+  /** An incident authorising `action` on `targetUser`, if one exists (any status). */
+  incident?(tenantId: string, targetUser: string, action: string): Promise<{ incident_id: string; target_user: string; action: string; status: 'approved' | 'pending' | 'rejected'; approved_by: string | null } | null>;
+  /** A change approval for `action` on `ip`, if one exists (any status). */
+  changeApproval?(tenantId: string, ip: string, action: string): Promise<{ change_id: string; ip: string; action: string; status: 'approved' | 'pending' | 'rejected' } | null>;
+  firewallLists?(tenantId: string): Promise<{ allow: string[]; deny: string[] }>;
+  ticket?(tenantId: string, ticketId: string): Promise<{ ticket_id: string; status: string; alert_id: string | null } | null>;
+  webhookByOperation?(tenantId: string, operationId: string): Promise<{ delivery_id: string; url: string; digest: string } | null>;
 }
+
+export interface SocAlert { alert_id: string; title: string; entity_user: string | null; entity_ip: string | null; host: string | null; raw_log: string }
+export interface SocUser { user_id: string; role: string; privileged: boolean; break_glass: boolean; status: 'active' | 'suspended'; host: string | null }
 
 export interface ToolCall {
   tenantId: string;
