@@ -3,19 +3,10 @@
 
 import { BATTERY, DEFAULT_POLICY } from '../engine/types.js';
 import { validatePolicy } from '../engine/policy.js';
-import { TENANT } from '../engine/scenarios.js';
+import { DOMAINS, SHARED_RULES } from '../engine/domains.js';
 import { $, esc, chip, deepClone } from './util.js';
 
-const NOUL = BATTERY.filter(q => q.type === 'noul').map(q => q.id);
-
-const RULES = [
-  ['amount_limit', 'BLOCK', 'pre_tool payment', `amount > $${TENANT.approval_limit_usd.toLocaleString('en-US')}`],
-  ['approval_evidence', 'HOLD', 'pre_tool payment', 'no approved approval record'],
-  ['domain_allowlist', 'BLOCK', 'pre_tool', `destination ∉ {${TENANT.domain_allowlist.join(', ')}}`],
-  ['readback_mismatch', 'ALERT', 'post_tool', '2xx result but ERP read-back not posted'],
-  ['stale_state', 'STOP', 'any', `snapshot older than ${TENANT.stale_after_ms} ms`],
-  ['repeat_failure', 'STOP', 'any', `≥ ${TENANT.repeat_failure_n} prior tool failures in the trace`],
-];
+const usedBy = qid => ['ap', 'soc'].filter(d => DOMAINS[d].questions.includes(qid)).map(d => chip(d.toUpperCase(), 'b')).join(' ');
 
 function diff(a, b, path = '') {
   if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
@@ -26,6 +17,9 @@ function diff(a, b, path = '') {
 }
 
 export function initStudio(app) {
+  // Only the chosen agent's questions, tools and rules (the shared rules too); the policy object itself holds both agents.
+  const NOUL = BATTERY.filter(q => q.type === 'noul' && app.domain.questions.includes(q.id)).map(q => q.id);
+  const RULES = [...app.domain.rules, ...SHARED_RULES];
   const thr = $('#studio-thr'), tools = $('#studio-tools'), err = $('#studio-err'), ver = $('#studio-version'), dff = $('#studio-diff');
   let n = 1;
 
@@ -51,7 +45,7 @@ export function initStudio(app) {
         <output>${v.toFixed(2)}</output>`;
     }).join('')).join('');
     tools.innerHTML = `<tr><th>Tool</th><th>Mode</th><th>On judge failure</th></tr>` +
-      Object.entries(p.tools).map(([t, c]) => `<tr><td class="mono">${esc(t)}</td>
+      Object.entries(p.tools).filter(([t]) => t in app.domain.tools).map(([t, c]) => `<tr><td class="mono">${esc(t)}</td>
         <td><select class="btn" data-tool-mode="${esc(t)}" aria-label="${esc(t)} mode">
           <option value="gate" ${c.mode === 'gate' ? 'selected' : ''}>Gate (enforce)</option>
           <option value="monitor" ${c.mode === 'monitor' ? 'selected' : ''}>Monitor (shadow)</option></select></td>
@@ -62,11 +56,13 @@ export function initStudio(app) {
     dff.innerHTML = d.length ? d.join('<br>') : 'No changes.';
   }
 
-  $('#studio-battery').innerHTML = `<tr><th>id</th><th>type</th><th>question</th><th>boundaries</th><th>features</th></tr>` +
-    BATTERY.map(q => `<tr><td class="mono">${esc(q.id)}${q.p0 ? ' ' + chip('P0', 'b') : ''}</td><td>${esc(q.type)}${q.risk === '1-p' ? ' (risk 1−p)' : ''}</td>
-      <td>${esc(q.text)}</td><td class="mono">${esc(q.boundaries.join(', '))}</td><td class="mono">${esc(q.features.join(', '))}</td></tr>`).join('');
+  // Four columns fit the half-width card; where a question is asked and what it reads sit under the question.
+  $('#studio-battery').innerHTML = `<tr><th>id</th><th>type</th><th>question</th><th>used by</th></tr>` +
+    BATTERY.map(q => `<tr data-question="${esc(q.id)}"><td class="mono">${esc(q.id)}${q.p0 ? ' ' + chip('P0', 'b') : ''}</td><td>${esc(q.type)}${q.risk === '1-p' ? ' (risk 1−p)' : ''}</td>
+      <td>${esc(q.text)}<div class="jv-meta q-meta">at <span class="mono">${esc(q.boundaries.join(', '))}</span> · reads <span class="mono">${esc(q.features.join(', '))}</span></div></td>
+      <td class="nowrap">${usedBy(q.id)}</td></tr>`).join('');
   $('#studio-rules').innerHTML = `<tr><th>rule</th><th>verdict</th><th>where</th><th>condition</th></tr>` +
-    RULES.map(r => `<tr><td class="mono">${r[0]}</td><td>${chip(r[1], r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td></tr>`).join('');
+    RULES.map(r => `<tr data-rule="${esc(r[0])}"><td class="mono">${r[0]}</td><td>${chip(r[1], r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[3])}</td></tr>`).join('');
 
   thr.addEventListener('input', e => {
     const t = e.target.closest('[data-studio-threshold]'); if (t) t.nextElementSibling.textContent = Number(t.value).toFixed(2);

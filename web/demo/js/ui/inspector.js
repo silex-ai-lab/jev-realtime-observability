@@ -16,6 +16,8 @@ const RULE_TEXT = {
   readback_mismatch: 'Tool said OK, ERP read-back disagrees',
   stale_state: 'State snapshot is stale',
   repeat_failure: 'Same failure repeated',
+  privileged_suspend_incident: 'Suspending a privileged account without an approved incident',
+  allowlist_change_approval: 'Allowlisting an IP without an approved change',
 };
 
 function band(ans, th) {

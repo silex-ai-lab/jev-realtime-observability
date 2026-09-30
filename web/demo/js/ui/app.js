@@ -2,7 +2,9 @@
 // every routed span becomes a row, a verdict envelope and part of the KPIs.
 
 import { DEFAULT_POLICY, BATTERY } from '../engine/types.js';
-import { TENANT, buildStream, makeBackground, scenarioById, ALL_SCENARIOS } from '../engine/scenarios.js';
+import { TENANT, BACKGROUND_TRACES, buildStream, makeBackground, scenarioById, scenariosFor } from '../engine/scenarios.js';
+import { makeSocBackground } from '../engine/scenarios-soc.js';
+import { domainFrom } from '../engine/domains.js';
 import { route, runStream } from '../engine/router.js';
 import { buildState } from '../engine/state.js';
 import { validatePolicy } from '../engine/policy.js';
@@ -21,14 +23,17 @@ const params = new URLSearchParams(location.search);
 const seedParam = Number.parseInt(params.get('seed') ?? '', 10);
 const SEED = Number.isFinite(seedParam) ? seedParam : 7;
 const AUTOPLAY = params.get('autoplay') !== '0';
+// One simulated agent per page load (logs/2026-09-30_DEMO_SOC_PLAN.md §1): ?domain=ap|soc, AP when missing or unknown.
+const DOMAIN = domainFrom(location.search);
+const SCENARIOS_HERE = scenariosFor(DOMAIN.id);
 
 // ---- state -------------------------------------------------------------
 let policy = deepClone(DEFAULT_POLICY);
 const policies = new Map([[policy.version, policy]]);
-const stream = buildStream(SEED);
+const stream = buildStream(SEED, { domain: DOMAIN.id });
 const titles = new Map([
-  ...ALL_SCENARIOS.map(t => [t.trace_id, t.title]),
-  ...makeBackground(SEED).map(t => [t.trace_id, t.title]),
+  ...SCENARIOS_HERE.map(t => [t.trace_id, t.title]),
+  ...(DOMAIN.id === 'soc' ? makeSocBackground(SEED, BACKGROUND_TRACES) : makeBackground(SEED)).map(t => [t.trace_id, t.title]),
 ]);
 const rows = [];           // { seq, span, env, fault }
 let seq = 0, cursor = 0, simTime = 0, playing = false, speed = 1, injectCount = 0;
@@ -38,6 +43,7 @@ const baseTrace = id => String(id).split('~')[0];
 const historyFor = row => rows.filter(r => r.seq < row.seq && r.span.trace_id === row.span.trace_id).map(r => r.env);
 
 const app = {
+  domain: DOMAIN,
   tenant: TENANT,
   seed: SEED,
   policy: () => policy,
@@ -201,7 +207,8 @@ const runsView = createRunsView({
   // Follow the scripted scenarios, not the background payments, so an injected scenario stays on screen.
   followable: r => !!r.scenario,
 });
-runsView?.setScenarioMeta({ scenarios: ALL_SCENARIOS.filter(t => t.scenario).map(t => ({ id: t.scenario, title: t.title, domain: 'ap' })) });
+// The tool → impact map lets the shared view say "read-only" for reads, as the console does.
+runsView?.setScenarioMeta({ scenarios: SCENARIOS_HERE.filter(t => t.scenario).map(t => ({ id: t.scenario, title: t.title, domain: DOMAIN.id })), tools: DOMAIN.tools });
 function refreshRuns() {
   if (!runsView) return;
   runsView.reset();
@@ -224,6 +231,22 @@ function renderKpis() {
   const more = $('#kpis-more');
   if (more) more.innerHTML = KPI_DEFS.filter(d => !HEADLINE.has(d[0])).map(tile).join('');
   else $('#kpis').innerHTML += KPI_DEFS.filter(d => !HEADLINE.has(d[0])).map(tile).join('');
+}
+
+// ---- the chosen agent -------------------------------------------------------
+$('#lede').innerHTML = DOMAIN.lede;
+$('#inject').insertAdjacentHTML('beforeend', DOMAIN.inject.map(([id, label, tip]) =>
+  `<button class="btn" data-inject="${esc(id)}" title="${esc(tip)}">${esc(label)}</button>`).join(''));
+$('#f-agent').insertAdjacentHTML('beforeend', `<option value="${esc(DOMAIN.agent)}">${esc(DOMAIN.agent)}</option>`);
+$('[data-replay-rules]').textContent = DOMAIN.replayRules;
+for (const b of $$('[data-domain]')) {
+  b.setAttribute('aria-pressed', String(b.dataset.domain === DOMAIN.id));
+  b.addEventListener('click', () => {
+    if (b.dataset.domain === DOMAIN.id) return;
+    const q = new URLSearchParams(location.search);   // keeps seed, autoplay and any other parameter
+    q.set('domain', b.dataset.domain);
+    location.assign(`${location.pathname}?${q}${location.hash}`);
+  });
 }
 
 // ---- wiring -------------------------------------------------------------
@@ -258,6 +281,7 @@ const latestRow = spanId => [...rows].reverse().find(r => r.env.span_id === span
 window.__jevDemo = {
   ready: true,
   seed: SEED,
+  domain: DOMAIN.id,
   engine: { route, runStream, buildState, computeKpis, validatePolicy, BATTERY, TENANT },
   policy: () => deepClone(policy),
   setPolicy(p) {

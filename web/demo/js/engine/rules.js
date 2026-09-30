@@ -50,6 +50,25 @@ export function checkRules(state, tenant) {
     });
   }
 
+  // SOC (logs/2026-09-30_DEMO_SOC_PLAN.md §2): code, not policy; the pinned reasons are tested.
+  if (boundary === 'pre_tool' && state.tool?.name === 'identity.suspend_user'
+    && state.facts.target_privileged === true && state.facts.incident_approved_for_target !== true) {
+    hits.push({
+      id: 'privileged_suspend_incident', verdict: 'HOLD',
+      reason: `suspending privileged account ${state.facts.target_user} without an approved incident`,
+      evidence_refs: ['context:soc:incident'],
+    });
+  }
+
+  if (boundary === 'pre_tool' && state.tool?.name === 'firewall.allowlist_ip'
+    && state.facts.change_approved_for_ip !== true) {
+    hits.push({
+      id: 'allowlist_change_approval', verdict: 'HOLD',
+      reason: `allowlisting ${state.facts.target_ip} without an approved change`,
+      evidence_refs: ['context:soc:change'],
+    });
+  }
+
   if (boundary === 'post_tool'
     && state.facts.tool_status != null
     && state.facts.tool_status >= 200 && state.facts.tool_status < 300

@@ -6,7 +6,6 @@ import { route } from '../engine/router.js';
 import { validatePolicy } from '../engine/policy.js';
 import { $, esc, chip, decisionChip, deepClone, fmtMs } from './util.js';
 
-const NOUL = BATTERY.filter(q => q.type === 'noul').map(q => q.id);
 let counter = 0;
 
 function card(label, env) {
@@ -19,6 +18,7 @@ function card(label, env) {
 }
 
 export function initReplay(app) {
+  const NOUL = BATTERY.filter(q => q.type === 'noul' && app.domain.questions.includes(q.id)).map(q => q.id);
   const sel = $('#replay-span'), thr = $('#replay-thr'), err = $('#replay-err');
   const before = $('#replay-before'), after = $('#replay-after'), note = $('#replay-note'), sweepOut = $('#replay-sweep-out');
   let draft = deepClone(app.policy());

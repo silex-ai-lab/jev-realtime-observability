@@ -23,7 +23,13 @@ a { color: var(--blue2); }
 .jv-back { color: #c9cff9; text-decoration: none; font-size: 13px; margin-left: auto; }
 .jv-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--amber-bg); color: var(--amber);
   border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 600; }
-.jv-tabs { display: flex; gap: 2px; margin-top: 12px; overflow-x: auto; }
+/* Agent switch + tabs share one row; the switch copies the console's Runs | Engineer pill (web/css/live.css .lv-views). */
+.jv-nav-row { display: flex; align-items: flex-end; gap: 18px; margin-top: 12px; flex-wrap: wrap; }
+.jv-domain { display: inline-flex; background: #33363d; border-radius: 999px; padding: 2px; margin-bottom: 8px; }
+.jv-domain button { background: transparent; color: #c9ccd3; border: 0; border-radius: 999px; padding: 4px 12px; font-size: 12px; white-space: nowrap; }
+.jv-domain button[aria-pressed="true"] { background: #fff; color: var(--ink); font-weight: 600; }
+.jv-domain button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.jv-tabs { display: flex; gap: 2px; overflow-x: auto; min-width: 0; }
 .jv-tabs button { background: none; border: 0; color: #b9bec8; padding: 10px 14px; border-bottom: 3px solid transparent; white-space: nowrap; }
 .jv-tabs button[aria-selected="true"] { color: #fff; border-bottom-color: var(--blue); font-weight: 600; }
 
@@ -243,3 +249,8 @@ main { padding-top: 16px; }
 .jv-engineer { margin-top: 4px; }
 .jv-engineer > summary { cursor: pointer; color: var(--muted); font-size: 12.5px; padding: 4px 2px 10px; }
 @media (max-width: 900px) { .demo-runs { grid-template-columns: minmax(0, 1fr); } .demo-runs .runs-list { position: static; } }
+@media (max-width: 560px) { .jv-nav-row { gap: 4px; } .jv-domain { margin-bottom: 4px; } .jv-domain button { padding: 4px 10px; } }
+.tbl td.nowrap { white-space: nowrap; }
+/* Battery table: the where/reads line under each question. */
+.q-meta { margin-top: 3px; font-size: 11px; }
+.q-meta .mono { font-size: 11px; }

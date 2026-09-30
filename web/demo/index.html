@@ -17,18 +17,24 @@
     <span class="jv-badge" data-simulated-badge title="No real Jev or LLM calls. The judge is a scripted simulator; latencies are simulated against the report's POC budget; all data is fictional.">SIMULATED · scripted judge, simulated latency, fictional tenant</span>
     <a class="jv-back" href="../index.html">← Live console</a>
   </div>
+  <div class="jv-nav-row">
+  <div class="jv-domain" role="group" aria-label="Which simulated agent" title="Switches the simulated agent and reloads the page. Policy Studio edits reset on reload.">
+    <button type="button" data-domain="ap" aria-pressed="true">AP payments agent</button>
+    <button type="button" data-domain="soc" aria-pressed="false">SOC triage agent</button>
+  </div>
   <nav class="jv-tabs" role="tablist">
     <button role="tab" data-tab="live" aria-selected="true">Live</button>
     <button role="tab" data-tab="replay" aria-selected="false">Replay</button>
     <button role="tab" data-tab="studio" aria-selected="false">Policy Studio</button>
     <button role="tab" data-tab="about" aria-selected="false">About &amp; evidence</button>
   </nav>
+  </div>
 </header>
 
 <main>
   <!-- LIVE -->
   <section data-panel="live" role="tabpanel">
-    <p class="jv-lede">A <b>state → action → outcome</b> control loop for an AP agent: every span goes <b>hard rules → Jev battery → policy</b>, and execution stays with the customer's gateway. Click a row to see why.</p>
+    <p class="jv-lede" id="lede" data-lede></p>
 
     <div class="jv-kpis" id="kpis"></div>
     <details class="jv-more"><summary>More metrics</summary><div class="jv-kpis more" id="kpis-more"></div></details>
@@ -42,16 +48,7 @@
         <span class="jv-clock" id="clock">t+0:00.0</span>
       </div>
       <span class="sep"></span>
-      <div class="grp" aria-label="Inject a scenario">
-        <label>Inject</label>
-        <button class="btn" data-inject="S1" title="Normal payment">S1 normal</button>
-        <button class="btn" data-inject="S2" title="Invoice vendor ≠ account holder">S2 payee</button>
-        <button class="btn" data-inject="S3" title="Amount over approval limit">S3 over-limit</button>
-        <button class="btn" data-inject="S4" title="No approval evidence">S4 no approval</button>
-        <button class="btn" data-inject="S5" title="200 OK but ERP not posted">S5 read-back</button>
-        <button class="btn" data-inject="S6" title="Injected instruction in an invoice note">S6 injection</button>
-        <button class="btn" data-inject="F1" title="Judge timeout on a lookup and a payment">F1 timeout</button>
-      </div>
+      <div class="grp" id="inject" aria-label="Inject a scenario"><label>Inject</label></div>
       <span class="sep"></span>
       <div class="grp">
         <label for="fault">Judge fault</label>
@@ -97,7 +94,6 @@
           </select>
           <select class="btn" id="f-agent" aria-label="Filter by agent">
             <option value="">all agents</option>
-            <option value="ap-agent">ap-agent</option>
           </select>
           <select class="btn" id="f-risk" aria-label="Filter by risk">
             <option value="">any risk</option>
@@ -121,8 +117,8 @@
   <!-- REPLAY -->
   <section data-panel="replay" role="tabpanel" hidden>
     <p class="jv-lede">Re-run one logged span under different thresholds. The simulated judge answers are keyed by span, so only the
-      <b>policy</b> changes between the two runs. The report's test: <b>a threshold changes semantic routing only; it can never bypass the
-      amount limit, approval evidence or the allowlist.</b></p>
+      <b>policy</b> changes between the two runs. The report's test: <b>a threshold changes semantic routing only; it can never bypass
+      <span data-replay-rules>the amount limit, approval evidence or the allowlist</span>.</b></p>
     <div class="two">
       <div class="card pad">
         <h3 style="margin-top:0">Span</h3>
@@ -194,10 +190,15 @@
             scenario labels: <b>not a benchmark</b> (the report: 20 red-team samples cannot prove a 90% catch rate).</li>
           <li><b>Execution</b> is the customer's. The action column is what a customer gateway would receive; nothing is executed.</li>
           <li><b>Tenant, vendors, invoices, domains</b> are fictional.</li>
+          <li><b>The SOC triage agent</b> (switch at the top) mirrors the live console's SOC1–SOC5: the same alert texts, users and rule
+            names, for a fictional Northwind SOC. One deliberate difference: in the live console the semantic checks are uncalibrated and
+            only shown as signals, so SOC5 runs. Here synthetic scores illustrate how a threshold policy would route SOC5's bulk
+            suspensions (<code>goal_deviation</code>). Nothing here is calibrated.</li>
         </ul>
         <h3>Architecture shown (report p.6, p.13)</h3>
         <div class="arch">
-          <div><b>P0 · hard rules</b>amount limit, approval evidence, allowlist, stale state, read-back. Veto; Jev cannot override.</div>
+          <div><b>P0 · hard rules</b>AP: amount limit, approval evidence, read-back. SOC: privileged-user suspension, allowlist change approval.
+            Both: destination allowlist, stale state, repeated failure. Veto; Jev cannot override.</div>
           <div><b>P1 · Jev battery</b>one call, atomic Noul / Choice / Score questions, full distributions.</div>
           <div><b>Policy (code)</b>three bands ALLOW / REVIEW / BLOCK per question, margin and confidence floors, per-tool Monitor / Gate.</div>
           <div><b>P2 · slow path</b>LLM or human for rationale, async; never changes the decision.</div>
