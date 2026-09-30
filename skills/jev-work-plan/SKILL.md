@@ -7,21 +7,69 @@ description: Resume or continue the dated work plan for jev-realtime-observabili
 
 ## Where things stand (update this when a plan closes)
 
-- **Current plan:** none open. [`plans/2026-09-30.md`](plans/2026-09-30.md) is finished: N1–N6 were done on 2026-09-29 on an M4 Pro (48 GB) with PostgreSQL 17.11. Its Log ends with the one follow-up it suggests: a 4B-specific fine-tune recipe, since the Kev-4B fine-tune (N2) did not match the 0.8B one on held-out goal_deviation. Start the next day's plan from that Log.
-- **Closed:** [`plans/2026-09-29.md`](plans/2026-09-29.md). T1–T10 are done in two reviewed fleet runs (`logs/2026-09-29_WORKPLAN_BATCH1_PLAN.md`, `…BATCH2_PLAN.md`). T10 was a Kev-0.8B rerun, by the user's decision on a 24 GB Mac.
+Last updated 2026-09-30, at `main` `590f89a`.
+
+- **Day plans:**
+  - No day plan is open.
+  - [`plans/2026-09-30.md`](plans/2026-09-30.md) (N1–N6) is finished. Its one suggested follow-up is a 4B-specific fine-tune recipe, because the Kev-4B fine-tune (N2) did not match the 0.8B one on held-out goal_deviation.
+  - [`plans/2026-09-29.md`](plans/2026-09-29.md) (T1–T10) is closed.
+- **Done since then** (outside the day plans; each is a reviewed three-seat fleet run, recorded in `logs/` and listed in `logs/README.md`):
+  1. **Sumo Logic demo:** SOC domain SOC1–SOC5, synthetic acceptance report, OTLP export. The run-book and talk track are in `docs/demo/SUMO_DEMO.md`.
+     - The Sumo meeting is **Monday 2026-10-05**. Sumo is a prospect with no account, so the demo exports to the local OTLP sink.
+     - Records: `logs/2026-09-29_SUMO_DEMO_PLAN.md`.
+  2. **Console Runs view** (`logs/2026-09-30_CONSOLE_UX_PLAN.md`):
+     - plain-language run cards, with the Engineer view still available underneath;
+     - Re-check (`model_reeval`), Run again (`POST /v1/sandbox/reexec`) and What-if (`policy_only`, flags only);
+     - the demo page's Live tab on the same layout;
+     - `scripts/demo-up.sh` / `demo-down.sh`, which run the whole demo on a 24 GB Mac with Kev-0.8B (about 6 GB measured). See USER_MANUAL §0.
+  3. **Demo page SOC agent** (`logs/2026-09-30_DEMO_SOC_PLAN.md`):
+     - `/demo/index.html?domain=soc`, with an `AP | SOC` switch in the header;
+     - SOC1–SOC5 are simulated with the console's rules;
+     - SOC5 is the one labelled difference: synthetic `goal_deviation` scores hold the 2nd and 3rd suspensions for review, while the live console does not block SOC5.
+- **Open follow-ups** (non-blocking review notes, not done; details at the end of each log):
+  - **Console** (`CONSOLE_UX_PLAN` code gate):
+    - `/v1/sandbox/reexec` takes its rate slot before the run lookup;
+    - the compatibility `/v1/replays kind: sandbox_reexec` path skips the sandbox budget;
+    - What-if only reaches the ≤ 50 runs the Runs view keeps;
+    - Run again jumps to the new run, so its "started" note is not seen.
+  - **Demo SOC:**
+    - the `QUESTIONS_BY_AGENT` lookup should use `Object.hasOwn`;
+    - separate stop and watch counters for mixed-mode runs.
+  - **Model:** the 4B fine-tune recipe (above).
+- **Test baseline at `590f89a`:**
+  - `npm test`: 277 tests, 273 pass, 0 fail, 4 skip; with `TEST_DATABASE_URL`, 1 skip.
+  - Probes, which need a Kev on 8010 (0.8B) or 8009:
+
+    | command | expected |
+    |---|---|
+    | `npm run probe` (`KEV_URL=http://127.0.0.1:8010 KEV_EXPECT=jaredpalmer/kev-0.8b`) | 8/8 |
+    | `node tests/probe/soc-probes.ts` | 7/7 |
+    | `node tests/probe/ui-runs-probes.ts` | 29/29 |
+    | `node tests/probe/demo-probes.ts` | 13/13 |
 
 ## Quick resume on a new host
 
 ```bash
 git clone https://github.com/silex-ai-lab/jev-realtime-observability.git && cd jev-realtime-observability
-npm ci && npm run typecheck && npm test          # expect 0 fail; 3 skips are normal (see the plan's Context)
+npm ci && npm run typecheck && npm test          # expect 0 fail; 4 skips are normal without PostgreSQL
 bash skills/jev-work-plan/scripts/resume-check.sh # what this host can run, and the open tasks
+bash scripts/demo-up.sh                            # the whole demo (Kev-0.8B, two consoles, OTLP sink); stop with demo-down.sh
 ```
 
-Then pick a task this host can run:
-- **any host:** N3–N6;
-- **Postgres available** (or Docker, or the user OKs an install): N1;
-- **32 GB+ Apple Silicon or a datacenter GPU:** N2, which needs the Kev checkout at `~/workplace/Silex/third_party/kev` (deploy skill step 3).
+- **Consoles:**
+  - gate: http://127.0.0.1:8791/
+  - watch-only: http://127.0.0.1:8790/
+- **Demo page:**
+  - AP: http://127.0.0.1:8791/demo/index.html
+  - SOC: http://127.0.0.1:8791/demo/index.html?domain=soc
+
+Then pick the next work:
+- **Meeting prep:** rehearse `docs/demo/SUMO_DEMO.md` before 2026-10-05. Take a follow-up from the list above only if the user asks.
+- **New day plan:** create `plans/<date>.md` from the follow-ups above, with the user's priorities. The 4B fine-tune needs 32 GB+ Apple Silicon or a datacenter GPU, plus the Kev checkout at `~/workplace/Silex/third_party/kev` (deploy skill step 3).
+
+**Fleet notes** (`herdr-agent-fleet`):
+- OpenCode's permission prompt wraps the path across lines. To auto-approve scratch reads, strip newlines and the box characters before matching the scratch path.
+- A domain or UI change to the demo keeps AP behaviour pinned by `tests/fixtures/demo-ap-envelopes.json`. Re-capture it only from unchanged code (`tests/fixtures/capture-demo-ap.mjs`).
 
 ## How the plans work
 
