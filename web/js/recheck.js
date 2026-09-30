@@ -48,7 +48,7 @@ export function createRecheck(deps) {
           : `<span class="changed">changed: ${esc(word(x.before.recommended))} → ${esc(word(x.after.recommended))}</span>`}${x.after.status && x.after.status !== 'ok' ? ` <span class="lv-meta">(judge status ${esc(x.after.status)})</span>` : ''}</li>`;
       });
       panels.set(runId, { html: `<div class="recheck-result">
-        <div class="recheck-head"><b>Re-check with the current judge and policy</b> <span class="lv-meta"><span data-judge-calls>${esc(r.judge_calls)}</span> judge call${r.judge_calls === 1 ? '' : 's'} made · ${changed} changed · ${unchanged} unchanged · ${skipped} skipped</span></div>
+        <div class="recheck-head"><b>Re-check with the current judge and policy</b> <span class="lv-meta"><span data-judge-calls>${esc(r.judge_calls)}</span> judge call attempt${r.judge_calls === 1 ? '' : 's'} · ${changed} changed · ${unchanged} unchanged · ${skipped} skipped</span></div>
         <ul class="recheck-rows">${rows.join('')}</ul>${steps.length > pick.length ? `
         <p class="lv-meta" data-recheck-omitted>Only the first ${pick.length} of ${steps.length} decided steps were re-checked (the replay API takes 20 at a time).</p>` : ''}
         <p class="lv-meta" data-audit-note>${esc(AUDIT_NOTE)} It re-assesses the recorded actions; it does not run a changed agent.</p></div>` });

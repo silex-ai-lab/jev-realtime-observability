@@ -30,6 +30,7 @@ export function createWhatIf(deps) {
   async function run() {
     const out = body.querySelector('.whatif-out');
     out.innerHTML = '<p class="lv-meta">Replaying recorded decisions…</p>';
+    if (!deps.policy()?.semantic?.bands) { out.innerHTML = '<p class="lv-meta">No active policy loaded yet. Connect first.</p>'; return; }
     const policy = structuredClone(deps.policy());
     for (const el of body.querySelectorAll('[data-band]')) policy.semantic.bands[el.dataset.band].review_at = Number(el.value);
     policy.policy_version = `${policy.policy_version}+whatif`;

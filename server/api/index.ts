@@ -193,9 +193,7 @@ export function createApi(d: ApiDeps): Server {
       const a = await auth(req, ['admin']);
       const body = await readJson(req) as { scenario?: string };
       if (!body?.scenario || !d.sandboxScenarios.includes(body.scenario)) throw new HttpError(400, 'bad_scenario', `scenario must be one of ${d.sandboxScenarios.join(', ')}`);
-      const recent = (sandboxRate.get(a.tenant_id) ?? []).filter(t => t > Date.now() - 60_000);
-      if (recent.length >= 30) throw new HttpError(429, 'rate_limited', 'at most 30 sandbox runs per minute');
-      sandboxRate.set(a.tenant_id, [...recent, Date.now()]);
+      takeSandboxSlot(a.tenant_id);
       return send(res, 202, await d.startSandboxRun(a.tenant_id, body.scenario));
     }
 
@@ -205,11 +203,18 @@ export function createApi(d: ApiDeps): Server {
     if (m === 'POST' && p === '/v1/sandbox/reexec') {
       const a = await auth(req, ['admin']);
       const body = await readJson(req) as { run_id?: string };
+      takeSandboxSlot(a.tenant_id);   // a re-run starts a sandbox run, so it shares the 30/min budget
       return send(res, 202, await sandboxReexec(a.tenant_id, body.run_id));
     }
 
     if (m === 'GET' && d.webRoot && !p.startsWith('/v1/')) return serveStatic(res, d.webRoot, p);
     throw new HttpError(404, 'not_found', 'no such route');
+  }
+
+  function takeSandboxSlot(tenantId: string) {
+    const recent = (sandboxRate.get(tenantId) ?? []).filter(t => t > Date.now() - 60_000);
+    if (recent.length >= 30) throw new HttpError(429, 'rate_limited', 'at most 30 sandbox runs per minute');
+    sandboxRate.set(tenantId, [...recent, Date.now()]);
   }
 
   /** Starts a NEW run of the same scripted scenario: new run id, new operation ids; the original run is untouched (RFC §10). */
