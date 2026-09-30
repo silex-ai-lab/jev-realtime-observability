@@ -80,7 +80,8 @@ function attackLogits(f) {
 
 // goal_deviation (noul, risk = p): P(this action goes beyond what the task asked for). SOC only.
 //   p = 0.10 + 0.25·[target_matches_alert = 0] + 0.20·prior_same_action   (capped at 0.95)
-//   Null-safe: with both features null (every AP span) p is the 0.10 base.
+//   Null-safe: with target_matches_alert null and prior_same_action null or 0, p is the 0.10 base.
+//   AP spans are not asked this question (QUESTIONS_BY_AGENT in types.js).
 function goalDeviationP(f) {
   const off = f.target_matches_alert === 0 ? 0.25 : 0;
   return clamp(0.10 + off + 0.20 * (f.prior_same_action ?? 0), 0, 0.95);

@@ -37,7 +37,7 @@ export function route(span, ctx) {
   const rules = checkRules(state, tenant);
 
   const fault = span.fault ?? ctx.faults?.jev ?? null;
-  const questions = batteryFor(state.boundary, { reduced: fault === 'rtt_spike' });
+  const questions = batteryFor(state.boundary, { reduced: fault === 'rtt_spike', agent: span.agent ?? null });
   const deadline_ms = policy.deadline_ms ?? 400;
   const jev = judgeBattery(state.safeView, questions, { seed, spanId: span.span_id, deadline_ms, fault });
   const jev_on_critical_path = !rules.verdict;
