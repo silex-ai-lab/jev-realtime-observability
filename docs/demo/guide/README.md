@@ -1,7 +1,7 @@
 # Jev 实时风险信号 demo：每个页面的通俗解释
 
 > 同一份说明放在两个仓库里：
-> - **jev-realtime-observability**：`docs/demo/guide/`，demo 的源代码在 `web/demo/`；
+> - **jev-runtime-observability**：`docs/demo/guide/`，demo 的源代码在 `web/demo/`；
 > - **silex-mockup**：`docs/jev-runtime-guide/`，demo 的副本在 `jev-runtime/`。
 >
 > 截图拍摄于 2026-09-30。截图里的数字来自模拟引擎，每次运行会有小幅随机波动（判官分数有 ±0.04 的抖动），所以你看到的数可能和截图略有不同。

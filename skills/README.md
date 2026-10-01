@@ -9,7 +9,7 @@ Agent skills for operating this project. Each folder is one skill: a `SKILL.md` 
 
 ## Using a skill
 
-- **Claude Code:** make the skill visible to the agent, then ask it to deploy (for example, "deploy jev-realtime-observability on this host").
+- **Claude Code:** make the skill visible to the agent, then ask it to deploy (for example, "deploy jev-runtime-observability on this host").
 
 ```bash
 mkdir -p .claude/skills && ln -s ../../skills/deploy-jev-observability .claude/skills/deploy-jev-observability   # this repo only
@@ -28,7 +28,7 @@ bash skills/deploy-jev-observability/scripts/smoke.sh        # after the server 
 To resume the work plan on another machine:
 
 ```bash
-git clone https://github.com/silex-ai-lab/jev-realtime-observability.git && cd jev-realtime-observability
+git clone https://github.com/silex-ai-lab/jev-runtime-observability.git && cd jev-runtime-observability
 npm ci
 ln -s "$PWD/skills/jev-work-plan" ~/.claude/skills/jev-work-plan      # then ask: "resume the jev work plan"
 bash skills/jev-work-plan/scripts/resume-check.sh                      # or check by hand

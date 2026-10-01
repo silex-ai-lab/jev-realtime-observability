@@ -1,13 +1,18 @@
 ---
 name: jev-work-plan
-description: Resume or continue the dated work plan for jev-realtime-observability on any machine. Use when asked to resume the jev work plan (today's or a given day's), continue the todo list, pick the next task, or record progress for this project. Reads the newest plans/<date>.md in this skill, checks what this machine can run (Node, Kev, GPU class, PostgreSQL), runs the next open task, and writes status back so another machine can pick up where this one stopped.
+description: Resume or continue the dated work plan for jev-runtime-observability on any machine. Use when asked to resume the jev work plan (today's or a given day's), continue the todo list, pick the next task, or record progress for this project. Reads the newest plans/<date>.md in this skill, checks what this machine can run (Node, Kev, GPU class, PostgreSQL), runs the next open task, and writes status back so another machine can pick up where this one stopped.
 ---
 
-# Resume the jev-realtime-observability work plan
+# Resume the jev-runtime-observability work plan
 
 ## Where things stand (update this when a plan closes)
 
 Last updated 2026-09-30, at `main` `77dc838` (silex-mockup `643f116`). Both repos are pushed, and their local `main` equals `origin/main`.
+
+**Renamed 2026-09-30:** this repo was `jev-realtime-observability`. It is now `silex-ai-lab/jev-runtime-observability`, checked out at `~/workplace/Silex/jev-runtime-observability`. GitHub redirects the old URL.
+- The live references were updated: `package.json`, READMEs, these skills, the deploy templates, the server banner, the guide, and the mockup's sync tool, `VENDORED.json` and READMEs.
+- Dated `logs/`, `runs/` and the day plans keep the old name as written.
+- An older clone only needs `git remote set-url origin https://github.com/silex-ai-lab/jev-runtime-observability.git`.
 
 - **Day plans:**
   - No day plan is open.
@@ -76,7 +81,7 @@ Last updated 2026-09-30, at `main` `77dc838` (silex-mockup `643f116`). Both repo
 ## Quick resume on a new host
 
 ```bash
-git clone https://github.com/silex-ai-lab/jev-realtime-observability.git && cd jev-realtime-observability
+git clone https://github.com/silex-ai-lab/jev-runtime-observability.git && cd jev-runtime-observability
 npm ci && npm run typecheck && npm test          # expect 0 fail; 4 skips are normal without PostgreSQL
 bash skills/jev-work-plan/scripts/resume-check.sh # what this host can run, and the open tasks
 bash scripts/demo-up.sh                            # the whole demo (Kev-0.8B, two consoles, OTLP sink); stop with demo-down.sh

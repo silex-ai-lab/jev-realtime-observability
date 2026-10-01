@@ -1,14 +1,14 @@
-# jev-realtime-observability server (API, worker, SSE, console). Reads its configuration from the
+# jev-runtime-observability server (API, worker, SSE, console). Reads its configuration from the
 # repo's .env (chmod 600). Edit User and WorkingDirectory, then: systemctl enable --now jev-observability
 [Unit]
-Description=jev-realtime-observability server
+Description=jev-runtime-observability server
 After=network-online.target jev-kev.service
 Wants=jev-kev.service
 
 [Service]
 User=CHANGE_ME
-WorkingDirectory=/home/CHANGE_ME/jev-realtime-observability
-EnvironmentFile=/home/CHANGE_ME/jev-realtime-observability/.env
+WorkingDirectory=/home/CHANGE_ME/jev-runtime-observability
+EnvironmentFile=/home/CHANGE_ME/jev-runtime-observability/.env
 ExecStart=/usr/bin/env node server/main.ts
 Restart=on-failure
 RestartSec=5

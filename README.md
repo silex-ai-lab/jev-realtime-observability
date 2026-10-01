@@ -1,4 +1,4 @@
-# jev-realtime-observability
+# jev-runtime-observability
 
 **Real-time agent observability with a Jev-protocol judge. The default model is the open-source [Kev](https://github.com/jaredpalmer/kev), not TypeSafe's Jev.**
 
@@ -51,7 +51,7 @@ One Apple Silicon Mac with **24 GB** of memory runs the whole demo: the gate and
 **You need:** Node ≥ 23.6, `uv` with Python 3.12 or 3.13, git, free ports 8010 / 8790 / 8791 / 4318, and internet on the first run (npm packages and the Kev-0.8B weights).
 
 ```bash
-git clone https://github.com/silex-ai-lab/jev-realtime-observability.git && cd jev-realtime-observability
+git clone https://github.com/silex-ai-lab/jev-runtime-observability.git && cd jev-runtime-observability
 npm ci && npm run typecheck && npm test
 git clone https://github.com/jaredpalmer/kev.git ~/workplace/Silex/third_party/kev
 git -C ~/workplace/Silex/third_party/kev checkout 3e1cd3b && (cd ~/workplace/Silex/third_party/kev && uv sync --extra serve)

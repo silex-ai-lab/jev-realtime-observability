@@ -1,9 +1,9 @@
 ---
 name: deploy-jev-observability
-description: Deploy jev-realtime-observability (the Jev-protocol agent observability server, its live console, and the local Kev judge) onto a new host, check it, and run a sandbox smoke test. Use when asked to deploy, install, set up, move or run this project on another machine or server (Linux with an NVIDIA GPU, or an Apple Silicon Mac), to run the demo on one 24 GB Mac (Kev-0.8B, scripts/demo-up.sh), to enable gate mode, to point it at a real PostgreSQL, or to diagnose a deployment whose /readyz reports the judge or database as degraded.
+description: Deploy jev-runtime-observability (the Jev-protocol agent observability server, its live console, and the local Kev judge) onto a new host, check it, and run a sandbox smoke test. Use when asked to deploy, install, set up, move or run this project on another machine or server (Linux with an NVIDIA GPU, or an Apple Silicon Mac), to run the demo on one 24 GB Mac (Kev-0.8B, scripts/demo-up.sh), to enable gate mode, to point it at a real PostgreSQL, or to diagnose a deployment whose /readyz reports the judge or database as degraded.
 ---
 
-# Deploy jev-realtime-observability on another host
+# Deploy jev-runtime-observability on another host
 
 This skill deploys **one host running two processes**:
 - **the Kev judge**: `jaredpalmer/kev` serving the System One protocol on `127.0.0.1:8009`;
@@ -55,7 +55,7 @@ The demo (the live consoles with the SOC and AP scenarios, plus the simulated `/
 
 ```bash
 # 1. The code and its dependencies
-git clone https://github.com/silex-ai-lab/jev-realtime-observability.git && cd jev-realtime-observability
+git clone https://github.com/silex-ai-lab/jev-runtime-observability.git && cd jev-runtime-observability
 npm ci && npm run typecheck && npm test        # expect 0 fail
 bash skills/deploy-jev-observability/scripts/check-host.sh
 
@@ -106,8 +106,8 @@ If the machine's npm points at an unreachable internal mirror, the repo's own `.
 ## 2. Get the code and dependencies
 
 ```bash
-git clone https://github.com/silex-ai-lab/jev-realtime-observability.git
-cd jev-realtime-observability
+git clone https://github.com/silex-ai-lab/jev-runtime-observability.git
+cd jev-runtime-observability
 npm ci                                   # uses package-lock.json and .npmrc
 npm run typecheck && npm test            # expect all pass, 1-2 skipped (live Kev, raw eval data)
 ```

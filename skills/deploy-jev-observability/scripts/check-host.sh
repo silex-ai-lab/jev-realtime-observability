@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pre-deployment host check for jev-realtime-observability. Read-only: installs nothing.
+# Pre-deployment host check for jev-runtime-observability. Read-only: installs nothing.
 # Prints PASS / WARN / FAIL per check and exits 1 if any FAIL.
 set -u
 fails=0

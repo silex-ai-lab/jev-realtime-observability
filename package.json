@@ -1,5 +1,5 @@
 {
-  "name": "jev-realtime-observability",
+  "name": "jev-runtime-observability",
   "version": "0.1.0",
   "private": true,
   "type": "module",

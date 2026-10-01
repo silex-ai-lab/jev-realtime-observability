@@ -10,7 +10,7 @@ if (!process.env.DATABASE_URL) mkdirSync(dataDir, { recursive: true });
 const db = await openDb(process.env.DATABASE_URL ? { url: process.env.DATABASE_URL } : { dataDir });
 const app = await createApp({ ...opts, db });
 const judge = app.judge?.served();
-console.log(`jev-realtime-observability listening on ${app.url}`);
+console.log(`jev-runtime-observability listening on ${app.url}`);
 console.log(`authentication: ${opts.auth === 'keys' ? 'API keys required (AUTH_MODE=keys)' : 'OFF (AUTH_MODE=none): anyone who can reach this address has full access'}`);
 console.log(`storage: ${db.kind}${db.kind === 'pglite' ? ` (${dataDir})` : ''}`);
 console.log(`judge: ${app.judge ? `${app.judge.config.backend} → ${judge ? `${judge.run} (${judge.runtime ?? 'runtime unknown'})` : 'not reachable yet'}` : 'not configured'}`);

@@ -1,8 +1,8 @@
-# Kev judge (jaredpalmer/kev) for jev-realtime-observability. Binds 127.0.0.1 only: the server
+# Kev judge (jaredpalmer/kev) for jev-runtime-observability. Binds 127.0.0.1 only: the server
 # sends no credential to a kev-local judge, so it must never be reachable from the network.
 # Edit User, WorkingDirectory (the kev clone) and KEV_RUN, then: systemctl enable --now jev-kev
 [Unit]
-Description=Kev judge (System One protocol) for jev-realtime-observability
+Description=Kev judge (System One protocol) for jev-runtime-observability
 After=network-online.target
 
 [Service]
