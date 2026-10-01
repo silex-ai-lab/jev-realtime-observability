@@ -7,7 +7,7 @@ description: Resume or continue the dated work plan for jev-realtime-observabili
 
 ## Where things stand (update this when a plan closes)
 
-Last updated 2026-09-30, at `main` `efce258` (silex-mockup `41ac8be`).
+Last updated 2026-09-30, at `main` `77dc838` (silex-mockup `643f116`). Both repos are pushed, and their local `main` equals `origin/main`.
 
 - **Day plans:**
   - No day plan is open.
@@ -38,7 +38,16 @@ Last updated 2026-09-30, at `main` `efce258` (silex-mockup `41ac8be`).
        node tests/site/run-site-probes.mjs                          # 19/19
        ```
 
-       Its integrity test fails on any local edit. A push to silex-mockup `main` is a public deploy.
+       Its integrity test fails on any local edit. A push to silex-mockup `main` is a public deploy (Vercel serves within about 15 s). Re-check the live site afterwards:
+
+       ```bash
+       node tests/site/run-site-probes.mjs --base https://silex-mockup.vercel.app   # 7/7 (S1, S3, S4, S5, S13, S14, S17)
+       ```
+
+     - The older AP-only `silex-mockup/jev-observability/` stays live, unchanged, and is marked superseded.
+  5. **Plain-language guide** (Chinese, 10 screenshots) to every demo page and the mockup's Runtime tab. Identical copies are in this repo (`docs/demo/guide/`) and in silex-mockup (`docs/jev-runtime-guide/`).
+     - When the demo UI changes, retake the screenshots and update both copies together. The screenshots were taken with headless Chrome at 1440 × 900 through the Chrome DevTools Protocol; the helper script was a session scratch file and is not in either repo.
+     - Its numbers are simulated, with ±0.04 jitter, and the guide says so.
 - **Open follow-ups** (non-blocking review notes, not done; details at the end of each log):
   - **Console** (`CONSOLE_UX_PLAN` code gate):
     - `/v1/sandbox/reexec` takes its rate slot before the run lookup;
@@ -49,7 +58,11 @@ Last updated 2026-09-30, at `main` `efce258` (silex-mockup `41ac8be`).
     - the `QUESTIONS_BY_AGENT` lookup should use `Object.hasOwn`;
     - separate stop and watch counters for mixed-mode runs.
   - **Model:** the 4B fine-tune recipe (above).
-- **Test baseline at `efce258`:**
+  - **Mockup Runtime tab:** every Run waits for the six-step animation (about 1.6 s), even when the frame is ready. That is fine for a demo; a faster path is possible.
+- **silex-mockup** (`~/workplace/Silex/silex-mockup`, https://github.com/silex-security/silex-mockup):
+  - serve it locally with `python3 -m http.server 8797 --bind 127.0.0.1`;
+  - tests: `node --test tests/site/*.test.mjs` (20/20) and `node tests/site/run-site-probes.mjs` (19/19).
+- **Test baseline at `efce258`** (`77dc838` only adds docs):
   - `npm test`: 280 tests, 276 pass, 0 fail, 4 skip; with `TEST_DATABASE_URL`, 1 skip.
   - Probes, which need a Kev on 8010 (0.8B) or 8009:
 
@@ -76,11 +89,17 @@ bash scripts/demo-up.sh                            # the whole demo (Kev-0.8B, t
   - AP: http://127.0.0.1:8791/demo/index.html
   - SOC: http://127.0.0.1:8791/demo/index.html?domain=soc
 
+**On another machine,** clone silex-mockup next to this repo (`git clone https://github.com/silex-security/silex-mockup.git ../silex-mockup`) if the work touches the demo, since its vendored copy must be re-synced.
+
 Then pick the next work:
 - **Meeting prep:** rehearse `docs/demo/SUMO_DEMO.md` before 2026-10-05. Take a follow-up from the list above only if the user asks.
 - **New day plan:** create `plans/<date>.md` from the follow-ups above, with the user's priorities. The 4B fine-tune needs 32 GB+ Apple Silicon or a datacenter GPU, plus the Kev checkout at `~/workplace/Silex/third_party/kev` (deploy skill step 3).
 
 **Fleet notes** (`herdr-agent-fleet`):
+- **Check exit codes directly.** `cmd | tail -1 && git commit` commits even when `cmd` fails, because the pipe's status is `tail`'s. That happened once on 2026-09-30 (jev `60b99da`). Use `cmd > log; echo exit=$?`.
+- **Codex in its sandbox:**
+  - It asks before writing files outside its working repo (silex-mockup) and before running probe runners on localhost. Approve its own assigned files and runner prefix only.
+  - Its session can drop mid-review ("Conversation interrupted"). Re-prompt it with the findings it already printed.
 - OpenCode's permission prompt wraps the path across lines. To auto-approve scratch reads, strip newlines and the box characters before matching the scratch path.
 - A domain or UI change to the demo keeps AP behaviour pinned by `tests/fixtures/demo-ap-envelopes.json`. Re-capture it only from unchanged code (`tests/fixtures/capture-demo-ap.mjs`).
 
