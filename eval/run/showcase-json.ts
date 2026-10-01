@@ -63,25 +63,44 @@ for (const [key, label] of MODELS) {
 
 // Promotion gate (plan §1, r2 §B): the rule lives in gate.js; here we only feed it the
 // paired goal_deviation test predictions at each model's own calibrated threshold.
+// The pairing must be exact: the generator fails closed on any malformed or inconsistent
+// prediction rather than silently dropping it (a dropped item would change the gate count).
 const ALPHA = 0.05;
-function goalDeviationTestPreds(label: string): Map<string, { label: boolean; p: number | null }> {
-  const map = new Map<string, { label: boolean; p: number | null }>();
-  for (const line of readFileSync(join(out, `predictions-${label}.jsonl`), 'utf8').split('\n').filter(Boolean)) {
-    const r = JSON.parse(line) as { item_id: string; question_id: string; split: string; label: boolean; signal: { type?: string; raw_probability?: number } | null };
+type Pred = { item_id: string; question_id: string; split: string; label: boolean; status: string; signal: { type?: string; raw_probability?: number } | null };
+function goalDeviationTestPreds(label: string): Map<string, { label: boolean; p: number }> {
+  const path = join(out, `predictions-${label}.jsonl`);
+  const map = new Map<string, { label: boolean; p: number }>();
+  for (const line of readFileSync(path, 'utf8').split('\n').filter(Boolean)) {
+    const r = JSON.parse(line) as Pred;
     if (r.question_id !== 'goal_deviation' || r.split !== 'test') continue;
-    map.set(r.item_id, { label: r.label, p: r.signal?.type === 'noul' ? (r.signal.raw_probability ?? null) : null });
+    if (r.item_id == null || r.item_id === '') throw new Error(`predictions-${label}.jsonl: goal_deviation/test item has no item_id`);
+    if (map.has(r.item_id)) throw new Error(`predictions-${label}.jsonl: duplicate item_id "${r.item_id}" in goal_deviation/test`);
+    if (r.status !== 'ok' && r.status !== 'partial') throw new Error(`predictions-${label}.jsonl: item "${r.item_id}" has status "${r.status}" (expected ok or partial)`);
+    if (typeof r.label !== 'boolean') throw new Error(`predictions-${label}.jsonl: item "${r.item_id}" has non-boolean label`);
+    const p = r.signal?.type === 'noul' ? r.signal.raw_probability : null;
+    if (typeof p !== 'number' || !Number.isFinite(p)) throw new Error(`predictions-${label}.jsonl: item "${r.item_id}" has no finite noul raw_probability`);
+    map.set(r.item_id, { label: r.label, p });
   }
   return map;
 }
 function gateFor(base: string, ft: string) {
   const baseThr = num(heldOut(base, 'goal_deviation/test').threshold);
   const ftThr = num(heldOut(ft, 'goal_deviation/test').threshold);
+  if (baseThr == null) throw new Error(`summary.json: ${base} goal_deviation/test threshold is missing`);
+  if (ftThr == null) throw new Error(`summary.json: ${ft} goal_deviation/test threshold is missing`);
   const basePreds = goalDeviationTestPreds(base);
   const ftPreds = goalDeviationTestPreds(ft);
-  const items: Array<{ positive: boolean; correctBefore: boolean; correctAfter: boolean }> = [];
   for (const [id, b] of basePreds) {
     const f = ftPreds.get(id);
-    if (!f || b.p == null || f.p == null || baseThr == null || ftThr == null) continue;
+    if (!f) throw new Error(`gate ${base}→${ft}: item "${id}" is missing from predictions-${ft}.jsonl`);
+    if (f.label !== b.label) throw new Error(`gate ${base}→${ft}: item "${id}" label differs (${base}: ${b.label}, ${ft}: ${f.label})`);
+  }
+  for (const id of ftPreds.keys()) {
+    if (!basePreds.has(id)) throw new Error(`gate ${base}→${ft}: item "${id}" is missing from predictions-${base}.jsonl`);
+  }
+  const items: Array<{ positive: boolean; correctBefore: boolean; correctAfter: boolean }> = [];
+  for (const [id, b] of basePreds) {
+    const f = ftPreds.get(id)!;
     items.push({ positive: b.label === true, correctBefore: b.p >= baseThr === b.label, correctAfter: f.p >= ftThr === f.label });
   }
   const d = decide({ items, alpha: ALPHA });

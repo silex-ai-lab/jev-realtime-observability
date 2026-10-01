@@ -342,6 +342,11 @@ async function learningLifecycle(url:string,domain:string) {
 }
 async function learningPresenter(url:string,domain:string) {
   const p=await learningReady(url,domain);
+  assert.equal(await p.eval<string>('return document.querySelector("#learn-gate").textContent.trim()'),'Press Play the loop to see three gate decisions.');
+  assert.equal(await p.eval<boolean>('return document.querySelector("#learn-comparison")===null'),true,'v1-to-v1 payoff is hidden');
+  assert.equal(await p.eval<boolean>('const status=document.querySelector("[data-learn-status]");return status.textContent==="Load authored examples or review a held Live action."&&!!status.closest("[data-learn-manual]")'),true,'initial manual guidance stays inside collapsed details');
+  assert.equal(await p.eval<number>('return document.querySelector("[data-learn-node=v1]").textContent.split("Starting model").length-1'),1);
+  assert.equal(await p.eval<string>('return document.querySelector("[data-learn-node=v1] [data-learn-active]").textContent'),'ACTIVE');
   await p.eval<void>('const policy=__jevDemo.policy();policy.version="custom-before-play";Object.values(policy.tools).forEach(t=>t.mode="monitor");__jevDemo.setPolicy(policy);');
   const external=await p.eval<string>('return JSON.stringify(__jevDemo.policy())');
   await clickDemo(p,'[data-learn-play]');
@@ -352,14 +357,19 @@ async function learningPresenter(url:string,domain:string) {
   for(const record of s.history){independentPairCheck(record.gate);assert.equal(record.snapshot.seed,7);assert.equal(record.snapshot.fault,null);await clickDemo(p,`[data-learn-node="${record.id}"]`);
     assert.equal(await p.eval<string>('return document.querySelector("[data-gate-counts]").textContent'),`Fixed ${record.gate.fixed} · Broke ${record.gate.broke}`);
     assert.ok((await p.eval<string>('return document.querySelector("[data-gate-safety]").textContent')).includes(`${record.gate.before.missed}/${record.gate.before.attacks} → ${record.gate.after.missed}/${record.gate.after.attacks}`));
-    assert.equal(await p.eval<string>('return document.querySelector("[data-gate-evidence]").textContent'),`Evidence: ${record.gate.evidenceOk?'enough':'needs more examples'}`);
+    const expectedEvidence=record.gate.evidenceOk?'Evidence: enough':record.gate.fixed>record.gate.broke?'Evidence: needs more examples':`Evidence: no improvement (fixed ${record.gate.fixed} ≤ broke ${record.gate.broke})`;
+    assert.equal(await p.eval<string>('return document.querySelector("[data-gate-evidence]").textContent'),expectedEvidence);
+    assert.equal(await p.eval<boolean>('return document.querySelector("#learn-gate").textContent.includes("Illustrative:")&&!document.querySelector("#learn-gate").nextElementSibling.matches("[data-learn-status]")'),true);
+    assert.equal(await p.eval<string>(`return document.querySelector('[data-learn-node="${record.id}"] small').textContent`),`${record.snapshot.labels.length} labels`);
   }
   assert.equal(await p.eval<boolean>('return !document.querySelector("[data-learn-manual]").open'),true);
+  assert.equal(await p.eval<boolean>('const active=[...document.querySelectorAll("[data-learn-active]")];return active.length===1&&active[0].closest("[data-learn-node]").dataset.learnNode==="attempt-2"&&active[0].getBoundingClientRect().height>0'),true,'visible ACTIVE pill belongs only to champion');
   const g=s.payoff;const bars=await p.eval<number[]>('return [...document.querySelectorAll(".learn-tiles .learn-bar")].map(e=>parseFloat(e.style.width))');const expected=[g.before.missedRate,g.after.missedRate,g.before.reviewRate,g.after.reviewRate,g.before.falseHoldRate,g.after.falseHoldRate].map(n=>n*100);assert.equal(bars.length,6);bars.forEach((n,i)=>assert.ok(Math.abs(n-expected[i])<.001));
   for(const width of [1440,390]){await p.send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width===390});assert.equal(await p.eval<boolean>('return document.documentElement.scrollWidth<=innerWidth+1'),true);}
   await clickDemo(p,'[data-learn-play]');await waitFor(()=>p.eval<boolean>('return __jevDemo.learning.state().history.length===1'),'first presenter round',10_000);await clickDemo(p,'[data-learn-reset]');await new Promise(r=>setTimeout(r,5500));
   assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.history.length===0&&s.champion.id==="v1"&&s.candidate===null&&!document.querySelector("[data-learn-play]").disabled'),true);
   assert.equal(await p.eval<string>('return JSON.stringify(__jevDemo.policy())'),external);
+  assert.equal(await p.eval<boolean>('return document.querySelector("#learn-comparison")===null&&document.querySelector("#learn-gate").textContent.trim()==="Press Play the loop to see three gate decisions."'),true,'Reset restores simple initial state');
   assert.deepEqual(p.errors,[]);return 'NEAR-MISS/KEEP/DISCARD, only KEEP moves champion, selected card and bars independently checked, default script context, collapsed manual, 390px and Reset mid-Play';
 }
 async function learningEvidence(url:string) {
@@ -377,10 +387,15 @@ async function learningEvidence(url:string) {
     assert.equal(await p.eval<string>(`return document.querySelector('[data-evidence-gate="${id}"] [data-evidence-verdict]').textContent`),g.verdict);
     const row=await p.eval<string>(`return document.querySelector('[data-evidence-gate="${id}"]').textContent`);
     assert.ok(row.includes(`Fixed ${g.fixed} · Broke ${g.broke}`));assert.ok(row.includes(String(g.p)));
+    assert.ok(row.includes(`Missed goal-deviation cases ${g.missed.before} → ${g.missed.after}`));
+    assert.ok(row.includes(`False alarms ${g.falseHolds.before} → ${g.falseHolds.after}`));
+    if(g.missed.after>g.missed.before)assert.ok(row.includes(`Safety check failed: more missed cases (${g.missed.before} → ${g.missed.after})`));
   }
   await clickDemo(p,'#learning-evidence > details summary');
   const text=await p.eval<string>('return document.querySelector("#learning-evidence").textContent');
   for(const caveat of data.caveats)assert.ok(text.includes(caveat));
+  assert.equal(text.split('Production promotion is not implemented').length-1,1);
+  assert.equal(text.includes('Same-recipe Kev-4B'),false);assert.equal(text.includes('Missed positives'),false);assert.equal(text.includes('False positives'),false);
   for(const phrase of ['not customer or human-reviewed','not reinforcement learning','calibrated threshold','No production latency guarantee','Production promotion is not implemented','records used','Source paths'])assert.ok(text.includes(phrase),phrase);
   assert.equal(await p.eval<boolean>('return ![...document.querySelectorAll("#learning-evidence a")].some(a=>a.getAttribute("href").includes("docs/EVAL.md"))'),true);
   assert.deepEqual(p.errors,[]);return 'all model cells generated from JSON, full provenance/caveats/training scope, served JSON link and no dead repo-doc link';
