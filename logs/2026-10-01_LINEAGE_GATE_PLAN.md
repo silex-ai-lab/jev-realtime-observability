@@ -226,3 +226,17 @@ Every item is taken.
 **Results:** typecheck 0; `npm test` 316 pass, 0 fail; demo-probes 24/24 (three runs by Codex, two by the planner); AP fixture `196ee6fe…` unchanged.
 
 **Next:** the mockup phase.
+
+## Mockup phase: build and code gate
+
+**Build:**
+- **Codex** `6ddcc89` (silex-mockup `lineage-gate`): vendored demo re-synced to `be8fda2`; "Would this gate promote it?" rows on the Runtime Observation card, read from the vendored JSON `gate{}`, replacing the Kev-4B sentence; S21 updated.
+- **Planner** `74ed19a`: guide §9 (identical in both repos) and the logs entry.
+
+| Revision | coder-deepseek | reviewer-codex | planner |
+|---|---|---|---|
+| `6ddcc89` | IMPL-APPROVED | IMPL-APPROVED | IMPL-APPROVED |
+
+**Results:** site unit 20/20; probes 21/21 (three runs by Codex, one by the planner).
+
+**Deploy:** pending the user's go-ahead. jev `lineage-gate` goes to `main` first, so `be8fda2` is on GitHub before the mockup `main` (public).
