@@ -7,7 +7,7 @@ description: Resume or continue the dated work plan for jev-runtime-observabilit
 
 ## Where things stand (update this when a plan closes)
 
-Last updated 2026-09-30, at `main` `77dc838` (silex-mockup `643f116`). Both repos are pushed, and their local `main` equals `origin/main`.
+Last updated 2026-09-30 (jev `main` is this commit; silex-mockup `bbf3a7d`). Both repos are pushed, and their local `main` equals `origin/main`.
 
 **Renamed 2026-09-30:** this repo was `jev-realtime-observability`. It is now `silex-ai-lab/jev-runtime-observability`, checked out at `~/workplace/Silex/jev-runtime-observability`. GitHub redirects the old URL.
 - The live references were updated: `package.json`, READMEs, these skills, the deploy templates, the server banner, the guide, and the mockup's sync tool, `VENDORED.json` and READMEs.
@@ -31,8 +31,8 @@ Last updated 2026-09-30, at `main` `77dc838` (silex-mockup `643f116`). Both repo
      - `/demo/index.html?domain=soc`, with an `AP | SOC` switch in the header;
      - SOC1–SOC5 are simulated with the console's rules;
      - SOC5 is the one labelled difference: synthetic `goal_deviation` scores hold the 2nd and 3rd suspensions for review, while the live console does not block SOC5.
-  4. **silex-mockup integration** (`silex-mockup/logs/2026-09-30_JEV_RUNTIME_VALIDATION_PLAN.md`, deployed to https://silex-mockup.vercel.app/#view=long-term&tab=runtime):
-     - System Validation gains a *Runtime · every agent action* tab that embeds this demo;
+  4. **silex-mockup integration** (`silex-mockup/logs/2026-09-30_JEV_RUNTIME_VALIDATION_PLAN.md`, deployed to https://silex-mockup.vercel.app/#view=runtime-observation):
+     - the site's left nav has a **Runtime Observation** view, between Enterprise World Model and System Validation, that embeds this demo. It started as a System Validation tab and was moved by `silex-mockup/logs/2026-09-30_RUNTIME_OBSERVE_VIEW_PLAN.md`; the old `#view=long-term&tab=runtime` link redirects;
      - the demo is vendored byte-for-byte in `silex-mockup/jev-runtime/` (currently from `efce258`);
      - this repo gained `?embed=1`, a validated `?back`, and the Runs view's `select(runId)`.
      - **After any change to `web/demo`, `web/js/runs.js`, `verdict.js` or `web/css/runs.css`,** re-sync the mockup, then run its suites and deploy with the user's OK:
@@ -50,7 +50,7 @@ Last updated 2026-09-30, at `main` `77dc838` (silex-mockup `643f116`). Both repo
        ```
 
      - The older AP-only `silex-mockup/jev-observability/` stays live, unchanged, and is marked superseded.
-  5. **Plain-language guide** (Chinese, 10 screenshots) to every demo page and the mockup's Runtime tab. Identical copies are in this repo (`docs/demo/guide/`) and in silex-mockup (`docs/jev-runtime-guide/`).
+  5. **Plain-language guide** (Chinese, 10 screenshots) to every demo page and the mockup's Runtime Observation view. Identical copies are in this repo (`docs/demo/guide/`) and in silex-mockup (`docs/jev-runtime-guide/`).
      - When the demo UI changes, retake the screenshots and update both copies together. The screenshots were taken with headless Chrome at 1440 × 900 through the Chrome DevTools Protocol; the helper script was a session scratch file and is not in either repo.
      - Its numbers are simulated, with ±0.04 jitter, and the guide says so.
 - **Open follow-ups** (non-blocking review notes, not done; details at the end of each log):
@@ -63,7 +63,7 @@ Last updated 2026-09-30, at `main` `77dc838` (silex-mockup `643f116`). Both repo
     - the `QUESTIONS_BY_AGENT` lookup should use `Object.hasOwn`;
     - separate stop and watch counters for mixed-mode runs.
   - **Model:** the 4B fine-tune recipe (above).
-  - **Mockup Runtime tab:** every Run waits for the six-step animation (about 1.6 s), even when the frame is ready. That is fine for a demo; a faster path is possible.
+  - **Mockup Runtime Observation view:** every Run waits for the six-step animation (about 1.6 s), even when the frame is ready. That is fine for a demo; a faster path is possible.
 - **silex-mockup** (`~/workplace/Silex/silex-mockup`, https://github.com/silex-security/silex-mockup):
   - serve it locally with `python3 -m http.server 8797 --bind 127.0.0.1`;
   - tests: `node --test tests/site/*.test.mjs` (20/20) and `node tests/site/run-site-probes.mjs` (19/19).

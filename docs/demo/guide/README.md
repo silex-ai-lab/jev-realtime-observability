@@ -156,20 +156,22 @@ AI agent（比如替财务付款的 agent、替安全团队处理告警的 agent
 
 ---
 
-## 8. 在 Silex mockup 里：System Validation → Runtime
+## 8. 在 Silex mockup 里：Runtime Observation
 
-线上地址：<https://silex-mockup.vercel.app/#view=long-term&tab=runtime>
+线上地址：<https://silex-mockup.vercel.app/#view=runtime-observation>
 
-### 8.1 Runtime 标签页总览
+### 8.1 Runtime Observation 总览
 
-![Runtime 标签页](08-runtime-tab.png)
+![Runtime Observation](08-runtime-tab.png)
 
-Silex 主站的 **System Validation** 有两个标签页：
+Silex 主站左侧导航的 **Environment** 组里，**Runtime Observation** 是独立的一项，位于 Enterprise World Model 下面、System Validation 上面：
 
-- **Periodic · environment-wide**：原来的“定期、全环境”验证，比如每月一次；
-- **Runtime · every agent action**：“每个动作、实时”的验证，也就是这个 demo。
+- **System Validation**：“定期、全环境”的验证，比如每月一次；
+- **Runtime Observation**：“每个动作、实时”地观察和验证，也就是这个 demo。
 
-Runtime 页上方：
+旧链接 `#view=long-term&tab=runtime` 会自动跳转到这里。
+
+Runtime Observation 页上方：
 
 - **四个参考数字**，由模拟引擎在默认策略下算出：12 个脚本场景、检查 24 个动作、10 个在执行前被拦下或暂停、6 个由硬规则决定。旁边注明了这是参考值：在下面嵌入的 demo 里改策略，不会改变这几个数。
 - **How runtime validation works**：六步流程。
@@ -194,7 +196,7 @@ Runtime 页上方：
 
 ![嵌入的 demo](10-runtime-embedded.png)
 
-点 Run 后，页面会滚到下方嵌入的 demo：它自动切到对应的 agent，并选中刚跑的那次运行。在这里可以做第 1–7 节介绍的所有事。右上角 **Open full page →** 用整页打开，左上角的返回链接回到这个标签页。
+点 Run 后，页面会滚到下方嵌入的 demo：它自动切到对应的 agent，并选中刚跑的那次运行。在这里可以做第 1–7 节介绍的所有事。右上角 **Open full page →** 用整页打开，左上角的返回链接回到 Runtime Observation。
 
 ---
 
