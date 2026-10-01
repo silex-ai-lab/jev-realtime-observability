@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 // @ts-expect-error browser module
-import { curriculumFor, requiredLabels } from '../../../web/demo/js/learning/curriculum.js';
+import { curriculumFor, requiredLabels, carelessBatchFor } from '../../../web/demo/js/learning/curriculum.js';
 // @ts-expect-error browser module
 import { createLearningSession, compareCases, gatePairs } from '../../../web/demo/js/learning/session.js';
 // @ts-expect-error browser module
@@ -28,7 +28,7 @@ function states(spans: any[]): string[] {
 }
 function trained(domain: string, failed = false, seed = 7): any {
   const s = createLearningSession(domain, () => DEFAULT_POLICY, seed);
-  s.load(); s.autoAnswer(); s.failed(failed); assert.equal(s.finishTrain(s.beginTrain()), true); return s;
+  s.load(); s.autoAnswer(); if (failed) s.addCareless(); assert.equal(s.finishTrain(s.beginTrain()), true); return s;
 }
 for (const domain of ['ap', 'soc']) {
   test(`${domain}: actual model-facing holdout states are disjoint from teaching and Live states`, () => {
@@ -54,44 +54,64 @@ for (const domain of ['ap', 'soc']) {
       assert.equal(truth, e.truth[qid], e.id);
     }
   });
-  test(`${domain}: default-seed pass/rejection and deterministic actions/controls across seeds 1–50`, () => {
-    for (let seed = 1; seed <= 50; seed++) for (const failed of [false, true]) {
-      const s = trained(domain, failed, seed), g = s.gate(); assert.equal(g.valid, true); if (seed === 7) assert.equal(g.pass, !failed, `seed ${seed}, failed ${failed}`);
-      if (seed === 7 && !failed) {
-        assert.ok(g.pairs.length >= 10 && g.pairs.length <= 12);
-        assert.ok(g.after.missed < g.before.missed); assert.ok(g.after.review < g.before.review); assert.ok(g.after.falseHolds < g.before.falseHolds);
-        assert.ok(g.pairs.some((p: any) => p.eligible && (p.kind === 'attack' ? p.after.action === 'allow' : p.after.action !== 'allow')), 'v2 retains a residual wrong outcome');
+
+  test(`${domain}: computed rounds, champion-relative regression, frozen history and quarantine`, () => {
+    const s = createLearningSession(domain, () => DEFAULT_POLICY, 23); s.startScript();
+    const expected = domain === 'ap' ? [[4,0,.0625],[9,0,.001953125],[0,4,1]] : [[3,0,.125],[7,1,.03515625],[0,2,1]];
+    for (let round=1; round<=3; round++) {
+      const g=s.scriptRound(round); const [f,b,p]=expected[round-1];
+      assert.equal(g.verdict,['NEAR-MISS','KEEP','DISCARD'][round-1]);
+      assert.deepEqual([g.fixed,g.broke,g.p],[f,b,p]);
+      assert.equal(g.fixed-g.broke,g.before.missed+g.before.falseHolds-g.after.missed-g.after.falseHolds);
+      assert.equal(s.state().champion.id,round===1?'v1':'v2');
+      for(const pair of g.pairs) {
+        if(pair.control) {assert.equal(pair.eligible,false);assert.equal(pair.correctControl,true);}
+        assert.deepEqual(pair.before.answers.attack,pair.after.answers.attack);
+        assert.deepEqual(pair.before.answers.impact,pair.after.answers.impact);
       }
-      const again = trained(domain, failed, seed).gate(); assert.deepEqual(g, again);
-      assert.equal(g.before.total, curriculumFor(domain).test.filter((e: any) => !e.id.includes('control-')).length, 'ALLOW by policy is included');
-      for (const p of g.pairs) {
-        if (p.control) { assert.equal(p.eligible, false); assert.equal(p.correctControl, true); assert.equal(p.before.action, p.after.action); }
-        assert.deepEqual(p.before.answers.attack, p.after.answers.attack); assert.deepEqual(p.before.answers.impact, p.after.answers.impact);
-      }
-      assert.equal(s.promote(), g.pass);
     }
+    const state=s.state(); assert.equal(state.history[2].championBefore,'v2');
+    assert.deepEqual(state.history.map((r:any)=>r.snapshot.labels.length),[3,18,24]);
+    assert.equal(state.history[2].gate.before.missed,0); assert.equal(state.history[2].gate.before.falseHolds,1);
+    assert.equal(state.history[2].gate.after.falseHolds,domain==='ap'?5:3);
+    assert.equal(state.quarantine.length,2); assert.equal(state.labelCount,18);
+    const frozen=copy(state.history); s.autoAnswer(); assert.equal(s.state().labelCount,18,'auto filling cannot revive quarantined labels');
+    s.beginTrain(); s.finishTrain(s.state().candidate.id); const next=s.gate();
+    assert.equal(next.verdict,'DISCARD'); assert.equal(next.fixed,0); assert.equal(next.broke,0);
+    assert.equal(s.state().history[3].snapshot.labels.length,18);
+    s.policyChanged();s.setFault('down');
+    assert.deepEqual(s.state().history.slice(0,3),frozen);
+    const e=s.state().examples[0];s.answer(e.id,Object.keys(e.truth)[0],true);assert.deepEqual(s.state().history.slice(0,3),frozen);
+    s.reset();assert.equal(s.state().history.length,0);assert.equal(s.state().champion.id,'v1');assert.deepEqual(s.state().quarantine,[]);
   });
-  test(`${domain}: frozen candidate, no heldout-truth oracle, and label edits invalidate approval`, () => {
-    const s = trained(domain), snapshot = s.state().candidate.snapshot;
-    const c = curriculumFor(domain), original = compareCases(c.test, snapshot, snapshot.model);
-    c.test.forEach((e: any) => { e.truth = Object.fromEntries(Object.entries(e.truth).map(([k, v]) => [k, !v])); e.kind = e.kind === 'attack' ? 'benign' : 'attack'; });
-    assert.deepEqual(compareCases(c.test, snapshot, snapshot.model).map((p: any) => p.after), original.map((p: any) => p.after));
-    assert.equal(s.gate().pass, true); const e = s.state().examples[0], q = Object.keys(e.truth)[0];
-    s.answer(e.id, q, !e.truth[q]); assert.equal(s.state().candidate, null); assert.equal(s.promote(), false);
-    assert.equal(s.state().count, s.state().N - 1); s.submit(e.id, 'Deny'); assert.equal(s.state().count, s.state().N);
-    s.load(); s.submit(e.id, 'Deny'); assert.equal(s.state().count, s.state().N);
+  test(`${domain}: manual readiness, truth isolation, edit invalidation and invalid evaluations`, () => {
+    const s=createLearningSession(domain,()=>DEFAULT_POLICY,7);s.load();assert.equal(s.beginTrain(),null);s.autoAnswer();
+    const id=s.beginTrain();assert.ok(id);assert.equal(s.finishTrain(id),true);
+    const snapshot=s.state().candidate.snapshot,c=curriculumFor(domain),original=compareCases(c.test,snapshot,snapshot.model);
+    for(const e of c.test) {e.truth=Object.fromEntries(Object.entries(e.truth).map(([k,v])=>[k,!v]));e.kind=e.kind==='attack'?'benign':'attack';}
+    assert.deepEqual(compareCases(c.test,snapshot,snapshot.model).map((p:any)=>p.after),original.map((p:any)=>p.after));
+    const g=s.gate();assert.equal(g.verdict,'KEEP');assert.equal(s.gate(),null,'cannot promote the same attempt twice');
+    const frozen=copy(s.state().history),e=s.state().examples[0],q=Object.keys(e.truth)[0];
+    s.answer(e.id,q,!e.truth[q]);assert.equal(s.state().candidate,null);assert.equal(s.state().count,s.state().N-1);
+    s.submit(e.id,'Deny');assert.equal(s.state().count,s.state().N);assert.deepEqual(s.state().history,frozen);
+    s.load();s.submit(e.id,'Deny');assert.equal(s.state().count,s.state().N);
+    const pending=s.beginTrain();s.reset();assert.equal(s.finishTrain(pending),false);assert.equal(s.gate(),null);
+    for(const fault of ['down','timeout','rtt_spike']) {const pairs=compareCases(curriculumFor(domain).test,{...snapshot,fault},snapshot.model);const g=gatePairs(pairs);assert.equal(g.verdict,'DISCARD');assert.equal(g.valid,false);}
+    assert.equal(gatePairs([]).pass,false);assert.equal(gatePairs(original.filter((p:any)=>p.kind==='benign')).valid,false);
+    const monitor=copy(snapshot.policy);Object.values(monitor.tools).forEach((t:any)=>{t.mode='monitor';});
+    assert.equal(gatePairs(compareCases(curriculumFor(domain).test,{...snapshot,policy:monitor},snapshot.model)).valid,false);
+    const bad=copy(original);bad.find((p:any)=>p.control).correctControl=false;assert.equal(gatePairs(bad).verdict,'DISCARD');
+    const invalid=copy(original);invalid.find((p:any)=>p.eligible).eligible=false;assert.equal(gatePairs(invalid).valid,false,'invalid pair cannot silently disappear');
   });
-  test(`${domain}: stale animation completion, policy/fault edits, reset and empty metrics fail closed`, () => {
-    const s = trained(domain); s.gate(); s.failed(true); assert.equal(s.promote(), false);
-    const id = s.beginTrain(); s.reset(); assert.equal(s.finishTrain(id), false); assert.equal(s.state().count, 0);
-    const p = trained(domain); p.gate(); p.policyChanged(); assert.equal(p.promote(), false);
-    const f = trained(domain); f.gate(); f.setFault('down'); assert.equal(f.promote(), false);
-    assert.equal(gatePairs([]).valid, false); assert.equal(gatePairs([]).pass, false);
-    const snapshot = trained(domain).state().candidate.snapshot;
-    const monitor = copy(snapshot.policy); Object.values(monitor.tools).forEach((t: any) => { t.mode = 'monitor'; });
-    assert.equal(gatePairs(compareCases(curriculumFor(domain).test, { ...snapshot, policy: monitor }, snapshot.model)).valid, false);
+  test(`${domain}: careless model-facing states are disjoint from review, test and Live`, () => {
+    const c=curriculumFor(domain),bad=carelessBatchFor(domain);
+    const other=new Set([...c.review,...c.test].flatMap((e:any)=>states(e.spans)).concat(states(buildStream(7,{domain}))));
+    const newStates=bad.flatMap((e:any)=>states(e.spans));assert.equal(new Set(newStates).size,newStates.length);
+    for(const value of newStates)assert.equal(other.has(value),false);
+    for(const e of bad)assert.equal(Object.keys(e.truth).filter(q=>e.truth[q]!==e.reviewerLabels[q]).length,1);
   });
 }
+
 test('default router scorer is byte-identical; unlabelled answers, faults and reduced battery fields pass through', () => {
   const spans = buildStream(7), ctx = { tenant: TENANT, policy: DEFAULT_POLICY, seed: 7 };
   assert.deepEqual(runStream(spans, ctx), runStream(spans, { ...ctx, scorer: judgeBattery }));

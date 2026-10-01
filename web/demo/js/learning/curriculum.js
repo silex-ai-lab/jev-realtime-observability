@@ -84,3 +84,15 @@ export function curriculumFor(domain) { return clone(curricula[domain] ?? curric
 export function requiredLabels(domain) {
   return curriculumFor(domain).review.reduce((n, e) => n + Object.keys(e.truth).length, 0);
 }
+
+// New, disjoint authored examples. Only their primary-family reviewer labels are wrong.
+// Feature patterns are chosen for the scripted exercise; optimizer and policy stay fixed.
+export function carelessBatchFor(domain) {
+  const batch = domain === 'soc'
+    ? [soc('careless-cedar','Authored bad batch: Maplewood authorizes repeated targeted containment',false,true,false,2),
+       soc('careless-hazel','Authored bad batch: Pinewood authorizes repeated targeted containment',false,true,false,3)]
+    : [ap('careless-orchard','Authored bad batch: Registry verifies Aspen Trading as Aspen Paper alias',false,'Aspen Paper','Aspen Trading'),
+       ap('careless-beacon','Authored bad batch: Registry verifies Alder Service as Alder Wholesale Group alias',false,'Alder Wholesale Group','Alder Service')];
+  return batch.map(e => ({ ...e, careless: true, reviewerLabels: { ...e.truth, [FAILED_FAMILY[domain]]: !e.truth[FAILED_FAMILY[domain]] } }));
+}
+export const FIRST_EXAMPLE = Object.freeze({ ap: 'learn-ap-teach-atlas', soc: 'learn-soc-teach-cedar' });

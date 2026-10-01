@@ -176,11 +176,11 @@
 
   <!-- LEARNING -->
   <section data-panel="learning" role="tabpanel" hidden>
-    <p class="jv-lede learn-intro">Teach the judge with review labels, then see what changes before proposed promotion.</p>
+    <p class="jv-lede learn-intro">Reviewers label held actions → Kev is retrained → a gate decides whether the new version may replace the old one.</p>
     <p>Simulated toy model in your browser · measured Kev fine-tune evidence below.</p>
     <details class="learn-intro"><summary>What is simulated</summary><p>This browser trains a simulated logistic correction on authored examples, not Kev weights, LoRA or RL.
       Review, export, fine-tuning and evaluation components exist; real human-label training and production promotion are future work.
-      Live stays on v1. The toy sees only existing numeric features, not registry prose or held-out truth: its authored associations are not identity verification. Measured benchmark evidence appears separately below.</p></details>
+      The three rounds are a scripted exercise chosen to show each verdict; partly repeated authored variants reuse one test set, not a calibrated error rate. Live stays on v1. The toy sees only existing numeric features, not registry prose or held-out truth: its authored associations are not identity verification. Measured benchmark evidence appears separately below.</p></details>
     <div id="learning-workflow"></div>
     <section id="learning-evidence" class="learn-evidence" aria-label="Measured benchmark evidence">Loading generated evidence…</section>
   </section>
@@ -216,7 +216,7 @@
           impact, attack, faults and latencies do not change.</p>
         <p>Labels are manual simulated-reviewer answers or scripted demo-author truth. The correction sees no
           held-out truth. Frozen candidates are tested on disjoint authored variants, not benchmarks; bad labels can
-          fail the gate. Promote affects only the Learning comparison. No tools execute, no real Kev weights change,
+          fail the gate. Only KEEP advances the champion, automatically, inside the Learning comparison. The authored, partly repeated test set is reused across rounds; its illustrative p values are not a calibrated error rate or a session-wide 5% false-promotion guarantee. No tools execute, no real Kev weights change,
           and production promotion is not implemented. The measured card reports separate supervised LoRA benchmark
           results, not human labels or reinforcement learning. RL and a human-label production loop are future work.</p>
         <h3>Architecture shown (report p.6, p.13)</h3>

@@ -281,6 +281,7 @@ async function learningReady(url:string,domain:string) {
   return p;
 }
 async function fillLearning(p:Cdp) {
+  if(await p.eval<boolean>('return !document.querySelector("[data-learn-manual]").open'))await clickDemo(p,'[data-learn-manual] > summary');
   await clickDemo(p,'[data-learn-load]');await clickDemo(p,'[data-learn-auto]');
   assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.N>0&&s.count===s.N&&s.labelCount===s.N'),true,'computed complete batch');
 }
@@ -289,97 +290,77 @@ async function trainAndGate(p:Cdp) {
   await waitFor(()=>p.eval<boolean>('return __jevDemo.learning.state().phase==="trained"'),'frozen trained candidate',10_000);
   await clickDemo(p,'[data-learn-gate]');
 }
+function independentPairCheck(g:any) {
+  const pairs=g.pairs.filter((p:any)=>p.eligible);
+  const correct=(p:any,side:string)=>p.kind==='attack'?p[side].action!=='allow':p[side].action==='allow';
+  const fixed=pairs.filter((p:any)=>!correct(p,'before')&&correct(p,'after')).length;
+  const broke=pairs.filter((p:any)=>correct(p,'before')&&!correct(p,'after')).length;
+  let term=2**-(fixed+broke),tail=0;
+  for(let k=0;k<=fixed+broke;k++){if(k>=fixed)tail+=term;term*=((fixed+broke)-k)/(k+1);}
+  assert.deepEqual([g.fixed,g.broke,g.p],[fixed,broke,tail]);
+  for(const side of ['before','after']) {
+    const attacks=pairs.filter((p:any)=>p.kind==='attack'),benign=pairs.filter((p:any)=>p.kind==='benign');
+    assert.equal(g[side].missed,attacks.filter((p:any)=>!correct(p,side)).length);
+    assert.equal(g[side].falseHolds,benign.filter((p:any)=>!correct(p,side)).length);
+    assert.equal(g[side].review,pairs.filter((p:any)=>p[side].action==='hold_for_review').length);
+  }
+  for(const p of g.pairs){if(p.control){assert.equal(p.correctControl,true);assert.equal(p.before.action,p.after.action);}assert.deepEqual(p.before.answers.attack,p.after.answers.attack);assert.deepEqual(p.before.answers.impact,p.after.answers.impact);}
+}
 async function learningWorkflow(url:string,domain:string) {
   const p=await learningReady(url,domain);
-  assert.equal(await p.eval<boolean>('return document.querySelector("[data-learn-train]").disabled'),true,'Train starts disabled');
-  const scenario=domain==='ap'?'S4':'SOC2';
-  await p.eval<void>(`__jevDemo.inject('${scenario}')`);
-  assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.examples.some(e=>!e.curriculum&&["HOLD","REVIEW"].includes(e.env.decision))&&s.count===0'),true,'inbox includes Live hold, no invented labels');
-  await fillLearning(p);
-  const N=await p.eval<number>('return __jevDemo.learning.state().N');
-  await clickDemo(p,'[data-learn-load]');await clickDemo(p,'[data-learn-auto]');
-  assert.equal(await p.eval<number>('return __jevDemo.learning.state().count'),N,'load/reanswer deduplicates');
-  assert.ok(await p.eval<boolean>('return [...document.querySelectorAll("[data-learn-label]")].some(e=>e.textContent.includes("scripted demo-author"))'));
-  const beforeLive=await p.eval<string>('return JSON.stringify(__jevDemo.log())');
-  await trainAndGate(p);
-  const s=await p.eval<any>('return __jevDemo.learning.state()'),g=s.candidate.gate;
-  assert.equal(g.pass,true);assert.equal(g.valid,true);
-  for(const side of ['before','after']) {
-    const eligible=g.pairs.filter((p:any)=>p.before.boundary==='pre_tool'&&p.after.boundary==='pre_tool'&&p.before.jev_status==='ok'&&p.after.jev_status==='ok'&&!p.before.fallback&&!p.after.fallback&&['jev','policy'].includes(p.before.decided_by)&&['jev','policy'].includes(p.after.decided_by)&&p.before.mode==='gate'&&p.after.mode==='gate');
-    const attacks=eligible.filter((p:any)=>p.kind==='attack'),benign=eligible.filter((p:any)=>p.kind==='benign');
-    const missed=attacks.filter((p:any)=>p[side].action==='allow').length;
-    const falseHolds=benign.filter((p:any)=>['hold_for_review','hold_for_approval','deny','stop_and_handover'].includes(p[side].action)).length;
-    const review=eligible.filter((p:any)=>p[side].action==='hold_for_review').length;
-    assert.deepEqual(g[side],{missed,attacks:attacks.length,missedRate:missed/attacks.length,falseHolds,benign:benign.length,falseHoldRate:falseHolds/benign.length,review,total:eligible.length,reviewRate:review/eligible.length});
-  }
-  for(const pair of g.pairs){
-    if(pair.control){assert.equal(pair.before.action,pair.after.action);assert.equal(pair.correctControl,true);assert.equal(pair.eligible,false);}
-    assert.deepEqual(pair.before.answers.attack,pair.after.answers.attack);assert.deepEqual(pair.before.answers.impact,pair.after.answers.impact);
-    for(const [qid,a] of Object.entries(pair.after.answers) as [string,any][]){if(a.type==='noul'){assert.equal(a.risk,qid==='grounded'?Math.round((1-a.p)*1000)/1000:a.p);assert.equal(a.confidence,Math.round(Math.max(a.p,1-a.p)*1000)/1000);}}
-  }
-  assert.equal(g.before.total,g.pairs.filter((p:any)=>p.eligible).length,'safe ALLOW results stay in denominators');
-  assert.ok(g.pairs.length>=10&&g.pairs.length<=12);
-  assert.ok(g.after.missed<g.before.missed,'strictly fewer missed attacks');
-  assert.ok(g.after.review<g.before.review,'strictly fewer actions sent to a person');
-  assert.ok(g.after.falseHolds<g.before.falseHolds,'strictly fewer false holds');
-  assert.ok(g.pairs.some((p:any)=>p.eligible&&(p.kind==='attack'?p.after.action==='allow':p.after.action!=='allow')),'v2 still makes an error');
-  const outcome=await p.eval<string>('return document.querySelector("[data-learn-outcome]").textContent');
-  assert.equal(outcome,`After ${s.candidate.snapshot.labels.length} reviewer answers, simulated on ${g.pairs.length} unseen authored actions: missed attacks ${g.before.missed}/${g.before.attacks} → ${g.after.missed}/${g.after.attacks} · sent to a person ${g.before.review}/${g.before.total} → ${g.after.review}/${g.after.total} · false holds ${g.before.falseHolds}/${g.before.benign} → ${g.after.falseHolds}/${g.after.benign}`);
-  const barWidths=await p.eval<number[]>('return [...document.querySelectorAll(".learn-tiles .learn-bar")].map(e=>parseFloat(e.style.width))');
-  const expectedBars=[g.before.missedRate,g.after.missedRate,g.before.reviewRate,g.after.reviewRate,g.before.falseHoldRate,g.after.falseHoldRate].map(n=>n*100);
-  assert.equal(barWidths.length,expectedBars.length,"six v1/v2 bars rendered");
-  barWidths.forEach((n,i)=>assert.ok(Math.abs(n-expectedBars[i])<0.001,'CSS bar matches computed rate within browser serialization precision'));
-  assert.equal(await p.eval<boolean>('const box=document.querySelector("#learn-comparison");const cards=[...box.querySelectorAll("[data-learn-pair]")];const collapsed=box.querySelector("[data-learn-unchanged]");return !!collapsed&&!collapsed.open&&cards.some(e=>e.dataset.changed==="true")&&cards.every(e=>e.dataset.changed==="true"?!e.closest("[data-learn-unchanged]"):!!e.closest("[data-learn-unchanged]"));'),true,'changed first; unchanged collapsed');
-  assert.deepEqual(await p.eval<string[]>('return [...document.querySelectorAll(".learn-stages button span")].map(e=>e.textContent)'),[`${s.examples.length} actions`,`${s.drafts.length} answers`,`${s.labelCount} labels`,`${Object.keys(s.candidate.snapshot.model.families).length} families`,`${g.pairs.length} variants`,'not yet']);
-  assert.equal(await p.eval<boolean>(`const {curriculumFor}=await import('./js/learning/curriculum.js');const {compareCases}=await import('./js/learning/session.js');const s=__jevDemo.learning.state().candidate.snapshot,c=curriculumFor('${domain}');const before=compareCases(c.test,s,s.model).map(p=>p.after);c.test.forEach(e=>{for(const q of Object.keys(e.truth))e.truth[q]=!e.truth[q];e.kind=e.kind==='attack'?'benign':'attack';});return JSON.stringify(before)===JSON.stringify(compareCases(c.test,s,s.model).map(p=>p.after));`),true,'scores independent of heldout truth');
-  await clickDemo(p,'[data-learn-promote]');
-  assert.equal(await p.eval<string>('return __jevDemo.learning.state().phase'),'promoted');
-  assert.equal(await p.eval<string>('return JSON.stringify(__jevDemo.log())'),beforeLive,'promotion leaves Live untouched');
-  assert.ok(await p.eval<boolean>('return document.querySelector("#learning-workflow").textContent.includes("simulated logistic correction")'));
-  await clickDemo(p,'[data-learn-reset]');
-  assert.equal(await p.eval<number>('return __jevDemo.learning.state().count'),0);assert.equal(await p.eval<boolean>('return __jevDemo.learning.state().candidate===null'),true);
-  await fillLearning(p);await clickDemo(p,'[data-learn-failed]');await trainAndGate(p);
-  assert.equal(await p.eval<boolean>('return __jevDemo.learning.state().candidate.gate.pass'),false);
-  assert.equal(await p.eval<boolean>('return document.querySelector("[data-learn-promote]").disabled'),true);
-  assert.match(await p.eval<string>('return document.querySelector("[data-learn-gate-result]").textContent'),/Rejected/);
-  for(const width of [1440,390]){await p.send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width===390});assert.equal(await p.eval<boolean>('return document.documentElement.scrollWidth<=innerWidth+1'),true,'Learning overflow');}
-  assert.deepEqual(p.errors,[]);return 'Live holds + authored curriculum, computed N/deduped labels, actual trained pass and corrupted rejection, independent metrics, no truth oracle, unchanged controls/choice/score/Live, scoped promotion, reset and 1440/390px';
+  assert.equal(await p.eval<boolean>('return document.querySelector("[data-learn-manual]").open'),false);
+  await clickDemo(p,'[data-learn-manual] > summary');
+  assert.equal(await p.eval<boolean>('return document.querySelector("[data-learn-train]").disabled'),true);
+  await p.eval<void>(`__jevDemo.inject('${domain==='ap'?'S4':'SOC2'}')`);
+  assert.equal(await p.eval<boolean>('return __jevDemo.learning.state().examples.some(e=>!e.curriculum)&&__jevDemo.learning.state().count===0'),true);
+  await fillLearning(p);const N=await p.eval<number>('return __jevDemo.learning.state().N');await fillLearning(p);assert.equal(await p.eval<number>('return __jevDemo.learning.state().count'),N);
+  const live=await p.eval<string>('return JSON.stringify(__jevDemo.log())');
+  await trainAndGate(p);const s=await p.eval<any>('return __jevDemo.learning.state()');
+  assert.equal(s.history[0].gate.verdict,'KEEP');assert.equal(s.champion.id,'v2');independentPairCheck(s.history[0].gate);
+  assert.equal(await p.eval<string>('return JSON.stringify(__jevDemo.log())'),live);
+  assert.equal(await p.eval<boolean>(`const {curriculumFor}=await import('./js/learning/curriculum.js');const {compareCases}=await import('./js/learning/session.js');const s=__jevDemo.learning.state().candidate.snapshot,c=curriculumFor('${domain}');const before=compareCases(c.test,s,s.model).map(p=>p.after);c.test.forEach(e=>{for(const q of Object.keys(e.truth))e.truth[q]=!e.truth[q];e.kind=e.kind==='attack'?'benign':'attack';});return JSON.stringify(before)===JSON.stringify(compareCases(c.test,s,s.model).map(p=>p.after));`),true);
+  await clickDemo(p,'[data-learn-careless]');await trainAndGate(p);
+  const bad=await p.eval<any>('return __jevDemo.learning.state()');assert.equal(bad.history[1].gate.verdict,'DISCARD');assert.equal(bad.history[1].championBefore,'v2');assert.equal(bad.champion.id,'v2');assert.equal(bad.quarantine.length,2);assert.equal(bad.labelCount,18);
+  await clickDemo(p,'[data-learn-auto]');assert.equal(await p.eval<number>('return __jevDemo.learning.state().labelCount'),18);
+  assert.deepEqual(p.errors,[]);return 'manual readiness, Live inbox, deduplication, automatic KEEP, champion-relative bad batch, quarantine, independent metrics and truth isolation';
 }
 async function learningLifecycle(url:string,domain:string) {
-  const p=await learningReady(url,domain);await fillLearning(p);await trainAndGate(p);
-  // Editing a visible answer removes its committed label and invalidates the candidate until a new Train.
-  await clickDemo(p,'#learn-review details summary');
+  const p=await learningReady(url,domain);await clickDemo(p,'[data-learn-manual] > summary');await fillLearning(p);await trainAndGate(p);
+  const history=await p.eval<string>('return JSON.stringify(__jevDemo.learning.state().history)');
   await p.eval<void>('const e=document.querySelector("[data-learn-example][data-learn-example^=learn-] [data-learn-answer]");e.focus();e.value=e.value==="true"?"false":"true";e.dispatchEvent(new Event("change",{bubbles:true}));');
-  assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.candidate===null&&s.count===s.N-1&&document.querySelector("[data-learn-promote]").disabled'),true,'answer invalidates approval');
-  assert.equal(await p.eval<boolean>('return document.activeElement.matches("[data-learn-answer]")'),true,'answer redraw preserves keyboard focus');
+  assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.candidate===null&&s.count===s.N-1'),true);
+  assert.equal(await p.eval<boolean>('return document.activeElement.matches("[data-learn-answer]")'),true);
+  assert.equal(await p.eval<string>('return JSON.stringify(__jevDemo.learning.state().history)'),history);
   await clickDemo(p,'[data-learn-example][data-learn-example^=learn-] [data-learn-submit="Deny"]');
   assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.count===s.N&&s.labels.some(l=>l.source==="manual simulated reviewer")'),true);
-  await clickDemo(p,'[data-learn-reset]');await fillLearning(p);await trainAndGate(p);
-  await p.eval<void>('const policy=__jevDemo.policy();policy.version="learning-test-policy";__jevDemo.setPolicy(policy);');
-  assert.equal(await p.eval<boolean>('return __jevDemo.learning.state().candidate===null&&document.querySelector("[data-learn-promote]").disabled'),true,'policy invalidates approval');
-  await clickDemo(p,'[data-learn-train]');await clickDemo(p,'[data-learn-reset]');
-  await new Promise(r=>setTimeout(r,650));assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.phase==="review"&&s.candidate===null&&s.count===0'),true,'stale training callback cannot resurrect reset');
-  assert.deepEqual(p.errors,[]);return 'manual-label distinction, answer edit/new Train, policy invalidation, and reset while animation is pending';
+  await clickDemo(p,'[data-learn-train]');await p.eval<void>('const policy=__jevDemo.policy();policy.version="learning-test-policy";__jevDemo.setPolicy(policy);');
+  await new Promise(r=>setTimeout(r,650));assert.equal(await p.eval<boolean>('return __jevDemo.learning.state().candidate===null'),true);
+  assert.equal(await p.eval<string>('return JSON.stringify(__jevDemo.learning.state().history)'),history);
+  await clickDemo(p,'[data-learn-train]');await clickDemo(p,'[data-learn-reset]');await new Promise(r=>setTimeout(r,650));
+  assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.history.length===0&&s.champion.id==="v1"&&s.candidate===null&&s.count===0&&!document.querySelector("[data-learn-manual]").open'),true);
+  assert.deepEqual(p.errors,[]);return 'frozen history, keyboard focus, manual source, policy invalidation, stale training and reset';
 }
 async function learningPresenter(url:string,domain:string) {
   const p=await learningReady(url,domain);
-  assert.equal(await p.eval<string>('return document.querySelector("[data-learn-outcome]").textContent'),'Answer the review examples to see what changes');
+  await p.eval<void>('const policy=__jevDemo.policy();policy.version="custom-before-play";Object.values(policy.tools).forEach(t=>t.mode="monitor");__jevDemo.setPolicy(policy);');
+  const external=await p.eval<string>('return JSON.stringify(__jevDemo.policy())');
   await clickDemo(p,'[data-learn-play]');
-  for(let stage=0;stage<6;stage++) {
-    await waitFor(()=>p.eval<boolean>(`return document.querySelector('[data-learn-stage="${stage}"]').getAttribute('aria-current')==='step';`),'presenter stage '+stage,10_000);
-    assert.equal(await p.eval<boolean>('return [...document.querySelectorAll("#learning-workflow button:not([data-learn-reset]), #learning-workflow select, #learning-workflow input")].every(e=>e.disabled)&&!document.querySelector("[data-learn-reset]").disabled;'),true,'presenter prevents mid-stage edits while Reset stays available');
+  await waitFor(()=>p.eval<boolean>('return __jevDemo.learning.state().history.length===3&&!document.querySelector("[data-learn-play]").disabled'),'three rounds completed',15_000);
+  const s=await p.eval<any>('return __jevDemo.learning.state()');
+  assert.deepEqual(s.history.map((r:any)=>r.gate.verdict),['NEAR-MISS','KEEP','DISCARD']);assert.deepEqual(s.history.map((r:any)=>r.championBefore),['v1','v1','v2']);assert.equal(s.champion.id,'v2');
+  assert.equal(await p.eval<string>('return JSON.stringify(__jevDemo.policy())'),external);
+  for(const record of s.history){independentPairCheck(record.gate);assert.equal(record.snapshot.seed,7);assert.equal(record.snapshot.fault,null);await clickDemo(p,`[data-learn-node="${record.id}"]`);
+    assert.equal(await p.eval<string>('return document.querySelector("[data-gate-counts]").textContent'),`Fixed ${record.gate.fixed} · Broke ${record.gate.broke}`);
+    assert.ok((await p.eval<string>('return document.querySelector("[data-gate-safety]").textContent')).includes(`${record.gate.before.missed}/${record.gate.before.attacks} → ${record.gate.after.missed}/${record.gate.after.attacks}`));
+    assert.equal(await p.eval<string>('return document.querySelector("[data-gate-evidence]").textContent'),`Evidence: ${record.gate.evidenceOk?'enough':'needs more examples'}`);
   }
-  await waitFor(()=>p.eval<boolean>('return !document.querySelector("[data-learn-play]").disabled'),'presenter completed',10_000);
-  assert.equal(await p.eval<string>('return __jevDemo.learning.state().phase'),'promoted');
-  assert.equal(await p.eval<string>('return document.querySelector(".learn-stages button:last-child span").textContent'),'promoted');
-  // Reset at the train stage cancels both the presenter and pending candidate completion.
-  await clickDemo(p,'[data-learn-play]');
-  await waitFor(()=>p.eval<boolean>('return __jevDemo.learning.state().phase==="training"'),'presenter training',10_000);
-  await clickDemo(p,'[data-learn-reset]');
-  await new Promise(r=>setTimeout(r,3300));
-  assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.count===0&&s.examples.length===0&&s.candidate===null&&s.phase==="review"&&!document.querySelector("[data-learn-play]").disabled;'),true,'Reset cancels every remaining presenter stage');
-  assert.equal(await p.eval<string>('return document.querySelector("[data-learn-outcome]").textContent'),'Answer the review examples to see what changes');
-  assert.deepEqual(p.errors,[]);return 'outcome-first, all six timed stages, promotion, Reset cancels stale presenter work';
+  assert.equal(await p.eval<boolean>('return !document.querySelector("[data-learn-manual]").open'),true);
+  const g=s.payoff;const bars=await p.eval<number[]>('return [...document.querySelectorAll(".learn-tiles .learn-bar")].map(e=>parseFloat(e.style.width))');const expected=[g.before.missedRate,g.after.missedRate,g.before.reviewRate,g.after.reviewRate,g.before.falseHoldRate,g.after.falseHoldRate].map(n=>n*100);assert.equal(bars.length,6);bars.forEach((n,i)=>assert.ok(Math.abs(n-expected[i])<.001));
+  for(const width of [1440,390]){await p.send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width===390});assert.equal(await p.eval<boolean>('return document.documentElement.scrollWidth<=innerWidth+1'),true);}
+  await clickDemo(p,'[data-learn-play]');await waitFor(()=>p.eval<boolean>('return __jevDemo.learning.state().history.length===1'),'first presenter round',10_000);await clickDemo(p,'[data-learn-reset]');await new Promise(r=>setTimeout(r,5500));
+  assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.history.length===0&&s.champion.id==="v1"&&s.candidate===null&&!document.querySelector("[data-learn-play]").disabled'),true);
+  assert.equal(await p.eval<string>('return JSON.stringify(__jevDemo.policy())'),external);
+  assert.deepEqual(p.errors,[]);return 'NEAR-MISS/KEEP/DISCARD, only KEEP moves champion, selected card and bars independently checked, default script context, collapsed manual, 390px and Reset mid-Play';
 }
 async function learningEvidence(url:string) {
   const p=await learningReady(url,'ap');
@@ -391,7 +372,13 @@ async function learningEvidence(url:string) {
     assert.equal(cells[0],Number(m.instruction_override.auroc).toFixed(3));assert.equal(cells[1],Number(m.goal_deviation.auroc).toFixed(3));
     assert.equal(cells[2],Number(m.goal_deviation.threshold).toFixed(3));assert.ok(cells[3].startsWith((m.goal_deviation.recall*100).toFixed(1)+'%'));assert.ok(cells[5].startsWith(Math.round(m.latency.p50_ms)+' ms'));
   }
-  await clickDemo(p,'#learning-evidence details summary');
+  assert.ok(data.gate,'generated gate rows present');
+  for(const [id,g] of Object.entries(data.gate) as [string,any][]) {
+    assert.equal(await p.eval<string>(`return document.querySelector('[data-evidence-gate="${id}"] [data-evidence-verdict]').textContent`),g.verdict);
+    const row=await p.eval<string>(`return document.querySelector('[data-evidence-gate="${id}"]').textContent`);
+    assert.ok(row.includes(`Fixed ${g.fixed} · Broke ${g.broke}`));assert.ok(row.includes(String(g.p)));
+  }
+  await clickDemo(p,'#learning-evidence > details summary');
   const text=await p.eval<string>('return document.querySelector("#learning-evidence").textContent');
   for(const caveat of data.caveats)assert.ok(text.includes(caveat));
   for(const phrase of ['not customer or human-reviewed','not reinforcement learning','calibrated threshold','No production latency guarantee','Production promotion is not implemented','records used','Source paths'])assert.ok(text.includes(phrase),phrase);
@@ -441,7 +428,7 @@ try{
   for(const kind of ['embed','back'] as const)await probe('DEMO-HOST-'+kind,()=>hostOptionsProbe(h!.url('/demo/index.html'),kind));
   for(const domain of ['ap','soc']){
     await probe('DEMO-LEARN-'+domain.toUpperCase(),()=>learningWorkflow(h!.url('/demo/index.html'),domain));
-    await probe('DEMO-LEARN-PRESENTER-'+domain.toUpperCase(),()=>learningPresenter(h!.url('/demo/index.html'),domain));
+    await probe('DEMO-GATE-PRESENTER-'+domain.toUpperCase(),()=>learningPresenter(h!.url('/demo/index.html'),domain));
     await probe('DEMO-LEARN-LIFECYCLE-'+domain.toUpperCase(),()=>learningLifecycle(h!.url('/demo/index.html'),domain));
   }
   await probe('DEMO-LEARN-EVIDENCE',()=>learningEvidence(h!.url('/demo/index.html')));

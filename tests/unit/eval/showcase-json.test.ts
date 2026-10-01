@@ -17,6 +17,11 @@ const evidence = JSON.parse(readFileSync(JSON_PATH, 'utf8')) as {
     latency: { p50_ms: number; p95_ms: number; n: number };
   }>;
   finetune: Record<string, { method: string; epochs: number; lr: number; records_total: number; records_used: number; wall_s: number }>;
+  gate: Record<string, {
+    vs: string; items: number; fixed: number; broke: number; p: number;
+    missed: { before: number; after: number }; falseHolds: { before: number; after: number };
+    safetyOk: boolean; evidenceOk: boolean; verdict: string; reason: string; alpha: number;
+  }>;
   label_provenance: string[];
 };
 
@@ -74,4 +79,68 @@ test('learning-evidence.json key values match the docs/EVAL.md generated block',
   }
 
   assert.deepEqual(evidence.label_provenance, ['benchmark_ground_truth_derived', 'heuristic_derived']);
+});
+
+// The gate{} block is recomputed here independently from the raw prediction files, with its own
+// inline one-sided sign test (this test must NOT import gate.js; the point is a second implementation).
+test('gate{} matches an independent recomputation from the predictions files', () => {
+  const OUT = 'runs/eval-2026-09-28-v2';
+  const summary = JSON.parse(readFileSync(join(OUT, 'summary.json'), 'utf8')) as Record<string, Record<string, Record<string, unknown>>>;
+  const threshold = (label: string) => summary[label]['goal_deviation/test'].threshold as number;
+
+  const binom = (n: number, k: number): number => { let r = 1; for (let i = 0; i < k; i++) r = r * (n - i) / (i + 1); return r; };
+  const signTest = (fixed: number, broke: number): number => {
+    const n = fixed + broke;
+    if (n === 0) return 1;
+    let p = 0;
+    for (let k = fixed; k <= n; k++) p += binom(n, k) * Math.pow(0.5, n);
+    return p;
+  };
+  const load = (label: string): Map<string, { label: boolean; p: number | null }> => {
+    const map = new Map<string, { label: boolean; p: number | null }>();
+    for (const line of readFileSync(join(OUT, `predictions-${label}.jsonl`), 'utf8').split('\n').filter(Boolean)) {
+      const r = JSON.parse(line) as { item_id: string; question_id: string; split: string; label: boolean; signal: { type?: string; raw_probability?: number } | null };
+      if (r.question_id !== 'goal_deviation' || r.split !== 'test') continue;
+      map.set(r.item_id, { label: r.label === true, p: r.signal?.type === 'noul' ? (r.signal.raw_probability ?? null) : null });
+    }
+    return map;
+  };
+  const recompute = (base: string, ft: string) => {
+    const baseThr = threshold(base), ftThr = threshold(ft);
+    const basePreds = load(base), ftPreds = load(ft);
+    let fixed = 0, broke = 0, mB = 0, mA = 0, fhB = 0, fhA = 0, items = 0;
+    for (const [id, b] of basePreds) {
+      const f = ftPreds.get(id);
+      if (!f || b.p == null || f.p == null) continue;
+      items++;
+      const correctBefore = (b.p >= baseThr) === b.label;
+      const correctAfter = (f.p >= ftThr) === f.label;
+      if (!correctBefore && correctAfter) fixed++;
+      else if (correctBefore && !correctAfter) broke++;
+      if (b.label) { if (!correctBefore) mB++; if (!correctAfter) mA++; }
+      else { if (!correctBefore) fhB++; if (!correctAfter) fhA++; }
+    }
+    const p = signTest(fixed, broke);
+    const safetyOk = mA <= mB && fhA <= fhB;
+    const evidenceOk = safetyOk && fixed > broke && p <= 0.05;
+    const verdict = evidenceOk ? 'KEEP' : safetyOk && fixed > broke ? 'NEAR-MISS' : 'DISCARD';
+    return { vs: base, items, fixed, broke, p, missed: { before: mB, after: mA }, falseHolds: { before: fhB, after: fhA }, safetyOk, evidenceOk, verdict, alpha: 0.05 };
+  };
+
+  assert.deepEqual(Object.keys(evidence.gate), ['kev-0.8b-ft', 'kev-4b-ft']);
+  for (const [base, ft] of [['kev-0.8b', 'kev-0.8b-ft'], ['kev-4b', 'kev-4b-ft']]) {
+    const got = recompute(base, ft);
+    const exp = evidence.gate[ft];
+    assert.equal(got.vs, exp.vs);
+    assert.equal(got.items, exp.items);
+    assert.equal(got.fixed, exp.fixed);
+    assert.equal(got.broke, exp.broke);
+    assert.ok(Math.abs(got.p - exp.p) <= 1e-12 * Math.max(1, Math.abs(exp.p)), `p ${got.p} vs ${exp.p}`);
+    assert.deepEqual(got.missed, exp.missed);
+    assert.deepEqual(got.falseHolds, exp.falseHolds);
+    assert.equal(got.safetyOk, exp.safetyOk);
+    assert.equal(got.evidenceOk, exp.evidenceOk);
+    assert.equal(got.verdict, exp.verdict);
+    assert.equal(got.alpha, exp.alpha);
+  }
 });

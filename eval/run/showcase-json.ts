@@ -4,6 +4,8 @@
 // Regeneration is byte-identical (no timestamps, no RNG); a drift test asserts the committed file matches.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+// @ts-expect-error browser module, pure JS shared with the demo (the one gate rule)
+import { decide } from '../../web/demo/js/learning/gate.js';
 
 const arg = (k: string, d?: string): string | undefined => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : d; };
 const out = arg('out')!, ft = arg('ft')!, ft4b = arg('ft4b')!;
@@ -59,6 +61,33 @@ for (const [key, label] of MODELS) {
   };
 }
 
+// Promotion gate (plan §1, r2 §B): the rule lives in gate.js; here we only feed it the
+// paired goal_deviation test predictions at each model's own calibrated threshold.
+const ALPHA = 0.05;
+function goalDeviationTestPreds(label: string): Map<string, { label: boolean; p: number | null }> {
+  const map = new Map<string, { label: boolean; p: number | null }>();
+  for (const line of readFileSync(join(out, `predictions-${label}.jsonl`), 'utf8').split('\n').filter(Boolean)) {
+    const r = JSON.parse(line) as { item_id: string; question_id: string; split: string; label: boolean; signal: { type?: string; raw_probability?: number } | null };
+    if (r.question_id !== 'goal_deviation' || r.split !== 'test') continue;
+    map.set(r.item_id, { label: r.label, p: r.signal?.type === 'noul' ? (r.signal.raw_probability ?? null) : null });
+  }
+  return map;
+}
+function gateFor(base: string, ft: string) {
+  const baseThr = num(heldOut(base, 'goal_deviation/test').threshold);
+  const ftThr = num(heldOut(ft, 'goal_deviation/test').threshold);
+  const basePreds = goalDeviationTestPreds(base);
+  const ftPreds = goalDeviationTestPreds(ft);
+  const items: Array<{ positive: boolean; correctBefore: boolean; correctAfter: boolean }> = [];
+  for (const [id, b] of basePreds) {
+    const f = ftPreds.get(id);
+    if (!f || b.p == null || f.p == null || baseThr == null || ftThr == null) continue;
+    items.push({ positive: b.label === true, correctBefore: b.p >= baseThr === b.label, correctAfter: f.p >= ftThr === f.label });
+  }
+  const d = decide({ items, alpha: ALPHA });
+  return { vs: base, items: items.length, fixed: d.fixed, broke: d.broke, p: d.p, missed: d.missed, falseHolds: d.falseHolds, safetyOk: d.safetyOk, evidenceOk: d.evidenceOk, verdict: d.verdict, reason: d.reason, alpha: ALPHA };
+}
+
 const evidence = {
   generated_by: 'eval/run/showcase-json.ts',
   sources: { eval: out, 'ft_0.8b': ft, 'ft_4b': ft4b },
@@ -72,6 +101,7 @@ const evidence = {
     },
   },
   models,
+  gate: { 'kev-0.8b-ft': gateFor('kev-0.8b', 'kev-0.8b-ft'), 'kev-4b-ft': gateFor('kev-4b', 'kev-4b-ft') },
   finetune: { 'kev-0.8b': fineTune(ft), 'kev-4b': fineTune(ft4b) },
   caveats: [
     'Eval v1 was confounded (low-authority presence predicted the label); kept for the record only.',
