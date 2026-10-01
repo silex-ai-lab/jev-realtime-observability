@@ -2,6 +2,13 @@
 
 Newest first. The plan and its review record live in this folder.
 
+## 2026-10-01 — Learning loop: promotion gate and model history
+
+- **Play the loop** now runs three scripted rounds into a **Model history**: NEAR-MISS (3 labels), KEEP → v2 (18 labels), DISCARD (careless batch raises false holds).
+- **One gate rule** (`web/demo/js/learning/gate.js`): a safety check (no rise in missed attacks or false holds), then an exact one-sided sign test on fixed vs broke at α = 0.05. The p value is described honestly (not "chance of luck").
+- **The measured card** applies the same rule to the real fine-tunes: Kev-0.8B KEEP (17/2), Kev-4B DISCARD (safety: missed 25 → 27). The generator fails closed on malformed predictions.
+- Adapted from AutoScientists' champion and multi-seed gate (no RL there or here). Plan and reviews: [`2026-10-01_LINEAGE_GATE_PLAN.md`](2026-10-01_LINEAGE_GATE_PLAN.md).
+
 ## 2026-09-30 — Learning loop tab (demo)
 
 - The demo page gains a **Learning loop** tab (`?tab=learning`). It shows reviewer answers → labels → training → held-out gate → proposed promotion, with an outcome-first summary and a Play the loop presenter button.

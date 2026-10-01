@@ -389,13 +389,29 @@ SOC5 is the one deliberate difference from the live console. There, semantic che
 
 The demo's **Live tab** now uses the same Runs layout as the console. A pure adapter (`web/demo/js/ui/runs-adapter.js`) maps the demo's simulated spans and verdict envelopes into the same record shapes, so the same run cards, step rail and one-line verdicts render. The mapping mirrors the live console: a tool call keeps the receipt and control its envelope action implies (`allow` → ran; `hold`/`deny` → did not run), `allow_and_alert` stays `allow` with the alert in the reasons, and the demo's per-tool mode maps each step to its own enforcement mode (`monitor` → shadow, `gate` → gate), so a mixed-mode run reads each step the way it was decided. A `post_tool` span such as S5's ERP read-back renders as a *finding after the fact* — it never turns an earlier call into "did not run". Every card carries a **simulated** tag and the header keeps the **SIMULATED** badge. Because simulated answers do drive REVIEW/BLOCK in the demo, the shared "judge signals (never block)" line is not shown for them; the simulated answers, threshold bands, three paths, cost, envelope and SIEM line stay in the demo's own simulated inspector (the details drawer).
 
-**Learning loop tab** (`?tab=learning`; plan [`logs/2026-09-30_LEARNING_LOOP_SHOWCASE_PLAN.md`](../logs/2026-09-30_LEARNING_LOOP_SHOWCASE_PLAN.md)). It shows how the judge improves from reviewer labels, in six stages: held for review → reviewer answers → labels → train → gate → promote.
-- **Top line:** "After N reviewer answers, simulated on M unseen authored actions: missed attacks · sent to a person · false holds, v1 → v2". It is computed from real verdict envelopes of the simulated engine. **Play the loop** runs the stages for a presenter; **Reset learning session** cancels.
-- **Review inbox:** authored teaching examples, plus any action this session's Live tab held. Only the Boolean questions are taught. Scripted filling is marked as demo-author truth, not human review, and Allow/Deny never releases a held call.
-- **Train:** a simulated logistic correction over the same features the simulated judge reads. Its constants are fixed. It is frozen after training and never sees the held-out answers. **Show a failed retrain** trains on a deliberately mislabelled batch, and the gate rejects it.
-- **Gate:** 11 unseen authored variants per agent, scored by v1 and v2 under the same policy. Hard-rule outcomes are shown unchanged and are excluded from the fractions. It passes only if missed attacks and false holds do not rise and one of them falls.
-- **Promote** applies v2 only inside this comparison. Live stays on v1, and production promotion is not implemented.
-- **Measured benchmark evidence** (bottom, green border): the real Kev fine-tune numbers from `web/demo/data/learning-evidence.json`, generated from `runs/eval-2026-09-28-v2` by `eval/run/showcase-json.ts` and drift-tested. It is LoRA on benchmark labels, not human reviewers and not RL; the caveats are in the card's details.
+**Learning loop tab** (`?tab=learning`). Plans: [`logs/2026-09-30_LEARNING_LOOP_SHOWCASE_PLAN.md`](../logs/2026-09-30_LEARNING_LOOP_SHOWCASE_PLAN.md), then [`logs/2026-10-01_LINEAGE_GATE_PLAN.md`](../logs/2026-10-01_LINEAGE_GATE_PLAN.md). It shows how the judge improves from reviewer labels, and how a gate decides whether a retrained version may replace the active one.
+- **Play the loop** runs three scripted rounds, always with the default policy, seed 7 and no fault, and fills the **Model history**:
+  - v1 · released, the starting model;
+  - Round 1 (3 labels): **NEAR-MISS · needs more examples**; v1 stays;
+  - Round 2 (18 labels): **KEEP**; it becomes v2, marked **ACTIVE**;
+  - Round 3 (the 18 labels plus an authored "careless reviewer" batch): **DISCARD · safety regression**, because false holds rose; v2 stays and the careless labels are set aside.
+
+  Every outcome is computed. The batches are a scripted exercise chosen to show each verdict, and the page says so.
+- **Gate card** (select any round). It has three plain lines:
+  - **Safety:** missed attacks and false holds must not rise, with the fractions shown.
+  - **Fixed X · Broke Y:** items this version got right that the champion got wrong, and the reverse.
+  - **Evidence:** "enough", "needs more examples" or "no improvement". The evidence check is a one-sided exact sign test on the changed items at α = 0.05. "How the evidence check works" explains its p value: it is **not** "the chance of luck".
+
+  A visible line says these are a few authored, partly repeated examples, not a calibrated error rate, and that the rounds reuse one test set.
+- **The rule** is one module, `web/demo/js/learning/gate.js`. The measured card uses it too.
+- **Training and comparison:** each challenger is refit from v1 on the accepted labels so far, with the toy model's fixed constants, and compared with the current champion. Before and after compares v1 with the champion.
+- **Do it yourself** (collapsed): the manual inbox, Train, and "Add a careless reviewer batch" controls, using the same gate and history.
+- **Measured benchmark evidence** (green border) includes **Would this gate promote it?** It applies the same rule to the real fine-tunes, on held-out AgentDojo goal_deviation at each model's own threshold:
+  - **Kev-0.8B fine-tuned: KEEP** (fixed 17, broke 2);
+  - **Kev-4B fine-tuned: DISCARD**, because its safety check failed (missed cases 25 → 27), even though it fixed 24 and broke 8.
+
+  The values come from `web/demo/data/learning-evidence.json`, generated by `eval/run/showcase-json.ts`. The generator fails closed on malformed predictions and is drift-tested with an independent recomputation. These are question-level errors on one benchmark split, a retrospective check, using benchmark labels (not reviewers), and LoRA, not RL.
+- **Not built:** production promotion and training on human labels.
 
 ## 13. Five-minute test of a deployment
 

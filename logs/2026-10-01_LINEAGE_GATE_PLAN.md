@@ -198,3 +198,31 @@ Every item is taken.
   - attempt ids are unique and distinct from version labels;
   - the history is keyboard-selectable, and the active and selected states are not marked by colour alone.
 - **Reset and cancellation:** both are tested against actual state; in-flight drafts are invalidated when their labels, policy or fault change.
+
+## Build and code gate (jev)
+
+**Build:**
+- **DeepSeek:** `gate.js` and its tests; `showcase-json.ts` `gate{}`; the independent recomputation; fail-closed input checks.
+- **Codex:** `ceba4e9` curriculum batches, lineage session and UI; `59ccf8a` planner fixes 1–5.
+- **Planner:** `be8fda2` exponent-aware p conversion and the control-veto reason; docs.
+
+**Computed rounds** (seed 7, default policy; fixed/broke):
+
+| Agent | Round 1 (3 labels) | Round 2 (18 labels) | Round 3 (+ careless batch, against v2) |
+|---|---|---|---|
+| AP | NEAR-MISS 4/0 | KEEP 9/0 → v2 | DISCARD 0/4 (false holds 1/6 → 5/6) |
+| SOC | NEAR-MISS 3/0 | KEEP 7/1 → v2 | DISCARD 0/2 (false holds 1/6 → 3/6) |
+
+**Measured:**
+- Kev-0.8B fine-tune: KEEP (17/2, p = 191/2^19).
+- Kev-4B fine-tune: DISCARD by the safety check (missed 25 → 27), despite 24/8.
+
+| Round | Revision | coder-deepseek | reviewer-codex | planner |
+|---|---|---|---|---|
+| r1 | `ceba4e9` → `59ccf8a` | IMPL-APPROVED (Codex part) | IMPL-CHANGES (`partial` status accepted) | IMPL-CHANGES (5 UI and wording items, generator fail-closed) |
+| r2 | `124c636` | IMPL-APPROVED | IMPL-CHANGES (p below 2^-54 truncated to 0) | — |
+| r3 | `be8fda2` | IMPL-APPROVED | IMPL-APPROVED | IMPL-APPROVED |
+
+**Results:** typecheck 0; `npm test` 316 pass, 0 fail; demo-probes 24/24 (three runs by Codex, two by the planner); AP fixture `196ee6fe…` unchanged.
+
+**Next:** the mockup phase.
