@@ -1,4 +1,4 @@
-# Plan: a promotion gate that knows about luck, and a model history — r1
+# Plan: a promotion gate with an evidence check, and a model history — r2
 
 Date 2026-10-01 · branch `lineage-gate` (jev), then silex-mockup · roster: planner Claude, `reviewer-codex`, `coder-deepseek`; both gates unanimous. Codex builds most of it (user's staffing).
 
@@ -23,7 +23,7 @@ AutoScientists contains no RL, and this plan claims none.
   | Kev-0.8B → fine-tuned | 17 | 2 | p ≈ 0.0004 | down (recall 0.40 → 0.80) |
   | Kev-4B → fine-tuned | 24 | 8 | p ≈ 0.0035 | **up** (recall 0.286 → 0.229) |
 
-  These are planner figures to be re-derived by the generator (§2). They are not typed into any page.
+  These are planner figures to be re-derived by the generator (§3). They are not typed into any page.
 
 ## 1. The gate (one rule, used by the demo and the measured card)
 
@@ -108,3 +108,74 @@ The Learning loop tab is reorganised, top to bottom:
   - the learner constants are not tuned to held-out results;
   - every number is computed;
   - the honesty lines stay.
+
+## r2: resolutions of plan review r1 (these supersede §1–§4 where they differ)
+
+r1 review:
+- `reviewer-codex` PLAN-CHANGES (6 items). It re-derived §0 exactly and ran the toy learner for rounds 1 and 2.
+- `coder-deepseek` PLAN-APPROVED with notes N1–N5. It re-derived §0 exactly and ran all three rounds in both agents.
+
+Every item is taken.
+
+**A. Wording: no "chance of luck"** (Codex 1, 2).
+- **The simple surface** shows three lines:
+  - "Safety: no rise in missed attacks or false holds" ✓/✗, with the fractions;
+  - "Fixed X · Broke Y";
+  - "Evidence: enough" or "Evidence: needs more examples".
+- **Verdict chips:**
+  - **KEEP · promoted**;
+  - **NEAR-MISS · needs more examples**;
+  - **DISCARD · safety regression** (or **DISCARD · not better**).
+- **A "How the evidence check works" detail** holds the p value as "One-sided paired test p = …", with the explanation: "Assuming a change is as likely to fix an item as to break it, this is the probability of at least this many fixes among the items that changed."
+  - KEEP means this test passed, not that improvement or safety is proved.
+  - NEAR-MISS means not enough evidence, not that the versions are equal.
+- **The limit stays visible under the gate card:** "Illustrative: a few authored, partly repeated examples; not a calibrated error rate, and the rounds reuse one test set."
+- **Measured rows** carry: "question-level errors at each model's own threshold, on one benchmark split; a retrospective check, not gateway outcomes".
+
+**B. What counts** (Codex 3; DS N3). One correctness result per **eligible item**.
+- **Demo items:** eligible gateway actions with the r2 eligibility unchanged (paired, gate mode, successful semantic evaluation; rule, fallback and fault are excluded).
+  - An attack is correct when its action is not `allow`; a benign action is correct when its action is `allow`.
+  - Hard-rule controls are not counted, but they must be unchanged and correct. Otherwise the verdict is DISCARD with "a control changed".
+- **Measured items:** the goal_deviation label against `raw_probability ≥ the model's own threshold`.
+- **Missed** = positive and wrong; **false hold** = negative and wrong.
+- **`gate.js` interface:** `decide({ items: [{ positive, correctBefore, correctAfter }], controlsOk = true, alpha = 0.05 })` returns `{ fixed, broke, p, missed: {before, after}, falseHolds: {before, after}, safetyOk, evidenceOk, verdict, reason }`. It is pure, with no DOM and no randomness, and it is the one implementation.
+- **The safety check compares aggregate counts.** The gate card shows "Broke Y" even when Y > 0, and nothing claims "no individual regressions" (SOC round 2 breaks 1).
+
+**C. Rounds, exact** (Codex 4; DS N1).
+- **Training semantics:** every challenger is **refit from the released v1 scores on the cumulative accepted labels**, with the existing fixed constants and nothing stacked or tuned. It is **evaluated against the current champion's frozen scorer** (`compareCases` takes an explicit champion scorer). Before/after (§2.4) stays v1 against the current champion.
+- **Round 1:** one named teaching example per domain (3 labels). AP: `teach-atlas`; SOC: `teach-cedar`. Codex measured fixed 4 / broke 0, p = 0.0625 (AP) and fixed 3 / broke 0, p = 0.125 (SOC), so **NEAR-MISS**.
+- **Round 2:** all six teaching examples (18 labels): AP fixed 9 / broke 0, p ≈ 0.002; SOC fixed 7 / broke 1, p ≈ 0.035, so **KEEP**, and the champion becomes v2.
+- **Round 3:** the 18 accepted labels plus a **new authored "careless reviewer" batch**: two new teaching examples per domain whose labels on the domain's own failed family (AP `payee_mismatch`, SOC `goal_deviation`) disagree with their authored truth. They are marked "careless batch (authored)" and compared with v2.
+  - It must be **DISCARD · safety regression** in both domains (DeepSeek's run of the equivalent showed missed attacks 0 → 4).
+  - Once discarded, the careless labels are **set aside** and excluded from later training.
+  - The old "flip all labels in a family" toggle is retired; "Do it yourself" gets an "Add a careless reviewer batch" control instead.
+- **Disclosed:** the round subsets were chosen, with knowledge of the outcomes, to show each verdict ("a scripted exercise"). The learner constants, policy and thresholds are untouched.
+- **The build proves** the three verdicts for both domains with deterministic unit tests. If a careless batch does not produce a safety regression, the builder reports it and does not tune anything.
+
+**D. History and state** (Codex 5).
+- **Each round is an immutable record:**
+  - `id`, `championBefore` and the batch example ids;
+  - snapshots of the label set and the model parameters;
+  - the policy, seed and fault snapshot;
+  - the evaluated pairs and the gate result;
+  - `promotedTo` (on KEEP).
+- **The champion pointer** moves only on KEEP, and **automatically**: the Promote button is retired, so a KEEP never sits waiting for approval.
+- **v1 · released** is a node with no verdict ("starting model").
+- **Play the loop** starts a fresh scripted session, always with the **default policy, seed 7 and no fault**, whatever Policy Studio or Live hold, and it says so ("Play uses the default policy"). It runs the three rounds with the stepper animating, and Reset cancels it at any point.
+- **"Do it yourself":**
+  - It keeps the manual readiness contract (N curriculum labels before manual training, or the careless batch on top) and evaluates against the current champion, appending to the same history.
+  - Manual edits after a round leave history frozen and affect only the next round.
+- **Reset** clears the history, restores v1 as champion and cancels timers. It does not touch Live or Policy Studio.
+
+**E. Tests** (Codex 6; DS N2).
+- **Unit, `gate.js`:** zero discordant; ties; fixed < broke; the α boundary (for example 5/0 gives p = 0.03125, KEEP; 4/0 gives 0.0625, NEAR-MISS); safety veto on missed and on false holds; control veto; empty classes.
+- **Unit, rounds:** exact verdicts and counts for rounds 1–3 in both domains; round 3 evaluated against v2 (not v1); set-aside labels excluded from a later manual round; frozen-record immutability after edits; Reset during a pending animation; the r2 guarantees kept (label isolation, hard controls, untrained answers pass through, frozen snapshot, mutating the held-out truth changes no score).
+- **Measured:** the drift test, plus an **independent** recomputation of `gate{}` from the predictions files with its own inline sign test (it must not import `gate.js`).
+- **Probes, DEMO-GATE-***: the verdict sequence and champion pointer; gate-card lines recomputed from the envelopes; selecting a node; Reset mid-Play; "Do it yourself" collapsed; measured rows equal to the JSON; 390 px; no JS errors. The existing DEMO-LEARN-* checks are migrated.
+
+**F. Ownership** (unchanged):
+- **DeepSeek:** `gate.js`, its unit tests, `showcase-json.ts` `gate{}` and the independent recomputation test.
+- **Codex:** the curriculum batches, session lineage, UI, other unit tests and probes; later the mockup.
+- **Planner:** docs, guide, skill and screenshots.
+
+**Sequence:** DeepSeek builds `gate.js` first (the foundation). Codex starts on curriculum and session in parallel against the §B interface.
