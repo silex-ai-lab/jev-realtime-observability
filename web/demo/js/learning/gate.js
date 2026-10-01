@@ -17,8 +17,8 @@ export const DISCARD = 'DISCARD';
  * rounding before the α comparison); no discordant pairs means p = 1.
  *
  * The tail Σ_{k≥fixed} C(n,k)/2^n is summed with exact BigInt combinatorics and
- * converted to a double only at the end, so the result is correct for arbitrarily
- * large n — a floating-point recurrence seeded at 2^-n underflows to 0 around n ≈ 1074,
+ * converted to a double only at the end (64 significant bits, exponent carried separately),
+ * so the result keeps double precision for any n whose p is representable — a floating-point recurrence seeded at 2^-n underflows to 0 around n ≈ 1074,
  * which would otherwise turn a near-tie (e.g. 551 fixed / 549 broke) into a spurious p=0.
  */
 function signTestP(fixed, broke) {
@@ -33,9 +33,15 @@ function signTestP(fixed, broke) {
     tail += c;
     c = (c * BigInt(k)) / BigInt(n - k + 1); // C(n, k - 1)
   }
-  // p = tail / 2^n, computed to ~54 bits via BigInt and scaled back to a double.
-  const q = (tail << 54n) / (1n << BigInt(n));
-  return Number(q) / 2 ** 54;
+  // p = tail / 2^n. Keep tail's top 64 significant bits as the mantissa and carry the binary exponent
+  // separately, so small tails keep their precision (55/0 gives exactly 2^-55) instead of truncating
+  // at a fixed absolute scale. The two-step scaling avoids an intermediate power of two underflowing.
+  const bits = tail.toString(2).length;
+  const shift = Math.max(0, bits - 64);
+  const mantissa = Number(tail >> BigInt(shift));
+  const exp = shift - n;
+  const half = Math.trunc(exp / 2);
+  return mantissa * 2 ** half * 2 ** (exp - half);
 }
 
 /**

@@ -156,3 +156,19 @@ test('large discordant set: 551 fixed / 549 broke gives the correct tail (no und
   assert.equal(d.verdict, NEAR_MISS);
   assert.equal(d.evidenceOk, false);
 });
+
+// Code review r2 (Codex): a fixed absolute conversion scale truncated every p below 2^-54 to 0.
+test('small tails keep double precision: 55/0 is exactly 2^-55, 100/0 is 2^-100', () => {
+  const allFixed = (f: number) => [it(true, true, true), ...Array.from({ length: f }, () => it(false, false, true))];
+  assert.equal(decide({ items: allFixed(54) }).p, 2 ** -54);
+  assert.equal(decide({ items: allFixed(55) }).p, 2 ** -55);
+  assert.equal(decide({ items: allFixed(100) }).p, 2 ** -100);
+  assert.equal(decide({ items: allFixed(250) }).p, 2 ** -250);
+  assert.ok(decide({ items: allFixed(250) }).p > 0);
+});
+
+test('a tiny α is compared against the true small tail, not a truncated zero', () => {
+  const items = [it(true, true, true), ...Array.from({ length: 55 }, () => it(false, false, true))];
+  assert.equal(decide({ items, alpha: 2 ** -56 }).verdict, NEAR_MISS);   // p = 2^-55 > α
+  assert.equal(decide({ items, alpha: 2 ** -55 }).verdict, KEEP);        // inclusive at equality
+});

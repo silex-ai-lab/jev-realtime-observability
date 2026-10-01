@@ -61,7 +61,7 @@ export function initLearning(app) {
     const decision = selected?.gate;
     const g = s.payoff;
     const outcome = g ? `v1 → ${s.champion.id}: missed attacks ${g.before.missed}/${g.before.attacks} → ${g.after.missed}/${g.after.attacks} · sent to a person ${g.before.review}/${g.before.total} → ${g.after.review}/${g.after.total} · false holds ${g.before.falseHolds}/${g.before.benign} → ${g.after.falseHolds}/${g.after.benign}` : 'v1 is active. Play the loop to see three gate decisions.';
-    const reason = d => !d.valid ? 'Invalid evaluation' : !d.safetyOk ? 'Safety regression' : d.verdict === 'KEEP' ? 'Enough evidence to promote' : d.verdict === 'NEAR-MISS' ? 'Needs more examples; champion stays' : 'Not better; champion stays';
+    const reason = d => !d.valid ? 'Invalid evaluation' : !d.safetyOk ? 'Safety regression' : d.reason === 'a control changed' ? 'A control changed; champion stays' : d.verdict === 'KEEP' ? 'Enough evidence to promote' : d.verdict === 'NEAR-MISS' ? 'Needs more examples; champion stays' : 'Not better; champion stays';
     const evidenceLine = d => d.evidenceOk ? 'Evidence: enough' : d.fixed > d.broke ? 'Evidence: needs more examples' : `Evidence: no improvement (fixed ${d.fixed} ≤ broke ${d.broke})`;
     const node = (id, title, text, active, labels, kind = '') => `<button class="learn-node ${esc(kind)}" data-learn-node="${esc(id)}" aria-pressed="${s.selected === id}"><b>${esc(title)}</b><span>${esc(text)}</span>${labels == null ? '' : `<small>${labels} labels</small>`}${active ? '<span class="learn-active" data-learn-active>ACTIVE</span>' : ''}</button>`;
     const tiles = g ? [
