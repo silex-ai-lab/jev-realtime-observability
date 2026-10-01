@@ -296,3 +296,21 @@ The AP v1 baseline follows from the engine's name-similarity payee check on homo
 **Non-blocking:** the disabled "Promote" button keeps its primary styling. The presenter cadence is a fixed 1 s per stage.
 
 **Next:** the mockup phase (§1b).
+
+## Mockup phase (§1b): build and code gate
+
+**Build** (silex-mockup branch `learning-loop`):
+- **Codex** `76d79ad`: vendored demo re-synced to `9ca7ffe`; "The judge learns from your reviewers" card after the six-step orchestration; every value read from the vendored `learning-evidence.json`; Try the loop; S21, also in the live subset.
+- **Planner:**
+  - `025a5da` subtitle, with no present-tense human-training claim;
+  - `a2c9b39` guide §9 (identical in both repos), README and logs;
+  - `fe51c44` fix: Try the loop during a Run left the orchestration at Running (Codex P2). S21 now asserts the settled state, and that assertion fails on the old code.
+
+| Round | Revision | coder-deepseek | reviewer-codex | planner |
+|---|---|---|---|---|
+| r1 | `025a5da` | IMPL-APPROVED | IMPL-CHANGES (P2) | — |
+| r2 | `fe51c44` | IMPL-APPROVED | IMPL-APPROVED | IMPL-APPROVED |
+
+**Results:** site unit 20/20; probes 21/21 (three runs by the builder, two by the planner after the fix).
+
+**Deploy:** pending the user's go-ahead. Merging silex-mockup `main` is public. jev `learning-loop` must reach `main` first, so that `VENDORED.json`'s commit `9ca7ffe` exists on GitHub.
