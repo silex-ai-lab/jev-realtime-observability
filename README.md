@@ -66,6 +66,8 @@ All of it runs on 127.0.0.1 with login off. The prerequisites and what the scrip
 
 [`docs/USER_MANUAL.md`](docs/USER_MANUAL.md) covers the whole page: connecting, the provenance header, the KPI tiles, every scenario and what it should show, the decision inspector, outcome read-back, replay and re-ask, gate mode, and a five-minute test of a deployment.
 
+[`docs/demo/guide/`](docs/demo/guide/README.md) (in Chinese) explains every page of the simulated demo (`/demo/`) in plain language, with screenshots.
+
 [`docs/judge/`](docs/judge/) (in Chinese) explains why Kev is the default judge, what Kev was trained on, and the plan for fine-tuning on this deployment's own labelled data.
 
 ## Deploying on another host

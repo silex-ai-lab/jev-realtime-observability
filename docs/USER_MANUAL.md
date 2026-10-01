@@ -367,6 +367,8 @@ Answer what you can, then press **Allow** or **Deny**. This records one `human_r
 
 ## 12. The simulated demo (`/demo/`)
 
+**Plain-language guide (Chinese, with screenshots of every page):** [`docs/demo/guide/README.md`](demo/guide/README.md).
+
 ![Simulated demo](manual/13-simulated-demo.png)
 
 This is the original click-through demo. Its judge, latencies and tenant are **simulated** in the browser, and the page says so in its banner. Use it to explain the idea; use the live console (`/`) to test the real system.
