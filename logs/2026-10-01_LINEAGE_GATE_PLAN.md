@@ -239,4 +239,4 @@ Every item is taken.
 
 **Results:** site unit 20/20; probes 21/21 (three runs by Codex, one by the planner).
 
-**Deploy:** pending the user's go-ahead. jev `lineage-gate` goes to `main` first, so `be8fda2` is on GitHub before the mockup `main` (public).
+**Deploy:** 2026-10-01, on the user's go-ahead. jev `main` at `f045d63` (`be8fda2` on origin); silex-mockup `main` at `74ed19a`. Live read-back `--base https://silex-mockup.vercel.app`: 9/9 PASS.
