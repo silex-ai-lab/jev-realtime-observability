@@ -78,6 +78,7 @@ test('select(runId) shows that run even after a manual pick of an older one, and
   feed(v, 3); v.render();
   assert.equal(selected(), 'run-0', 'a manual pick stays pinned while new runs arrive');
   assert.equal(v.select('run-3'), true);
+  v.render();
   assert.equal(selected(), 'run-3');
   feed(v, 4); v.render();
   assert.equal(selected(), 'run-4', 'selecting the newest run resumes following');

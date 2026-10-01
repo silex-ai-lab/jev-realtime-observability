@@ -274,7 +274,7 @@ export function createRunsView(deps) {
     if (!runs.has(runId)) return false;
     selectedRun = runId;
     autoFollow = runId === [...runs.values()].filter(followable).sort((a, c) => maxSeq(c) - maxSeq(a))[0]?.runId;
-    render();
+    scheduleRender();   // like every other update: the card renders once its run detail has been fetched
     return true;
   }
   return { onRecord, setScenarioMeta, setReviews, render, runIds, reset, select, rerender: scheduleRender };
