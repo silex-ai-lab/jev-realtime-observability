@@ -38,7 +38,7 @@ const titles = new Map([
   ...(DOMAIN.id === 'soc' ? makeSocBackground(SEED, BACKGROUND_TRACES) : makeBackground(SEED)).map(t => [t.trace_id, t.title]),
 ]);
 const rows = [];           // { seq, span, env, fault }
-let seq = 0, cursor = 0, simTime = 0, playing = false, speed = 1, injectCount = 0;
+let seq = 0, cursor = 0, simTime = 0, playing = false, speed = 1, injectCount = 0, injectAt = 0;
 let selectedSeq = null, fault = null, lastFrame = null;
 
 const baseTrace = id => String(id).split('~')[0];
@@ -77,10 +77,14 @@ function inject(id) {
   if (!tr) return [];
   const k = ++injectCount;
   const sfx = s => `${s}~i${k}`;
+  // Injected traces get strictly increasing times, also while the clock is paused, so the newest injection is the
+  // newest run and the Runs view selects it (a longer earlier trace must not outrank it).
+  const start = Math.max(Math.round(simTime), injectAt);
   const made = tr.spans.map((s, i) => ({
     ...deepClone(s), trace_id: sfx(s.trace_id), span_id: sfx(s.span_id),
-    parent_span_id: s.parent_span_id ? sfx(s.parent_span_id) : null, t_ms: Math.round(simTime) + i * 40,
+    parent_span_id: s.parent_span_id ? sfx(s.parent_span_id) : null, t_ms: start + i * 40,
   }));
+  injectAt = start + made.length * 40;
   titles.set(made[0].trace_id, tr.title);
   const routed = made.map(s => routeSpan(s)).filter(Boolean);
   const focus = [...routed].reverse().find(r => r.env.decision !== 'ALLOW' || r.env.alert) ?? routed.at(-1);

@@ -234,6 +234,35 @@ async function socProbe(url:string,id:string) {
   assert.match(await p.eval<string>('return document.querySelector("[data-panel=about]").textContent'),/synthetic scores.*threshold policy/i);
   assert.deepEqual(p.errors,[]);return 'button injection, independent envelopes and pinned verdicts/reasons, simulated tags and caveat; all tabs at 1440/390px'+(id==='SOC2'?'; hard-rule Replay invariant':'');
 }
+async function hostOptionsProbe(url:string,kind:'embed'|'back') {
+  const p=await ensureBrowser();p.errors.length=0;
+  const visible=(sel:string)=>`const e=document.querySelector(${JSON.stringify(sel)});if(!e)return false;const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(e).visibility!=='hidden'`;
+  if(kind==='embed'){
+    await loadDemo(url,'?embed=1&domain=ap&autoplay=0&seed=11');
+    for(const domain of ['ap','soc']){
+      if(domain==='soc'){await p.eval<void>('document.querySelector("[data-domain=soc]").click()');await waitFor(()=>p.eval<boolean>('return window.__jevDemo?.domain==="soc"&&window.__jevDemo.ready'),'embedded SOC ready',10_000);}
+      assert.equal(await p.eval<boolean>('return document.body.classList.contains("embed")'),true);
+      for(const sel of ['.jv-brand','.jv-back'])assert.equal(await p.eval<boolean>(visible(sel)),false,sel+' hidden');
+      for(const sel of ['[data-simulated-badge]','.jv-domain','.jv-tabs'])assert.equal(await p.eval<boolean>(visible(sel)),true,sel+' visible');
+      assert.deepEqual(await p.eval<string[]>('const q=new URLSearchParams(location.search);return [q.get("embed"),q.get("seed"),q.get("autoplay")]'),['1','11','0']);
+    }
+    await loadDemo(url,'?autoplay=0');
+    for(const sel of ['.jv-brand','.jv-back'])assert.equal(await p.eval<boolean>(visible(sel)),true,'default '+sel+' visible');
+  }else{
+    const valid='../../index.html#view=long-term&tab=runtime';
+    await loadDemo(url,'?autoplay=0&back='+encodeURIComponent(valid));
+    assert.deepEqual(await p.eval<string[]>('const a=document.querySelector(".jv-back");return [a.getAttribute("href"),a.textContent.trim()]'),[valid,'← Back']);
+    for(const value of ['javascript:alert(1)','jav%61script:alert(1)','//evil.example','%2F%2Fevil.example','https://evil.example','', '../\\evil.example']){
+      await loadDemo(url,'?autoplay=0&back='+encodeURIComponent(value));
+      assert.deepEqual(await p.eval<string[]>('const a=document.querySelector(".jv-back");return [a.getAttribute("href"),a.textContent.trim()]'),['../index.html','← Live console'],value+' rejected');
+    }
+    for(const raw of ['jav%61script:alert(1)','%2F%2Fevil.example']){
+      await loadDemo(url,'?autoplay=0&back='+raw);
+      assert.equal(await p.eval<string>('return document.querySelector(".jv-back").getAttribute("href")'),'../index.html','URL-decoded invalid value rejected');
+    }
+  }
+  assert.deepEqual(p.errors,[]);return kind==='embed'?'embedded brand/back hidden; badge, switch, tabs visible; options survive switch; default unchanged':'relative Back accepted; scheme, encoded scheme, protocol-relative, absolute, empty and malformed values ignored';
+}
 async function cleanupBrowser(){page?.ws.close();browser?.ws.close();chrome?.kill();}
 let h:Awaited<ReturnType<typeof startGateAHarness>>|undefined;
 try{
@@ -258,6 +287,7 @@ try{
   for(const kind of ['mixed','semantic','finding'] as const)await probe('DEMO-RUNS-'+kind,()=>demoRunsProbe(h!.url('/demo/index.html'),kind));
   await probe('DEMO-DOMAIN-SWITCH',()=>domainSwitchProbe(h!.url('/demo/index.html')));
   for(const id of ['SOC1','SOC2','SOC3','SOC4','SOC5'])await probe('DEMO-'+id,()=>socProbe(h!.url('/demo/index.html'),id));
+  for(const kind of ['embed','back'] as const)await probe('DEMO-HOST-'+kind,()=>hostOptionsProbe(h!.url('/demo/index.html'),kind));
 }catch(e){const status=e instanceof SkipProbe?'SKIP':'FAIL';results.push({id:'BOOT',status,detail:String(e)});console.log(`${status} BOOT — ${String(e)}`);}
 finally{await cleanupBrowser();await h?.close();}
 console.log(`\n${results.filter(r=>r.status==='PASS').length} PASS · ${results.filter(r=>r.status==='SKIP').length} SKIP · ${results.filter(r=>r.status==='FAIL').length} FAIL`);
