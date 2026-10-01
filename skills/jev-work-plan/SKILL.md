@@ -7,7 +7,7 @@ description: Resume or continue the dated work plan for jev-runtime-observabilit
 
 ## Where things stand (update this when a plan closes)
 
-Last updated 2026-09-30 (jev `main` is this commit; silex-mockup `bbf3a7d`). Both repos are pushed, and their local `main` equals `origin/main`.
+Last updated 2026-09-30, at jev `main` `0143c8a` plus this skill update, and silex-mockup `main` `bbf3a7d`. Nothing is in progress: no open branch, no undeployed change, no pending review. Both repos are pushed, and their local `main` equals `origin/main`.
 
 **Renamed 2026-09-30:** this repo was `jev-realtime-observability`. It is now `silex-ai-lab/jev-runtime-observability`, checked out at `~/workplace/Silex/jev-runtime-observability`. GitHub redirects the old URL.
 - The live references were updated: `package.json`, READMEs, these skills, the deploy templates, the server banner, the guide, and the mockup's sync tool, `VENDORED.json` and READMEs.
@@ -35,6 +35,7 @@ Last updated 2026-09-30 (jev `main` is this commit; silex-mockup `bbf3a7d`). Bot
      - the site's left nav has a **Runtime Observation** view, between Enterprise World Model and System Validation, that embeds this demo. It started as a System Validation tab and was moved by `silex-mockup/logs/2026-09-30_RUNTIME_OBSERVE_VIEW_PLAN.md`; the old `#view=long-term&tab=runtime` link redirects;
      - the demo is vendored byte-for-byte in `silex-mockup/jev-runtime/` (currently from `efce258`);
      - this repo gained `?embed=1`, a validated `?back`, and the Runs view's `select(runId)`.
+     - **Latest deploy:** silex-mockup `df267fa` (2026-09-30), live read-back 7/7. The view was first built as "Runtime Observe" and renamed to **Runtime Observation** at the user's request; its id and deep link are `runtime-observation`. The plan file keeps the old name (`RUNTIME_OBSERVE_VIEW_PLAN.md`), as dated records do. Every silex-mockup branch is merged into `main`.
      - **After any change to `web/demo`, `web/js/runs.js`, `verdict.js` or `web/css/runs.css`,** re-sync the mockup, then run its suites and deploy with the user's OK:
 
        ```bash
@@ -51,7 +52,7 @@ Last updated 2026-09-30 (jev `main` is this commit; silex-mockup `bbf3a7d`). Bot
 
      - The older AP-only `silex-mockup/jev-observability/` stays live, unchanged, and is marked superseded.
   5. **Plain-language guide** (Chinese, 10 screenshots) to every demo page and the mockup's Runtime Observation view. Identical copies are in this repo (`docs/demo/guide/`) and in silex-mockup (`docs/jev-runtime-guide/`).
-     - When the demo UI changes, retake the screenshots and update both copies together. The screenshots were taken with headless Chrome at 1440 × 900 through the Chrome DevTools Protocol; the helper script was a session scratch file and is not in either repo.
+     - When the demo UI changes, retake the screenshots and update both copies together. The screenshots were taken with headless Chrome at 1440 × 900 through the Chrome DevTools Protocol; the helper script was a session scratch file and is not in either repo. Keep screenshots in the session scratch directory and show them inline. Do not copy screenshot sets to ~/Desktop; the user does not want them there.
      - Its numbers are simulated, with ±0.04 jitter, and the guide says so.
 - **Open follow-ups** (non-blocking review notes, not done; details at the end of each log):
   - **Console** (`CONSOLE_UX_PLAN` code gate):
