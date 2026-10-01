@@ -203,7 +203,7 @@ journalctl -u jev-observability -f
 - **Watch:**
   - `/v1/metrics`: `gate.sdk_preflight_ms` and `judge_http_rtt_ms` (if the gate's p95 approaches 600 ms, the gate is failing closed), `capture_coverage` and `realtime_expired`;
   - `/readyz` for liveness.
-- **Upgrades:** `git pull && npm ci && npm test`, then restart the server. Migrations apply on start and are idempotent. Back up `DATA_DIR` or the PostgreSQL database first.
+- **Upgrades:** on a checkout made before 2026-09-30, first point it at the renamed repo: `git remote set-url origin https://github.com/silex-ai-lab/jev-runtime-observability.git`. GitHub redirects the old name, but don't rely on it. Then `git pull && npm ci && npm test`, and restart the server. Migrations apply on start and are idempotent. Back up `DATA_DIR` or the PostgreSQL database first.
 - **The semantic policy stays `experimental`** (signals are recorded and never act). Turning on calibrated mode needs a calibration fitted on this deployment's own labelled data; see `docs/EVAL.md`.
 
 ## Troubleshooting

@@ -126,6 +126,7 @@ bash skills/jev-work-plan/scripts/resume-check.sh
 
 The script:
 - checks Node ≥ 23.6;
+- checks that `origin` is the renamed repo. An old clone fails with the fix: `git remote set-url origin https://github.com/silex-ai-lab/jev-runtime-observability.git`. It also warns about an old folder name, and fails on skill links in `~/.claude/skills` / `~/.codex/skills` that point to the old path;
 - runs `git fetch` and says whether the local branch is behind or ahead of `origin`;
 - checks `node_modules`, `.env`, and whether Kev answers on 8009 and 8010;
 - checks the Kev checkout and its pinned commit (`3e1cd3b`);
@@ -134,6 +135,7 @@ The script:
 - lists the open tasks from the newest plan (any `| <letter><number> |` row not `done`).
 
 Then fix what it reports:
+- **`origin` still uses the old name** (`jev-realtime-observability`): `git remote set-url origin https://github.com/silex-ai-lab/jev-runtime-observability.git`, then `git fetch`. If the folder still has the old name, renaming it is optional; if you do, re-link the skills with `ln -sfn <new path>/skills/<skill> ~/.claude/skills/<skill>`.
 - **Behind `origin`:** `git pull --ff-only` before anything else.
 - **No `node_modules`:** `npm ci`.
 - **No `.env`:** it is never in git. Create it from `deploy/env.example` with fresh random keys. The steps are in `skills/deploy-jev-observability/SKILL.md` step 4.

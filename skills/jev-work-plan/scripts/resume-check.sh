@@ -13,6 +13,25 @@ if v=$(node -p 'process.versions.node' 2>/dev/null); then
 else fail "node not found"; fi
 
 if git rev-parse --git-dir >/dev/null 2>&1; then
+  # Renamed 2026-09-30: jev-realtime-observability → jev-runtime-observability. GitHub redirects the old URL,
+  # but an old clone should point at the new one.
+  NEW_URL=https://github.com/silex-ai-lab/jev-runtime-observability.git
+  url=$(git remote get-url origin 2>/dev/null || true)
+  case "$url" in
+    *jev-realtime-observability*) fail "origin is the old repo name ($url): git remote set-url origin $NEW_URL" ;;
+    *jev-runtime-observability*) ok "origin $url" ;;
+    "") warn "no origin remote: git remote add origin $NEW_URL" ;;
+    *) warn "origin is $url (expected $NEW_URL)" ;;
+  esac
+  top=$(git rev-parse --show-toplevel)
+  [ "$(basename "$top")" = jev-realtime-observability ] && warn "checkout folder still uses the old name ($top); optional: mv it to jev-runtime-observability and re-link the skills below"
+  for d in "$HOME/.claude/skills" "$HOME/.codex/skills"; do
+    for sk in jev-work-plan deploy-jev-observability; do
+      l="$d/$sk"; [ -L "$l" ] || continue
+      if [ ! -e "$l" ]; then fail "$l is a broken link ($(readlink "$l")): ln -sfn $top/skills/$sk $l"
+      else case "$(readlink "$l")" in *jev-realtime-observability*) warn "$l still points at the old folder name ($(readlink "$l"))" ;; esac; fi
+    done
+  done
   git fetch -q origin 2>/dev/null || warn "git fetch failed (offline?)"
   br=$(git rev-parse --abbrev-ref HEAD)
   if git rev-parse -q --verify "origin/$br" >/dev/null; then
