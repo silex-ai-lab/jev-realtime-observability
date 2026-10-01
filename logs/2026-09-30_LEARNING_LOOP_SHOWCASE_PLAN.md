@@ -226,3 +226,44 @@ r1 review: `reviewer-codex` PLAN-CHANGES (8 items), `coder-deepseek` PLAN-CHANGE
 - **Codex:** everything under `web/demo` (including the router hook), the curriculum, and the probes.
 - **Planner:** docs, guide and screenshots.
 - **Mockup phase:** after the jev code gate.
+
+### Plan gate
+
+| Round | reviewer-codex | coder-deepseek | planner |
+|---|---|---|---|
+| r1 | PLAN-CHANGES (8) | PLAN-CHANGES (3 + 6 notes) | — |
+| r2 | PLAN-APPROVED | PLAN-APPROVED | PLAN-APPROVED |
+
+**Build notes from r2** (non-blocking, binding on the build):
+
+1. **The learner:**
+   - it fits on `p` (the proposition probability), never on `risk`, and recomputes `risk`, `confidence` and `margin` after (so `grounded`, with `risk: 1-p`, stays right);
+   - it clamps before the logit;
+   - it uses a documented finite encoding of numeric, Boolean and null features;
+   - all preprocessing, optimizer and L2 constants are fixed before any evaluation;
+   - a family with no labels returns its original answer exactly.
+2. **The v2 scorer:**
+   - wraps `judgeBattery`, transforming only eligible, successful Boolean answers;
+   - fault status, reduced batteries, latency, token fields and untrained answers pass through;
+   - it never receives the fixture truth.
+3. **Candidate snapshot:** labels, parameters, policy, faults and seed are frozen together. Edits after Train need a new Train.
+4. **Labels:**
+   - identity is (example, question), so a reload or a re-answer updates rather than increments;
+   - "x of N" counts only valid curriculum Boolean labels;
+   - scripted (demo-author) answers and manual answers are marked differently;
+   - Auto-answer appears only where authored truth exists;
+   - Allow/Deny says it never releases the tool call.
+5. **Eligibility for metrics:** semantically evaluated pre_tool variants with no rule or fallback decision. ALLOW outcomes (`decided_by: policy`) stay in the denominators. v1 and v2 use one paired set, in gate mode.
+6. **Curriculum authoring:**
+   - the ambiguous held-out items must have errors the question's feature subset can express linearly, so a pass path exists in both domains, proven in the build;
+   - the failed-retrain family is a documented constant, labelled as a mislabelled toy batch, not a reproduction of the 4B run.
+7. **`impact` and `attack`** render identically under v1 and v2.
+8. **Evidence link:** no link to `docs/EVAL.md` from the page (it is outside the web root). The evidence details live in the JSON and render on the page, and the source path is shown as text.
+9. **The domain switch's `location.assign`** must carry `tab`.
+10. **`learning-evidence.json` contract** (DeepSeek writes it; Codex reads it; full precision; display formatting only in the UI):
+    - `generated_by`, `sources{}` (repo paths), `hardware`;
+    - `test{benchmark, items, positives{q}}`;
+    - `models{"kev-0.8b"|"kev-0.8b-ft"|"kev-4b"|"kev-4b-ft": {label, judge_source, instruction_override{auroc}, goal_deviation{auroc, threshold|null, recall, recall_ci[2], fpr}, latency{p50_ms, p95_ms, n}}}`;
+    - `finetune{"kev-0.8b"|"kev-4b": {method, epochs, lr, records_total, records_used, wall_s}}`;
+    - `caveats[]` (the EVAL.md "What these numbers do not show" points, as short strings);
+    - `label_provenance` (`benchmark_ground_truth_derived`, `heuristic_derived`).
