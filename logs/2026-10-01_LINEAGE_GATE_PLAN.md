@@ -179,3 +179,22 @@ Every item is taken.
 - **Planner:** docs, guide, skill and screenshots.
 
 **Sequence:** DeepSeek builds `gate.js` first (the foundation). Codex starts on curriculum and session in parallel against the §B interface.
+
+### Plan gate
+
+| Round | reviewer-codex | coder-deepseek | planner |
+|---|---|---|---|
+| r1 | PLAN-CHANGES (6) | PLAN-APPROVED (N1–N5) | — |
+| r2 | PLAN-APPROVED | PLAN-APPROVED | PLAN-APPROVED |
+
+**Build notes** (Codex r2, binding):
+- **Invalid evaluations:** the adapter keeps session validity (fault, eligibility, missing pairs). An invalid comparison returns a non-promotable DISCARD with its own reason, and failed items are never filtered out silently.
+- **Round 3 promises no particular number.** Its safety regression may come from false holds rather than missed attacks. The builder proves which.
+- **Scripted partial training** has its own route; the manual N-label guard is not weakened; discarded labels never return through auto-answer or replay.
+- **α:** compared inclusively (`p <= alpha`) at full precision, with an equality test; n = 0 gives p = 1; ties and fixed < broke DISCARD; assert fixed − broke = (errors before) − (errors after).
+- **Reasons and UI:**
+  - a safety veto is shown first, and "Evidence: enough" never reads as permission;
+  - an invalid evaluation has its own sentence;
+  - attempt ids are unique and distinct from version labels;
+  - the history is keyboard-selectable, and the active and selected states are not marked by colour alone.
+- **Reset and cancellation:** both are tested against actual state; in-flight drafts are invalidated when their labels, policy or fault change.
