@@ -254,3 +254,9 @@ main { padding-top: 16px; }
 /* Battery table: the where/reads line under each question. */
 .q-meta { margin-top: 3px; font-size: 11px; }
 .q-meta .mono { font-size: 11px; }
+
+/* ?embed=1 (inside a host page's iframe): the host already shows its own brand and navigation. */
+body.embed .jv-brand, body.embed .jv-back { display: none; }
+body.embed .jv-top { padding: 8px 16px 0; }
+body.embed .jv-top-row { justify-content: flex-start; }
+body.embed main { padding: 12px 16px 24px; }

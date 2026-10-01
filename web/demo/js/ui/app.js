@@ -5,6 +5,7 @@ import { DEFAULT_POLICY, BATTERY } from '../engine/types.js';
 import { TENANT, BACKGROUND_TRACES, buildStream, makeBackground, scenarioById, scenariosFor } from '../engine/scenarios.js';
 import { makeSocBackground } from '../engine/scenarios-soc.js';
 import { domainFrom } from '../engine/domains.js';
+import { applyHostOptions } from './embed.js';
 import { route, runStream } from '../engine/router.js';
 import { buildState } from '../engine/state.js';
 import { validatePolicy } from '../engine/policy.js';
@@ -25,6 +26,7 @@ const SEED = Number.isFinite(seedParam) ? seedParam : 7;
 const AUTOPLAY = params.get('autoplay') !== '0';
 // One simulated agent per page load (logs/2026-09-30_DEMO_SOC_PLAN.md §1): ?domain=ap|soc, AP when missing or unknown.
 const DOMAIN = domainFrom(location.search);
+applyHostOptions(params);
 const SCENARIOS_HERE = scenariosFor(DOMAIN.id);
 
 // ---- state -------------------------------------------------------------
