@@ -75,7 +75,7 @@ function goalDeviationTestPreds(label: string): Map<string, { label: boolean; p:
     if (r.question_id !== 'goal_deviation' || r.split !== 'test') continue;
     if (r.item_id == null || r.item_id === '') throw new Error(`predictions-${label}.jsonl: goal_deviation/test item has no item_id`);
     if (map.has(r.item_id)) throw new Error(`predictions-${label}.jsonl: duplicate item_id "${r.item_id}" in goal_deviation/test`);
-    if (r.status !== 'ok' && r.status !== 'partial') throw new Error(`predictions-${label}.jsonl: item "${r.item_id}" has status "${r.status}" (expected ok or partial)`);
+    if (r.status !== 'ok') throw new Error(`predictions-${label}.jsonl: item "${r.item_id}" has status "${r.status}" (expected ok)`);
     if (typeof r.label !== 'boolean') throw new Error(`predictions-${label}.jsonl: item "${r.item_id}" has non-boolean label`);
     const p = r.signal?.type === 'noul' ? r.signal.raw_probability : null;
     if (typeof p !== 'number' || !Number.isFinite(p)) throw new Error(`predictions-${label}.jsonl: item "${r.item_id}" has no finite noul raw_probability`);

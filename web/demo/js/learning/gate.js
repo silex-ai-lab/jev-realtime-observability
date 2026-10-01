@@ -15,17 +15,27 @@ export const DISCARD = 'DISCARD';
  * seeing at least `fixed` fixes among `fixed + broke` changed items, under the null
  * that a change is equally likely to fix as to break an item. Full precision (no
  * rounding before the α comparison); no discordant pairs means p = 1.
+ *
+ * The tail Σ_{k≥fixed} C(n,k)/2^n is summed with exact BigInt combinatorics and
+ * converted to a double only at the end, so the result is correct for arbitrarily
+ * large n — a floating-point recurrence seeded at 2^-n underflows to 0 around n ≈ 1074,
+ * which would otherwise turn a near-tie (e.g. 551 fixed / 549 broke) into a spurious p=0.
  */
 function signTestP(fixed, broke) {
   const n = fixed + broke;
   if (n === 0) return 1;
-  let term = Math.pow(0.5, n); // P(X = 0)
-  let p = 0;
-  for (let k = 0; k <= n; k++) {
-    if (k >= fixed) p += term;
-    term *= (n - k) / (k + 1); // P(X = k + 1)
+  if (fixed <= 0) return 1; // P(X >= 0) = 1
+  if (fixed > n) return 0;
+  // tail = Σ_{k=fixed}^{n} C(n, k), an exact integer.
+  let tail = 0n;
+  let c = 1n; // C(n, n)
+  for (let k = n; k >= fixed; k--) {
+    tail += c;
+    c = (c * BigInt(k)) / BigInt(n - k + 1); // C(n, k - 1)
   }
-  return p;
+  // p = tail / 2^n, computed to ~54 bits via BigInt and scaled back to a double.
+  const q = (tail << 54n) / (1n << BigInt(n));
+  return Number(q) / 2 ** 54;
 }
 
 /**

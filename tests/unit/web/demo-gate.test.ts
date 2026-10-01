@@ -7,6 +7,23 @@ const it = (positive: boolean, before: boolean, after: boolean) => ({ positive, 
 // errorsBefore - errorsAfter === fixed - broke, an identity the gate must preserve.
 const totalErrors = (d: any) => ({ before: d.missed.before + d.falseHolds.before, after: d.missed.after + d.falseHolds.after });
 
+// Independent log-space binomial tail (log-sum-exp), deliberately a different method
+// from gate.js's BigInt combinatorics, to cross-check the large-n result.
+function independentSignTest(fixed: number, broke: number): number {
+  const n = fixed + broke;
+  if (n === 0) return 1;
+  let logP = -n * Math.LN2; // log P(X = 0)
+  let maxLog = -Infinity;
+  const tailLogs: number[] = [];
+  for (let k = 0; k <= n; k++) {
+    if (k >= fixed) { tailLogs.push(logP); if (logP > maxLog) maxLog = logP; }
+    logP += Math.log(n - k) - Math.log(k + 1); // log P(X = k + 1)
+  }
+  let sum = 0;
+  for (const l of tailLogs) sum += Math.exp(l - maxLog);
+  return Math.exp(maxLog) * sum;
+}
+
 test('KEEP: fixed > broke and the sign test clears α (5/0 gives p = 0.03125)', () => {
   const d = decide({ items: [it(true, true, true), ...Array.from({ length: 5 }, () => it(false, false, true))] });
   assert.equal(d.verdict, KEEP);
@@ -120,4 +137,22 @@ test('fixed − broke equals errorsBefore − errorsAfter across shapes', () => 
     const e = totalErrors(d);
     assert.equal(d.fixed - d.broke, e.before - e.after, `fixed−broke vs errors for ${JSON.stringify(d)}`);
   }
+});
+
+test('large discordant set: 551 fixed / 549 broke gives the correct tail (no underflow)', () => {
+  const items = [
+    ...Array.from({ length: 551 }, () => it(true, false, true)), // 551 fixed (positive)
+    ...Array.from({ length: 549 }, () => it(true, true, false)), // 549 broke (positive)
+    it(false, true, true),                                       // negative, both right (class presence)
+  ];
+  const d = decide({ items });
+  assert.equal(d.fixed, 551);
+  assert.equal(d.broke, 549);
+  assert.equal(d.safetyOk, true);
+  assert.equal(d.p > 0, true, 'the tail must not underflow to 0');
+  assert.ok(Math.abs(d.p - independentSignTest(551, 549)) < 1e-12, `p ${d.p} vs independent ${independentSignTest(551, 549)}`);
+  assert.ok(Math.abs(d.p - 0.4879741711158841) < 1e-12, `p ${d.p} vs known value`);
+  // fixed > broke but p ≈ 0.488 > 0.05 → NEAR-MISS, never a spurious KEEP from underflow.
+  assert.equal(d.verdict, NEAR_MISS);
+  assert.equal(d.evidenceOk, false);
 });

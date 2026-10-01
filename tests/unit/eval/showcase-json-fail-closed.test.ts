@@ -47,6 +47,12 @@ test('throws on a non-ok status', () => {
   assert.match(runGenerator(writeFixture(rows)), /status "timeout"/);
 });
 
+test('throws on a partial status (only ok is accepted)', () => {
+  const rows = validRows();
+  rows['kev-0.8b'] = [pred(IDS[0], true, 0.8, 'partial'), pred(IDS[1], false, 0.1)];
+  assert.match(runGenerator(writeFixture(rows)), /status "partial"/);
+});
+
 test('throws on a missing or non-finite noul raw_probability', () => {
   const rows = validRows();
   rows['kev-0.8b'] = [pred(IDS[0], true, 0.8), { ...pred(IDS[1], false, 0.1), signal: null }];

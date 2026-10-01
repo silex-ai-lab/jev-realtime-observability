@@ -100,7 +100,7 @@ for (const domain of ['ap', 'soc']) {
     assert.equal(gatePairs([]).pass,false);assert.equal(gatePairs(original.filter((p:any)=>p.kind==='benign')).valid,false);
     const monitor=copy(snapshot.policy);Object.values(monitor.tools).forEach((t:any)=>{t.mode='monitor';});
     assert.equal(gatePairs(compareCases(curriculumFor(domain).test,{...snapshot,policy:monitor},snapshot.model)).valid,false);
-    const bad=copy(original);bad.find((p:any)=>p.control).correctControl=false;assert.equal(gatePairs(bad).verdict,'DISCARD');
+    const bad=copy(original);bad.find((p:any)=>p.control).correctControl=false;assert.equal(gatePairs(bad).verdict,'DISCARD');assert.equal(gatePairs(bad).reason,'a control changed','a changed control gets its own reason');assert.equal(gatePairs(bad).pass,false);
     const invalid=copy(original);invalid.find((p:any)=>p.eligible).eligible=false;assert.equal(gatePairs(invalid).valid,false,'invalid pair cannot silently disappear');
   });
   test(`${domain}: careless model-facing states are disjoint from review, test and Live`, () => {

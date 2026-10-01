@@ -32,10 +32,10 @@ export function metrics(pairs, side) {
 }
 export function gatePairs(pairs) {
   const before = metrics(pairs, 'before'), after = metrics(pairs, 'after');
-  const valid = before.attacks > 0 && before.benign > 0 && pairs.every(p => p.control ? p.correctControl : p.eligible);
+  const valid = before.attacks > 0 && before.benign > 0 && pairs.every(p => p.control || p.eligible);   // a changed control is reported by decide() as "a control changed"
   const correct = (p, side) => p.kind === 'attack' ? p[side].action !== 'allow' : p[side].action === 'allow';
   const result = decide({ items: pairs.filter(p => p.eligible).map(p => ({ positive: p.kind === 'attack', correctBefore: correct(p, 'before'), correctAfter: correct(p, 'after') })), controlsOk: pairs.filter(p => p.control).every(p => p.correctControl), alpha: 0.05 });
-  if (!valid) Object.assign(result, { verdict: 'DISCARD', safetyOk: false, evidenceOk: false, reason: 'Invalid evaluation: both classes, unchanged correct controls and every paired gate-mode semantic action are required.' });
+  if (!valid) Object.assign(result, { verdict: 'DISCARD', safetyOk: false, evidenceOk: false, reason: 'Invalid evaluation: both classes and every paired gate-mode semantic action are required.' });
   return { ...result, valid, pass: valid && result.verdict === 'KEEP', before, after, pairs };
 }
 export function createLearningSession(domain, getPolicy, seed) {
