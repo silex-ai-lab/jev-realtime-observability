@@ -7,7 +7,7 @@ description: Resume or continue the dated work plan for jev-runtime-observabilit
 
 ## Where things stand (update this when a plan closes)
 
-Last updated 2026-09-30, at jev `main` `0143c8a` plus this skill update, and silex-mockup `main` `bbf3a7d`. Nothing is in progress: no open branch, no undeployed change, no pending review. Both repos are pushed, and their local `main` equals `origin/main`.
+Last updated 2026-10-01, at jev `main` `040f9c8` plus this skill update, and silex-mockup `main` `fe51c44`. Nothing is in progress: no open branch, no undeployed change, no pending review. Both repos are pushed, and their local `main` equals `origin/main`.
 
 **Renamed 2026-09-30:** this repo was `jev-realtime-observability`. It is now `silex-ai-lab/jev-runtime-observability`, checked out at `~/workplace/Silex/jev-runtime-observability`. GitHub redirects the old URL.
 - The live references were updated: `package.json`, READMEs, these skills, the deploy templates, the server banner, the guide, and the mockup's sync tool, `VENDORED.json` and READMEs.
@@ -33,7 +33,7 @@ Last updated 2026-09-30, at jev `main` `0143c8a` plus this skill update, and sil
      - SOC5 is the one labelled difference: synthetic `goal_deviation` scores hold the 2nd and 3rd suspensions for review, while the live console does not block SOC5.
   4. **silex-mockup integration** (`silex-mockup/logs/2026-09-30_JEV_RUNTIME_VALIDATION_PLAN.md`, deployed to https://silex-mockup.vercel.app/#view=runtime-observation):
      - the site's left nav has a **Runtime Observation** view, between Enterprise World Model and System Validation, that embeds this demo. It started as a System Validation tab and was moved by `silex-mockup/logs/2026-09-30_RUNTIME_OBSERVE_VIEW_PLAN.md`; the old `#view=long-term&tab=runtime` link redirects;
-     - the demo is vendored byte-for-byte in `silex-mockup/jev-runtime/` (currently from `efce258`);
+     - the demo is vendored byte-for-byte in `silex-mockup/jev-runtime/` (currently from `9ca7ffe`);
      - this repo gained `?embed=1`, a validated `?back`, and the Runs view's `select(runId)`.
      - **Latest deploy:** silex-mockup `df267fa` (2026-09-30), live read-back 7/7. The view was first built as "Runtime Observe" and renamed to **Runtime Observation** at the user's request; its id and deep link are `runtime-observation`. The plan file keeps the old name (`RUNTIME_OBSERVE_VIEW_PLAN.md`), as dated records do. Every silex-mockup branch is merged into `main`.
      - **After any change to `web/demo`, `web/js/runs.js`, `verdict.js` or `web/css/runs.css`,** re-sync the mockup, then run its suites and deploy with the user's OK:
@@ -41,19 +41,25 @@ Last updated 2026-09-30, at jev `main` `0143c8a` plus this skill update, and sil
        ```bash
        node tools/sync-jev-runtime.mjs <this checkout> <commit>      # run in the silex-mockup repo
        node --test tests/site/*.test.mjs                            # 20/20
-       node tests/site/run-site-probes.mjs                          # 19/19
+       node tests/site/run-site-probes.mjs                          # 21/21
        ```
 
        Its integrity test fails on any local edit. A push to silex-mockup `main` is a public deploy (Vercel serves within about 15 s). Re-check the live site afterwards:
 
        ```bash
-       node tests/site/run-site-probes.mjs --base https://silex-mockup.vercel.app   # 7/7 (S1, S3, S4, S5, S13, S14, S17)
+       node tests/site/run-site-probes.mjs --base https://silex-mockup.vercel.app   # 9/9 (S1, S3, S4, S5, S13, S14, S17, S20, S21)
        ```
 
      - The older AP-only `silex-mockup/jev-observability/` stays live, unchanged, and is marked superseded.
-  5. **Plain-language guide** (Chinese, 10 screenshots) to every demo page and the mockup's Runtime Observation view. Identical copies are in this repo (`docs/demo/guide/`) and in silex-mockup (`docs/jev-runtime-guide/`).
+  5. **Plain-language guide** (Chinese, 13 screenshots; §9 is the Learning loop) to every demo page and the mockup's Runtime Observation view. Identical copies are in this repo (`docs/demo/guide/`) and in silex-mockup (`docs/jev-runtime-guide/`).
      - When the demo UI changes, retake the screenshots and update both copies together. The screenshots were taken with headless Chrome at 1440 × 900 through the Chrome DevTools Protocol; the helper script was a session scratch file and is not in either repo. Keep screenshots in the session scratch directory and show them inline. Do not copy screenshot sets to ~/Desktop; the user does not want them there.
      - Its numbers are simulated, with ±0.04 jitter, and the guide says so.
+  6. **Learning loop showcase** (`logs/2026-09-30_LEARNING_LOOP_SHOWCASE_PLAN.md`, deployed 2026-10-01). The user called it the best selling point: "human judgment → align Kev to it → self-improving Kev".
+     - **Demo:** a `?tab=learning` tab with **Play the loop**. A simulated logistic correction is trained on authored examples, then gated on 11 unseen variants per agent. By default, missed attacks fall 4/4 → 0/4 in both agents, actions sent to a person fall 3/10 → 1/10 (SOC), and one stays wrong.
+     - **Measured card:** the real Kev-0.8B fine-tune, recall 0.40 → 0.80 at FPR 0.014 → 0.009 on held-out AgentDojo. It comes from `web/demo/data/learning-evidence.json`, generated by `eval/run/showcase-json.ts` and drift-tested. After re-running an eval, regenerate it, then re-sync the mockup.
+     - **Honesty rules on every surface:** benchmark labels, not customer reviewers; LoRA, not RL; human-label training and production promotion are future work.
+     - **Mockup:** Runtime Observation has a "The judge learns from your reviewers" card with **Try the loop** (S21).
+  7. **silex-mockup floating left nav** (`silex-mockup/logs/2026-09-30_FLOATING_NAV_PLAN.md`, deployed 2026-09-30). The nav is hidden by default. A ChatGPT-style sidebar icon docks or hides it, the choice is remembered, and hovering the left edge peeks it. Probes: S20; `nav()` docks through the real icon.
 - **Open follow-ups** (non-blocking review notes, not done; details at the end of each log):
   - **Console** (`CONSOLE_UX_PLAN` code gate):
     - `/v1/sandbox/reexec` takes its rate slot before the run lookup;
@@ -67,7 +73,7 @@ Last updated 2026-09-30, at jev `main` `0143c8a` plus this skill update, and sil
   - **Mockup Runtime Observation view:** every Run waits for the six-step animation (about 1.6 s), even when the frame is ready. That is fine for a demo; a faster path is possible.
 - **silex-mockup** (`~/workplace/Silex/silex-mockup`, https://github.com/silex-security/silex-mockup):
   - serve it locally with `python3 -m http.server 8797 --bind 127.0.0.1`;
-  - tests: `node --test tests/site/*.test.mjs` (20/20) and `node tests/site/run-site-probes.mjs` (19/19).
+  - tests: `node --test tests/site/*.test.mjs` (20/20) and `node tests/site/run-site-probes.mjs` (21/21).
 - **Test baseline at `efce258`** (`77dc838` only adds docs):
   - `npm test`: 280 tests, 276 pass, 0 fail, 4 skip; with `TEST_DATABASE_URL`, 1 skip.
   - Probes, which need a Kev on 8010 (0.8B) or 8009:
@@ -77,7 +83,7 @@ Last updated 2026-09-30, at jev `main` `0143c8a` plus this skill update, and sil
     | `npm run probe` (`KEV_URL=http://127.0.0.1:8010 KEV_EXPECT=jaredpalmer/kev-0.8b`) | 8/8 |
     | `node tests/probe/soc-probes.ts` | 7/7 |
     | `node tests/probe/ui-runs-probes.ts` | 29/29 |
-    | `node tests/probe/demo-probes.ts` | 15/15 |
+    | `node tests/probe/demo-probes.ts` | 24/24 |
 
 ## Quick resume on a new host
 
@@ -102,6 +108,8 @@ Then pick the next work:
 - **New day plan:** create `plans/<date>.md` from the follow-ups above, with the user's priorities. The 4B fine-tune needs 32 GB+ Apple Silicon or a datacenter GPU, plus the Kev checkout at `~/workplace/Silex/third_party/kev` (deploy skill step 3).
 
 **Fleet notes** (`herdr-agent-fleet`):
+- **Staffing (user, 2026-10-01):** give Codex more of the build, including features and probes; DeepSeek reviews and does mechanical slices. Between unrelated tasks, start fresh sessions (`/new` in both panes).
+- **Codex outside its workspace:** when its pane runs in silex-mockup and the work is in the jev repo, it stages files in /tmp and installs them with a script. Read the script before approving; it should only copy assigned paths.
 - **Check exit codes directly.** `cmd | tail -1 && git commit` commits even when `cmd` fails, because the pipe's status is `tail`'s. That happened once on 2026-09-30 (jev `60b99da`). Use `cmd > log; echo exit=$?`.
 - **Codex in its sandbox:**
   - It asks before writing files outside its working repo (silex-mockup) and before running probe runners on localhost. Approve its own assigned files and runner prefix only.

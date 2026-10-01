@@ -313,4 +313,4 @@ The AP v1 baseline follows from the engine's name-similarity payee check on homo
 
 **Results:** site unit 20/20; probes 21/21 (three runs by the builder, two by the planner after the fix).
 
-**Deploy:** pending the user's go-ahead. Merging silex-mockup `main` is public. jev `learning-loop` must reach `main` first, so that `VENDORED.json`'s commit `9ca7ffe` exists on GitHub.
+**Deploy:** 2026-10-01, on the user's go-ahead. jev `main` fast-forwarded to `040f9c8` and pushed (`9ca7ffe` is on origin); silex-mockup `main` fast-forwarded to `fe51c44` and pushed. Live read-back `--base https://silex-mockup.vercel.app`: 9/9 PASS (S1, S3, S4, S5, S13, S14, S17, S20, S21).
