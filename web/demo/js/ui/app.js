@@ -13,6 +13,7 @@ import { computeKpis } from '../engine/kpi.js';
 import { renderInspector } from './inspector.js';
 import { initReplay } from './replay.js';
 import { initStudio } from './studio.js';
+import { initLearning } from '../learning/ui.js';
 import { $, $$, esc, chip, decisionChip, deepClone, fmtClock, fmtMs, fmtPct, fmtUsd } from './util.js';
 // The Live tab shows the simulated traces in the live console's Runs layout (logs/2026-09-30_CONSOLE_UX_PLAN.md r7 C1'):
 // the pure adapter maps spans and envelopes to live-shape records, and the shared renderer draws them. Simulated
@@ -55,6 +56,7 @@ const app = {
   setPolicy(p) {
     policy = p; policies.set(p.version, p);
     replay?.onPolicy();
+    learning?.onPolicy();
     if (selectedSeq != null) select(selectedSeq);
   },
 };
@@ -68,6 +70,7 @@ function routeSpan(span, f = fault) {
   row.env = route(span, { tenant: TENANT, policy, seed: SEED, history, faults: { jev: applied } });
   if (!row.env) return null;
   rows.push(row);
+  learning?.onRow(row, history);
   addRow(row);
   return row;
 }
@@ -258,10 +261,15 @@ for (const b of $$('[data-domain]')) {
 }
 
 // ---- wiring -------------------------------------------------------------
-function showTab(name) {
+const PUBLIC_TABS = ['live', 'replay', 'studio', 'learning', 'about'];
+function showTab(requested, updateUrl = true) {
+  const name = PUBLIC_TABS.includes(requested) ? requested : 'live';
+  if (updateUrl) { const q = new URLSearchParams(location.search); q.set('tab', name); history.replaceState(null, '', `${location.pathname}?${q}${location.hash}`); }
   for (const b of $$('[data-tab]')) b.setAttribute('aria-selected', String(b.dataset.tab === name));
   for (const p of $$('[data-panel]')) p.hidden = p.dataset.panel !== name;
   if (name === 'replay') replay.onShow(rows.find(r => r.seq === selectedSeq)?.env.span_id);
+  if (name === 'learning') learning.onShow();
+  return name;
 }
 
 $$('[data-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
@@ -272,7 +280,7 @@ $$('[data-speed]').forEach(b => b.addEventListener('click', () => {
   $$('[data-speed]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
 }));
 $$('[data-inject]').forEach(b => b.addEventListener('click', () => inject(b.dataset.inject)));
-$('[data-fault]').addEventListener('change', e => { fault = e.target.value || null; });
+$('[data-fault]').addEventListener('change', e => { fault = e.target.value || null; learning.onFault(fault); });
 [fBoundary, fDecision, fScen, fAgent, fRisk].forEach(x => x.addEventListener('change', applyFilters));
 streamEl.addEventListener('click', e => { const r = e.target.closest('.jv-row'); if (r) select(Number(r.dataset.seq)); });
 streamEl.addEventListener('keydown', e => {
@@ -282,6 +290,7 @@ streamEl.addEventListener('keydown', e => {
 
 const replay = initReplay(app);
 const studio = initStudio(app);
+const learning = initLearning(app);
 streamEl.innerHTML = '<p class="jv-empty">Press Play to stream the agent\'s spans, or inject a scenario.</p>';
 renderKpis();
 
@@ -301,10 +310,13 @@ window.__jevDemo = {
   log: () => rows.map(r => r.env),
   kpis: () => computeKpis(rows.map(r => r.env)),
   inject,
-  setFault(kind) { fault = kind || null; $('[data-fault]').value = kind || ''; },
+  setFault(kind) { fault = kind || null; $('[data-fault]').value = kind || ''; learning.onFault(fault); },
+  openTab: showTab,
+  learning: { state: learning.state, evidence: learning.evidence },
   flush,
   select(spanId) { const r = latestRow(spanId); if (r) select(r.seq); return !!r; },
   replay(spanId, p) { const r = latestRow(spanId); return r ? replay.replay(r.seq, p) : null; },
 };
 
+showTab(params.get('tab') ?? 'live', false);
 if (AUTOPLAY) setPlaying(true);

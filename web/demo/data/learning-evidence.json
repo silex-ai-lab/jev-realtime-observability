@@ -1,0 +1,139 @@
+{
+  "generated_by": "eval/run/showcase-json.ts",
+  "sources": {
+    "eval": "runs/eval-2026-09-28-v2",
+    "ft_0.8b": "runs/ft-kev-0.8b-2026-09-28",
+    "ft_4b": "runs/ft-kev-4b-2026-09-29"
+  },
+  "hardware": "Apple M4 Pro, MLX, bf16",
+  "test": {
+    "benchmark": "AgentDojo",
+    "items": 250,
+    "positives": {
+      "instruction_override": 35,
+      "goal_deviation": 35
+    }
+  },
+  "models": {
+    "kev-0.8b": {
+      "label": "Kev-0.8B",
+      "judge_source": "kev-local:jaredpalmer/kev-0.8b",
+      "instruction_override": {
+        "auroc": 0.6016611295681064
+      },
+      "goal_deviation": {
+        "auroc": 0.8925581395348837,
+        "threshold": 0.6,
+        "recall": 0.4,
+        "recall_ci": [
+          0.23684210526315788,
+          0.5625
+        ],
+        "fpr": 0.013953488372093023
+      },
+      "latency": {
+        "p50_ms": 150.70404200000485,
+        "p95_ms": 344.820332999996,
+        "n": 708
+      }
+    },
+    "kev-0.8b-ft": {
+      "label": "Kev-0.8B fine-tuned",
+      "judge_source": "kev-local:runs/ft-kev-0.8b-2026-09-28/model",
+      "instruction_override": {
+        "auroc": 0.9726245847176079
+      },
+      "goal_deviation": {
+        "auroc": 0.9613953488372093,
+        "threshold": 0.01,
+        "recall": 0.8,
+        "recall_ci": [
+          0.6486486486486487,
+          0.9310344827586207
+        ],
+        "fpr": 0.009302325581395349
+      },
+      "latency": {
+        "p50_ms": 148.5367499999993,
+        "p95_ms": 342.8885829999999,
+        "n": 708
+      }
+    },
+    "kev-4b": {
+      "label": "Kev-4B",
+      "judge_source": "kev-local:jaredpalmer/kev-4b",
+      "instruction_override": {
+        "auroc": 0.7921594684385382
+      },
+      "goal_deviation": {
+        "auroc": 0.5409302325581395,
+        "threshold": 0.47,
+        "recall": 0.2857142857142857,
+        "recall_ci": [
+          0.125,
+          0.4444444444444444
+        ],
+        "fpr": 0.20930232558139536
+      },
+      "latency": {
+        "p50_ms": 856.5937910000212,
+        "p95_ms": 2000.853167000023,
+        "n": 708
+      }
+    },
+    "kev-4b-ft": {
+      "label": "Kev-4B fine-tuned",
+      "judge_source": "kev-local:runs/ft-kev-4b-2026-09-29/model",
+      "instruction_override": {
+        "auroc": 0.9526910299003323
+      },
+      "goal_deviation": {
+        "auroc": 0.6657142857142857,
+        "threshold": 0.01,
+        "recall": 0.22857142857142856,
+        "recall_ci": [
+          0.09090909090909091,
+          0.38235294117647056
+        ],
+        "fpr": 0.12558139534883722
+      },
+      "latency": {
+        "p50_ms": 912.8669579999987,
+        "p95_ms": 2116.6060419999994,
+        "n": 708
+      }
+    }
+  },
+  "finetune": {
+    "kev-0.8b": {
+      "method": "LoRA",
+      "epochs": 2,
+      "lr": 0.00002,
+      "records_total": 1223,
+      "records_used": 1183,
+      "wall_s": 2346
+    },
+    "kev-4b": {
+      "method": "LoRA",
+      "epochs": 2,
+      "lr": 0.00002,
+      "records_total": 1223,
+      "records_used": 1183,
+      "wall_s": 9867
+    }
+  },
+  "caveats": [
+    "Eval v1 was confounded (low-authority presence predicted the label); kept for the record only.",
+    "Dev goal_deviation scores are source-separable (positives from ASB, negatives from tau-bench); use the AgentDojo test rows.",
+    "A residual style risk on AgentDojo test: every negative low-authority text is constructed and every positive is recorded, so a model that recognises constructed text could score well without doing the task.",
+    "instruction_override has no fitted threshold (too few calibration negatives), so only AUROC is reported for it.",
+    "Calibrations are recorded and not activated; live policy stays in experimental mode.",
+    "Labels are derived from benchmark ground truth; some benign fillers are heuristic_derived; none are human-reviewed.",
+    "No data exists for payee_relation or claim_support.",
+    "The Kev-4B fine-tune does not beat the Kev-0.8B fine-tune on the held-out family (goal_deviation test AUROC 0.666 vs 0.961)."
+  ],
+  "label_provenance": [
+    "benchmark_ground_truth_derived",
+    "heuristic_derived"
+  ]
+}

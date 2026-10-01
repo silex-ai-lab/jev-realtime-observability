@@ -226,7 +226,7 @@ async function socProbe(url:string,id:string) {
     assert.deepEqual(await p.eval<string[]>('return [document.querySelector("#replay-before").dataset.decision,document.querySelector("#replay-after").dataset.decision]'),['HOLD','HOLD']);
     assert.match(await p.eval<string>('return document.querySelector("#replay-note").textContent'),/no threshold reaches this decision/);
   }
-  for(const tab of ['live','replay','studio','about'])for(const width of [1440,390]){
+  for(const tab of ['live','replay','studio','learning','about'])for(const width of [1440,390]){
     await p.send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width===390});
     await p.eval<void>(`document.querySelector('[data-tab="${tab}"]').click();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));`);
     assert.equal(await p.eval<boolean>('return document.documentElement.scrollWidth<=innerWidth+1'),true,`${id} ${tab} ${width}px overflow`);
@@ -263,6 +263,119 @@ async function hostOptionsProbe(url:string,kind:'embed'|'back') {
   }
   assert.deepEqual(p.errors,[]);return kind==='embed'?'embedded brand/back hidden; badge, switch, tabs visible; options survive switch; default unchanged':'relative Back accepted; scheme, encoded scheme, protocol-relative, absolute, empty and malformed values ignored';
 }
+
+// Learning probes activate visible controls; state hooks are read-only snapshots.
+async function clickDemo(p:Cdp, selector:string) {
+  const at=await p.eval<{x:number;y:number}>(`const e=document.querySelector(${JSON.stringify(selector)});if(!e||e.disabled)throw Error('Unavailable '+${JSON.stringify(selector)});e.scrollIntoView({block:'center',behavior:'instant'});await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const b=e.getBoundingClientRect(),x=b.x+b.width/2,y=b.y+b.height/2;if(!b.width||!b.height||!e.contains(document.elementFromPoint(x,y)))throw Error('Not hit-testable '+${JSON.stringify(selector)});return {x,y};`);
+  for(const type of ['mouseMoved','mousePressed','mouseReleased'])await p.send('Input.dispatchMouseEvent',{type,...at,button:'left',buttons:type==='mousePressed'?1:0,clickCount:1});
+}
+async function learningReady(url:string,domain:string) {
+  const p=await ensureBrowser();p.errors.length=0;
+  await loadDemo(url,`?domain=${domain}&tab=learning&autoplay=0&seed=7`);
+  await waitFor(()=>p.eval<boolean>('return !!window.__jevDemo?.learning&&document.querySelector("[data-panel=learning]").hidden===false'),'Learning deep link',10_000);
+  return p;
+}
+async function fillLearning(p:Cdp) {
+  await clickDemo(p,'[data-learn-load]');await clickDemo(p,'[data-learn-auto]');
+  assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.N>0&&s.count===s.N&&s.labelCount===s.N'),true,'computed complete batch');
+}
+async function trainAndGate(p:Cdp) {
+  await clickDemo(p,'[data-learn-train]');
+  await waitFor(()=>p.eval<boolean>('return __jevDemo.learning.state().phase==="trained"'),'frozen trained candidate',10_000);
+  await clickDemo(p,'[data-learn-gate]');
+}
+async function learningWorkflow(url:string,domain:string) {
+  const p=await learningReady(url,domain);
+  assert.equal(await p.eval<boolean>('return document.querySelector("[data-learn-train]").disabled'),true,'Train starts disabled');
+  const scenario=domain==='ap'?'S4':'SOC2';
+  await p.eval<void>(`__jevDemo.inject('${scenario}')`);
+  assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.examples.some(e=>!e.curriculum&&["HOLD","REVIEW"].includes(e.env.decision))&&s.count===0'),true,'inbox includes Live hold, no invented labels');
+  await fillLearning(p);
+  const N=await p.eval<number>('return __jevDemo.learning.state().N');
+  await clickDemo(p,'[data-learn-load]');await clickDemo(p,'[data-learn-auto]');
+  assert.equal(await p.eval<number>('return __jevDemo.learning.state().count'),N,'load/reanswer deduplicates');
+  assert.ok(await p.eval<boolean>('return [...document.querySelectorAll("[data-learn-label]")].some(e=>e.textContent.includes("scripted demo-author"))'));
+  const beforeLive=await p.eval<string>('return JSON.stringify(__jevDemo.log())');
+  await trainAndGate(p);
+  const s=await p.eval<any>('return __jevDemo.learning.state()'),g=s.candidate.gate;
+  assert.equal(g.pass,true);assert.equal(g.valid,true);
+  for(const side of ['before','after']) {
+    const eligible=g.pairs.filter((p:any)=>p.before.boundary==='pre_tool'&&p.after.boundary==='pre_tool'&&p.before.jev_status==='ok'&&p.after.jev_status==='ok'&&!p.before.fallback&&!p.after.fallback&&['jev','policy'].includes(p.before.decided_by)&&['jev','policy'].includes(p.after.decided_by)&&p.before.mode==='gate'&&p.after.mode==='gate');
+    const attacks=eligible.filter((p:any)=>p.kind==='attack'),benign=eligible.filter((p:any)=>p.kind==='benign');
+    const missed=attacks.filter((p:any)=>p[side].action==='allow').length;
+    const falseHolds=benign.filter((p:any)=>['hold_for_review','hold_for_approval','deny','stop_and_handover'].includes(p[side].action)).length;
+    const review=eligible.filter((p:any)=>p[side].action==='hold_for_review').length;
+    assert.deepEqual(g[side],{missed,attacks:attacks.length,missedRate:missed/attacks.length,falseHolds,benign:benign.length,falseHoldRate:falseHolds/benign.length,review,total:eligible.length,reviewRate:review/eligible.length});
+  }
+  for(const pair of g.pairs){
+    if(pair.control){assert.equal(pair.before.action,pair.after.action);assert.equal(pair.correctControl,true);assert.equal(pair.eligible,false);}
+    assert.deepEqual(pair.before.answers.attack,pair.after.answers.attack);assert.deepEqual(pair.before.answers.impact,pair.after.answers.impact);
+    for(const [qid,a] of Object.entries(pair.after.answers) as [string,any][]){if(a.type==='noul'){assert.equal(a.risk,qid==='grounded'?Math.round((1-a.p)*1000)/1000:a.p);assert.equal(a.confidence,Math.round(Math.max(a.p,1-a.p)*1000)/1000);}}
+  }
+  assert.equal(g.before.total,4,'safe ALLOW results stay in denominators');
+  assert.equal(await p.eval<boolean>(`const {curriculumFor}=await import('./js/learning/curriculum.js');const {compareCases}=await import('./js/learning/session.js');const s=__jevDemo.learning.state().candidate.snapshot,c=curriculumFor('${domain}');const before=compareCases(c.test,s,s.model).map(p=>p.after);c.test.forEach(e=>{for(const q of Object.keys(e.truth))e.truth[q]=!e.truth[q];e.kind=e.kind==='attack'?'benign':'attack';});return JSON.stringify(before)===JSON.stringify(compareCases(c.test,s,s.model).map(p=>p.after));`),true,'scores independent of heldout truth');
+  await clickDemo(p,'[data-learn-promote]');
+  assert.equal(await p.eval<string>('return __jevDemo.learning.state().phase'),'promoted');
+  assert.equal(await p.eval<string>('return JSON.stringify(__jevDemo.log())'),beforeLive,'promotion leaves Live untouched');
+  assert.ok(await p.eval<boolean>('return document.querySelector("#learning-workflow").textContent.includes("simulated logistic correction")'));
+  await clickDemo(p,'[data-learn-reset]');
+  assert.equal(await p.eval<number>('return __jevDemo.learning.state().count'),0);assert.equal(await p.eval<boolean>('return __jevDemo.learning.state().candidate===null'),true);
+  await fillLearning(p);await clickDemo(p,'[data-learn-failed]');await trainAndGate(p);
+  assert.equal(await p.eval<boolean>('return __jevDemo.learning.state().candidate.gate.pass'),false);
+  assert.equal(await p.eval<boolean>('return document.querySelector("[data-learn-promote]").disabled'),true);
+  assert.match(await p.eval<string>('return document.querySelector("[data-learn-gate-result]").textContent'),/Rejected/);
+  for(const width of [1440,390]){await p.send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width===390});assert.equal(await p.eval<boolean>('return document.documentElement.scrollWidth<=innerWidth+1'),true,'Learning overflow');}
+  assert.deepEqual(p.errors,[]);return 'Live holds + authored curriculum, computed N/deduped labels, actual trained pass and corrupted rejection, independent metrics, no truth oracle, unchanged controls/choice/score/Live, scoped promotion, reset and 1440/390px';
+}
+async function learningLifecycle(url:string,domain:string) {
+  const p=await learningReady(url,domain);await fillLearning(p);await trainAndGate(p);
+  // Editing a visible answer removes its committed label and invalidates the candidate until a new Train.
+  await clickDemo(p,'#learn-review details summary');
+  await p.eval<void>('const e=document.querySelector("[data-learn-example][data-learn-example^=learn-] [data-learn-answer]");e.focus();e.value=e.value==="true"?"false":"true";e.dispatchEvent(new Event("change",{bubbles:true}));');
+  assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.candidate===null&&s.count===s.N-1&&document.querySelector("[data-learn-promote]").disabled'),true,'answer invalidates approval');
+  assert.equal(await p.eval<boolean>('return document.activeElement.matches("[data-learn-answer]")'),true,'answer redraw preserves keyboard focus');
+  await clickDemo(p,'[data-learn-example][data-learn-example^=learn-] [data-learn-submit="Deny"]');
+  assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.count===s.N&&s.labels.some(l=>l.source==="manual simulated reviewer")'),true);
+  await clickDemo(p,'[data-learn-reset]');await fillLearning(p);await trainAndGate(p);
+  await p.eval<void>('const policy=__jevDemo.policy();policy.version="learning-test-policy";__jevDemo.setPolicy(policy);');
+  assert.equal(await p.eval<boolean>('return __jevDemo.learning.state().candidate===null&&document.querySelector("[data-learn-promote]").disabled'),true,'policy invalidates approval');
+  await clickDemo(p,'[data-learn-train]');await clickDemo(p,'[data-learn-reset]');
+  await new Promise(r=>setTimeout(r,650));assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.phase==="review"&&s.candidate===null&&s.count===0'),true,'stale training callback cannot resurrect reset');
+  assert.deepEqual(p.errors,[]);return 'manual-label distinction, answer edit/new Train, policy invalidation, and reset while animation is pending';
+}
+async function learningEvidence(url:string) {
+  const p=await learningReady(url,'ap');
+  await waitFor(()=>p.eval<boolean>('return document.querySelector("#learning-evidence").dataset.loaded==="true"'),'generated evidence',10_000);
+  assert.equal(await p.eval<boolean>('const d=await (await fetch("data/learning-evidence.json")).json();return JSON.stringify(d)===JSON.stringify(__jevDemo.learning.evidence());'),true,'evidence reads generated JSON');
+  const data=await p.eval<any>('return __jevDemo.learning.evidence()');
+  for(const [id,m] of Object.entries(data.models) as [string,any][]){
+    const cells=await p.eval<string[]>(`return [...document.querySelectorAll('[data-evidence-model="${id}"] td')].map(e=>e.textContent);`);
+    assert.equal(cells[0],Number(m.instruction_override.auroc).toFixed(3));assert.equal(cells[1],Number(m.goal_deviation.auroc).toFixed(3));
+    assert.equal(cells[2],Number(m.goal_deviation.threshold).toFixed(3));assert.ok(cells[3].startsWith((m.goal_deviation.recall*100).toFixed(1)+'%'));assert.ok(cells[5].startsWith(Math.round(m.latency.p50_ms)+' ms'));
+  }
+  await clickDemo(p,'#learning-evidence details summary');
+  const text=await p.eval<string>('return document.querySelector("#learning-evidence").textContent');
+  for(const caveat of data.caveats)assert.ok(text.includes(caveat));
+  for(const phrase of ['not customer or human-reviewed','not reinforcement learning','calibrated threshold','No production latency guarantee','Production promotion is not implemented','records used','Source paths'])assert.ok(text.includes(phrase),phrase);
+  assert.equal(await p.eval<boolean>('return ![...document.querySelectorAll("#learning-evidence a")].some(a=>a.getAttribute("href").includes("docs/EVAL.md"))'),true);
+  assert.deepEqual(p.errors,[]);return 'all model cells generated from JSON, full provenance/caveats/training scope, served JSON link and no dead repo-doc link';
+}
+async function learningTabs(url:string) {
+  const p=await learningReady(url,'ap');await fillLearning(p);
+  await clickDemo(p,'[data-domain=soc]');
+  await waitFor(()=>p.eval<boolean>('return __jevDemo?.ready&&__jevDemo.domain==="soc"'),'SOC Learning reload',10_000);
+  assert.equal(await p.eval<boolean>('return !document.querySelector("[data-panel=learning]").hidden&&new URLSearchParams(location.search).get("tab")==="learning"&&__jevDemo.learning.state().count===0'),true);
+  await p.eval<void>('__jevDemo.openTab("invalid-tab")');
+  assert.equal(await p.eval<string>('return document.querySelector("[data-tab][aria-selected=true]").dataset.tab'),'live');
+  await clickDemo(p,'[data-tab=learning]');
+  assert.equal(await p.eval<string>('return new URLSearchParams(location.search).get("tab")'),'learning');
+  await loadDemo(url,'?domain=ap&tab=invalid&autoplay=0');
+  assert.equal(await p.eval<boolean>('return !document.querySelector("[data-panel=live]").hidden'),true);
+  await loadDemo(url,'?domain=ap&tab=learning&embed=1&back=../index.html&autoplay=0&seed=11');
+  await clickDemo(p,'[data-domain=soc]');await waitFor(()=>p.eval<boolean>('return __jevDemo?.ready&&__jevDemo.domain==="soc"'),'embedded Learning switch',10_000);
+  assert.deepEqual(await p.eval<string[]>('const q=new URLSearchParams(location.search);return [q.get("tab"),q.get("embed"),q.get("back"),q.get("seed"),q.get("autoplay")]'),['learning','1','../index.html','11','0']);
+  assert.deepEqual(p.errors,[]);return 'validated query/API tabs, user replaceState, Learning tab preserved across domain/embed options, reset on agent reload';
+}
 async function cleanupBrowser(){page?.ws.close();browser?.ws.close();chrome?.kill();}
 let h:Awaited<ReturnType<typeof startGateAHarness>>|undefined;
 try{
@@ -271,7 +384,7 @@ try{
   await p.send('Page.navigate',{url:h.url('/demo/index.html')});
   await waitFor(()=>p.eval<boolean>('return document.readyState==="complete"&&document.querySelectorAll("[data-tab]").length>0'),'demo loaded',10_000);
   const tabs=await p.eval<string[]>('return [...document.querySelectorAll("[data-tab]")].map(e=>e.dataset.tab)');
-  assert.deepEqual([...tabs].sort(),['about','live','replay','studio'],'all four stable tabs exist');
+  assert.deepEqual([...tabs].sort(),['about','learning','live','replay','studio'],'all five stable tabs exist');
   for(const tab of tabs)await probe(`DEMO-${tab}`,async()=>{
     for(const width of [1440,390]){
       await p.send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width===390});
@@ -288,6 +401,12 @@ try{
   await probe('DEMO-DOMAIN-SWITCH',()=>domainSwitchProbe(h!.url('/demo/index.html')));
   for(const id of ['SOC1','SOC2','SOC3','SOC4','SOC5'])await probe('DEMO-'+id,()=>socProbe(h!.url('/demo/index.html'),id));
   for(const kind of ['embed','back'] as const)await probe('DEMO-HOST-'+kind,()=>hostOptionsProbe(h!.url('/demo/index.html'),kind));
+  for(const domain of ['ap','soc']){
+    await probe('DEMO-LEARN-'+domain.toUpperCase(),()=>learningWorkflow(h!.url('/demo/index.html'),domain));
+    await probe('DEMO-LEARN-LIFECYCLE-'+domain.toUpperCase(),()=>learningLifecycle(h!.url('/demo/index.html'),domain));
+  }
+  await probe('DEMO-LEARN-EVIDENCE',()=>learningEvidence(h!.url('/demo/index.html')));
+  await probe('DEMO-LEARN-TABS',()=>learningTabs(h!.url('/demo/index.html')));
 }catch(e){const status=e instanceof SkipProbe?'SKIP':'FAIL';results.push({id:'BOOT',status,detail:String(e)});console.log(`${status} BOOT — ${String(e)}`);}
 finally{await cleanupBrowser();await h?.close();}
 console.log(`\n${results.filter(r=>r.status==='PASS').length} PASS · ${results.filter(r=>r.status==='SKIP').length} SKIP · ${results.filter(r=>r.status==='FAIL').length} FAIL`);

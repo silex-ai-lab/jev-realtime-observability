@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/learning.css">
 <link rel="stylesheet" href="../css/runs.css">
 </head>
 <body>
@@ -26,6 +27,7 @@
     <button role="tab" data-tab="live" aria-selected="true">Live</button>
     <button role="tab" data-tab="replay" aria-selected="false">Replay</button>
     <button role="tab" data-tab="studio" aria-selected="false">Policy Studio</button>
+    <button role="tab" data-tab="learning" aria-selected="false">Learning loop</button>
     <button role="tab" data-tab="about" aria-selected="false">About &amp; evidence</button>
   </nav>
   </div>
@@ -172,6 +174,16 @@
     </div>
   </section>
 
+  <!-- LEARNING -->
+  <section data-panel="learning" role="tabpanel" hidden>
+    <p class="jv-lede learn-intro">The judge learns from review labels: <b>review → train → test → proposed promotion</b>.
+      This browser trains a <b>simulated logistic correction</b> on authored examples, not Kev weights, LoRA or RL.
+      Review, export, fine-tuning and evaluation components exist; real human-label training and production promotion are future work.
+      Live stays on v1. Measured benchmark evidence appears separately below.</p>
+    <div id="learning-workflow"></div>
+    <section id="learning-evidence" class="learn-evidence" aria-label="Measured benchmark evidence">Loading generated evidence…</section>
+  </section>
+
   <!-- ABOUT -->
   <section data-panel="about" role="tabpanel" hidden>
     <div class="two">
@@ -195,6 +207,17 @@
             only shown as signals, so SOC5 runs. Here synthetic scores illustrate how a threshold policy would route SOC5's bulk
             suspensions (<code>goal_deviation</code>). Nothing here is calibrated.</li>
         </ul>
+        <h3>Learning loop: a toy model, not Kev training</h3>
+        <p>Only Boolean questions are trained: p₂ = sigmoid(logit(p₁) + b + Σw·x). Features are exactly each battery
+          question's named subset. Null is encoded as zero plus a missing flag; Booleans as minus/plus one; numeric
+          unit-ratio/match features stay in [0,1]; numeric counts are clipped to [-4,4] and divided by four. Gradient steps, rate, L2 and logit clamping are fixed
+          in <code>js/learning/model.js</code> before evaluation. Grounded's risk remains 1-p. Unlabelled families,
+          impact, attack, faults and latencies do not change.</p>
+        <p>Labels are manual simulated-reviewer answers or scripted demo-author truth. The correction sees no
+          held-out truth. Frozen candidates are tested on disjoint authored variants, not benchmarks; bad labels can
+          fail the gate. Promote affects only the Learning comparison. No tools execute, no real Kev weights change,
+          and production promotion is not implemented. The measured card reports separate supervised LoRA benchmark
+          results, not human labels or reinforcement learning. RL and a human-label production loop are future work.</p>
         <h3>Architecture shown (report p.6, p.13)</h3>
         <div class="arch">
           <div><b>P0 · hard rules</b>AP: amount limit, approval evidence, read-back. SOC: privileged-user suspension, allowlist change approval.
