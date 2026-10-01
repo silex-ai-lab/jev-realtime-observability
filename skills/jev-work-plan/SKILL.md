@@ -7,7 +7,7 @@ description: Resume or continue the dated work plan for jev-realtime-observabili
 
 ## Where things stand (update this when a plan closes)
 
-Last updated 2026-09-30, at `main` `590f89a`.
+Last updated 2026-09-30, at `main` `efce258` (silex-mockup `41ac8be`).
 
 - **Day plans:**
   - No day plan is open.
@@ -26,6 +26,19 @@ Last updated 2026-09-30, at `main` `590f89a`.
      - `/demo/index.html?domain=soc`, with an `AP | SOC` switch in the header;
      - SOC1–SOC5 are simulated with the console's rules;
      - SOC5 is the one labelled difference: synthetic `goal_deviation` scores hold the 2nd and 3rd suspensions for review, while the live console does not block SOC5.
+  4. **silex-mockup integration** (`silex-mockup/logs/2026-09-30_JEV_RUNTIME_VALIDATION_PLAN.md`, deployed to https://silex-mockup.vercel.app/#view=long-term&tab=runtime):
+     - System Validation gains a *Runtime · every agent action* tab that embeds this demo;
+     - the demo is vendored byte-for-byte in `silex-mockup/jev-runtime/` (currently from `efce258`);
+     - this repo gained `?embed=1`, a validated `?back`, and the Runs view's `select(runId)`.
+     - **After any change to `web/demo`, `web/js/runs.js`, `verdict.js` or `web/css/runs.css`,** re-sync the mockup, then run its suites and deploy with the user's OK:
+
+       ```bash
+       node tools/sync-jev-runtime.mjs <this checkout> <commit>      # run in the silex-mockup repo
+       node --test tests/site/*.test.mjs                            # 20/20
+       node tests/site/run-site-probes.mjs                          # 19/19
+       ```
+
+       Its integrity test fails on any local edit. A push to silex-mockup `main` is a public deploy.
 - **Open follow-ups** (non-blocking review notes, not done; details at the end of each log):
   - **Console** (`CONSOLE_UX_PLAN` code gate):
     - `/v1/sandbox/reexec` takes its rate slot before the run lookup;
@@ -36,8 +49,8 @@ Last updated 2026-09-30, at `main` `590f89a`.
     - the `QUESTIONS_BY_AGENT` lookup should use `Object.hasOwn`;
     - separate stop and watch counters for mixed-mode runs.
   - **Model:** the 4B fine-tune recipe (above).
-- **Test baseline at `590f89a`:**
-  - `npm test`: 277 tests, 273 pass, 0 fail, 4 skip; with `TEST_DATABASE_URL`, 1 skip.
+- **Test baseline at `efce258`:**
+  - `npm test`: 280 tests, 276 pass, 0 fail, 4 skip; with `TEST_DATABASE_URL`, 1 skip.
   - Probes, which need a Kev on 8010 (0.8B) or 8009:
 
     | command | expected |
@@ -45,7 +58,7 @@ Last updated 2026-09-30, at `main` `590f89a`.
     | `npm run probe` (`KEV_URL=http://127.0.0.1:8010 KEV_EXPECT=jaredpalmer/kev-0.8b`) | 8/8 |
     | `node tests/probe/soc-probes.ts` | 7/7 |
     | `node tests/probe/ui-runs-probes.ts` | 29/29 |
-    | `node tests/probe/demo-probes.ts` | 13/13 |
+    | `node tests/probe/demo-probes.ts` | 15/15 |
 
 ## Quick resume on a new host
 
