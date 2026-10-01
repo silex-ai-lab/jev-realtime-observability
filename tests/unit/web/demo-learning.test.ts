@@ -5,7 +5,7 @@ import { curriculumFor, requiredLabels } from '../../../web/demo/js/learning/cur
 // @ts-expect-error browser module
 import { createLearningSession, compareCases, gatePairs } from '../../../web/demo/js/learning/session.js';
 // @ts-expect-error browser module
-import { scorerFor, trainCorrection } from '../../../web/demo/js/learning/model.js';
+import { scorerFor, trainCorrection, encode } from '../../../web/demo/js/learning/model.js';
 // @ts-expect-error browser module
 import { DEFAULT_POLICY, BATTERY } from '../../../web/demo/js/engine/types.js';
 // @ts-expect-error browser module
@@ -40,11 +40,30 @@ for (const domain of ['ap', 'soc']) {
     for (const s of held) { assert.equal(review.has(s), false); assert.equal(live.has(s), false); }
     assert.equal(requiredLabels(domain), c.review.reduce((n: number, e: any) => n + Object.keys(e.truth).length, 0));
   });
+  test(`${domain}: primary semantic truths admit a linear separator in the existing encoded features`, () => {
+    // A test-only separability witness, never a training parameter or a deployed scorer.
+    // Controls are outside learning metrics. This includes the residual false-hold cases:
+    // finite training can underfit a separable set or miss an unseen missing-feature flag.
+    const c = curriculumFor(domain), qid = domain === 'ap' ? 'payee_mismatch' : 'goal_deviation';
+    const question = BATTERY.find((q: any) => q.id === qid);
+    for (const e of [...c.review, ...c.test]) {
+      const env = runStream(e.spans, { tenant: TENANT, policy: DEFAULT_POLICY, seed: 7 }).find((v: any) => v.span_id === e.target);
+      if (env.decided_by === 'rule') continue;
+      const x = encode(env.answers[qid].features_used, question.features);
+      const truth = domain === 'ap' ? x[0] > 0.58 : 1 - x[0] - x[1] > 0.5;
+      assert.equal(truth, e.truth[qid], e.id);
+    }
+  });
   test(`${domain}: default-seed pass/rejection and deterministic actions/controls across seeds 1–50`, () => {
     for (let seed = 1; seed <= 50; seed++) for (const failed of [false, true]) {
       const s = trained(domain, failed, seed), g = s.gate(); assert.equal(g.valid, true); if (seed === 7) assert.equal(g.pass, !failed, `seed ${seed}, failed ${failed}`);
+      if (seed === 7 && !failed) {
+        assert.ok(g.pairs.length >= 10 && g.pairs.length <= 12);
+        assert.ok(g.after.missed < g.before.missed); assert.ok(g.after.review < g.before.review); assert.ok(g.after.falseHolds < g.before.falseHolds);
+        assert.ok(g.pairs.some((p: any) => p.eligible && (p.kind === 'attack' ? p.after.action === 'allow' : p.after.action !== 'allow')), 'v2 retains a residual wrong outcome');
+      }
       const again = trained(domain, failed, seed).gate(); assert.deepEqual(g, again);
-      assert.equal(g.before.total, 4, 'ALLOW by policy is included');
+      assert.equal(g.before.total, curriculumFor(domain).test.filter((e: any) => !e.id.includes('control-')).length, 'ALLOW by policy is included');
       for (const p of g.pairs) {
         if (p.control) { assert.equal(p.eligible, false); assert.equal(p.correctControl, true); assert.equal(p.before.action, p.after.action); }
         assert.deepEqual(p.before.answers.attack, p.after.answers.attack); assert.deepEqual(p.before.answers.impact, p.after.answers.impact);

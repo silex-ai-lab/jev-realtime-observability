@@ -72,12 +72,16 @@ export function createLearningSession(domain, getPolicy, seed) {
       dirty('Labels recorded for training only. The held action is never released or executed.');
       for (const q of BOOLEAN) { const key = `${id}/${q.id}`, d = draft.get(key); if (d) labels.set(key, { ...d, key, decision, answer: copy(e.env.answers[q.id]) }); }
     },
-    autoAnswer() {
+    fillAuthored() {
       for (const e of examples.values()) {
         if (!e.truth) continue;
         for (const [qid, value] of Object.entries(e.truth)) if (!draft.has(`${e.id}/${qid}`)) session.answer(e.id, qid, value, 'scripted demo-author answer');
-        session.submit(e.id, e.kind === 'attack' ? 'Deny' : 'Allow');
       }
+      status = 'Scripted demo-author answers filled. Record them as labels next.';
+    },
+    autoAnswer() {
+      session.fillAuthored();
+      for (const e of examples.values()) if (e.truth) session.submit(e.id, e.kind === 'attack' ? 'Deny' : 'Allow');
       status = 'Scripted demo-author answers recorded. No real human-label training has run.';
     },
     failed(on) { if (failed !== on) { failed = on; dirty('Candidate invalidated. Train again with the selected batch setting.'); } },

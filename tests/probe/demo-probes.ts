@@ -135,8 +135,13 @@ async function demoRunsProbe(url:string,kind:'mixed'|'semantic'|'finding'):Promi
     for(const env of semantic){const why=await p.eval<string>(`return document.querySelector('${scope} .step[data-tool="${env.tool!.name}"] .step-why')?.textContent||''`);
       assert.ok(env.reasons.length>0);for(const reason of env.reasons)assert.ok(why.includes(reason),'simulated semantic reason visible');}
     // Change current policy after recording; original mixed-step wording must survive.
+    // Argument titles only exist after the adapter's async run-detail fetch has rendered.
+    // Wait for the actual DOM state before BOTH snapshots; a sleep alone races the fetch.
+    const detailRendered = () => p.eval<boolean>(`const calls=[...document.querySelectorAll('${scope} .step-call[title]')];return calls.length>0&&calls.every(e=>e.getAttribute('title').length>0);`);
+    await waitFor(detailRendered,'run detail rendered before policy edit',10_000);
     const before=await p.eval<string>(`return document.querySelector('${scope}').textContent`);
     await p.eval<void>(`const policy=window.__jevDemo.policy();for(const t of Object.values(policy.tools))t.mode='gate';window.__jevDemo.setPolicy(policy);await new Promise(r=>setTimeout(r,150));`);
+    await waitFor(detailRendered,'run detail rendered after policy edit',10_000);
     assert.equal(await p.eval<string>(`return document.querySelector('${scope}').textContent`),before,'recorded meanings survive policy mode edit');
   }
   for(const width of [1440,390]){
@@ -312,7 +317,19 @@ async function learningWorkflow(url:string,domain:string) {
     assert.deepEqual(pair.before.answers.attack,pair.after.answers.attack);assert.deepEqual(pair.before.answers.impact,pair.after.answers.impact);
     for(const [qid,a] of Object.entries(pair.after.answers) as [string,any][]){if(a.type==='noul'){assert.equal(a.risk,qid==='grounded'?Math.round((1-a.p)*1000)/1000:a.p);assert.equal(a.confidence,Math.round(Math.max(a.p,1-a.p)*1000)/1000);}}
   }
-  assert.equal(g.before.total,4,'safe ALLOW results stay in denominators');
+  assert.equal(g.before.total,g.pairs.filter((p:any)=>p.eligible).length,'safe ALLOW results stay in denominators');
+  assert.ok(g.pairs.length>=10&&g.pairs.length<=12);
+  assert.ok(g.after.missed<g.before.missed,'strictly fewer missed attacks');
+  assert.ok(g.after.review<g.before.review,'strictly fewer actions sent to a person');
+  assert.ok(g.after.falseHolds<g.before.falseHolds,'strictly fewer false holds');
+  assert.ok(g.pairs.some((p:any)=>p.eligible&&(p.kind==='attack'?p.after.action==='allow':p.after.action!=='allow')),'v2 still makes an error');
+  const outcome=await p.eval<string>('return document.querySelector("[data-learn-outcome]").textContent');
+  assert.equal(outcome,`After ${s.candidate.snapshot.labels.length} reviewer answers, simulated on ${g.pairs.length} unseen authored actions: missed attacks ${g.before.missed}/${g.before.attacks} → ${g.after.missed}/${g.after.attacks} · sent to a person ${g.before.review}/${g.before.total} → ${g.after.review}/${g.after.total} · false holds ${g.before.falseHolds}/${g.before.benign} → ${g.after.falseHolds}/${g.after.benign}`);
+  const barWidths=await p.eval<number[]>('return [...document.querySelectorAll(".learn-tiles .learn-bar")].map(e=>parseFloat(e.style.width))');
+  const expectedBars=[g.before.missedRate,g.after.missedRate,g.before.reviewRate,g.after.reviewRate,g.before.falseHoldRate,g.after.falseHoldRate].map(n=>n*100);
+  barWidths.forEach((n,i)=>assert.ok(Math.abs(n-expectedBars[i])<0.001,'CSS bar matches computed rate within browser serialization precision'));
+  assert.equal(await p.eval<boolean>('const box=document.querySelector("#learn-comparison");const cards=[...box.querySelectorAll("[data-learn-pair]")];const collapsed=box.querySelector("[data-learn-unchanged]");return !!collapsed&&!collapsed.open&&cards.some(e=>e.dataset.changed==="true")&&cards.every(e=>e.dataset.changed==="true"?!e.closest("[data-learn-unchanged]"):!!e.closest("[data-learn-unchanged]"));'),true,'changed first; unchanged collapsed');
+  assert.deepEqual(await p.eval<string[]>('return [...document.querySelectorAll(".learn-stages button span")].map(e=>e.textContent)'),[`${s.examples.length} actions`,`${s.drafts.length} answers`,`${s.labelCount} labels`,`${Object.keys(s.candidate.snapshot.model.families).length} families`,`${g.pairs.length} variants`,'not yet']);
   assert.equal(await p.eval<boolean>(`const {curriculumFor}=await import('./js/learning/curriculum.js');const {compareCases}=await import('./js/learning/session.js');const s=__jevDemo.learning.state().candidate.snapshot,c=curriculumFor('${domain}');const before=compareCases(c.test,s,s.model).map(p=>p.after);c.test.forEach(e=>{for(const q of Object.keys(e.truth))e.truth[q]=!e.truth[q];e.kind=e.kind==='attack'?'benign':'attack';});return JSON.stringify(before)===JSON.stringify(compareCases(c.test,s,s.model).map(p=>p.after));`),true,'scores independent of heldout truth');
   await clickDemo(p,'[data-learn-promote]');
   assert.equal(await p.eval<string>('return __jevDemo.learning.state().phase'),'promoted');
@@ -342,6 +359,26 @@ async function learningLifecycle(url:string,domain:string) {
   await clickDemo(p,'[data-learn-train]');await clickDemo(p,'[data-learn-reset]');
   await new Promise(r=>setTimeout(r,650));assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.phase==="review"&&s.candidate===null&&s.count===0'),true,'stale training callback cannot resurrect reset');
   assert.deepEqual(p.errors,[]);return 'manual-label distinction, answer edit/new Train, policy invalidation, and reset while animation is pending';
+}
+async function learningPresenter(url:string,domain:string) {
+  const p=await learningReady(url,domain);
+  assert.equal(await p.eval<string>('return document.querySelector("[data-learn-outcome]").textContent'),'Answer the review examples to see what changes');
+  await clickDemo(p,'[data-learn-play]');
+  for(let stage=0;stage<6;stage++) {
+    await waitFor(()=>p.eval<boolean>(`return document.querySelector('[data-learn-stage="${stage}"]').getAttribute('aria-current')==='step';`),'presenter stage '+stage,10_000);
+    assert.equal(await p.eval<boolean>('return [...document.querySelectorAll("#learning-workflow button:not([data-learn-reset]), #learning-workflow select, #learning-workflow input")].every(e=>e.disabled)&&!document.querySelector("[data-learn-reset]").disabled;'),true,'presenter prevents mid-stage edits while Reset stays available');
+  }
+  await waitFor(()=>p.eval<boolean>('return !document.querySelector("[data-learn-play]").disabled'),'presenter completed',10_000);
+  assert.equal(await p.eval<string>('return __jevDemo.learning.state().phase'),'promoted');
+  assert.equal(await p.eval<string>('return document.querySelector(".learn-stages button:last-child span").textContent'),'promoted');
+  // Reset at the train stage cancels both the presenter and pending candidate completion.
+  await clickDemo(p,'[data-learn-play]');
+  await waitFor(()=>p.eval<boolean>('return __jevDemo.learning.state().phase==="training"'),'presenter training',10_000);
+  await clickDemo(p,'[data-learn-reset]');
+  await new Promise(r=>setTimeout(r,3300));
+  assert.equal(await p.eval<boolean>('const s=__jevDemo.learning.state();return s.count===0&&s.examples.length===0&&s.candidate===null&&s.phase==="review"&&!document.querySelector("[data-learn-play]").disabled;'),true,'Reset cancels every remaining presenter stage');
+  assert.equal(await p.eval<string>('return document.querySelector("[data-learn-outcome]").textContent'),'Answer the review examples to see what changes');
+  assert.deepEqual(p.errors,[]);return 'outcome-first, all six timed stages, promotion, Reset cancels stale presenter work';
 }
 async function learningEvidence(url:string) {
   const p=await learningReady(url,'ap');
@@ -403,6 +440,7 @@ try{
   for(const kind of ['embed','back'] as const)await probe('DEMO-HOST-'+kind,()=>hostOptionsProbe(h!.url('/demo/index.html'),kind));
   for(const domain of ['ap','soc']){
     await probe('DEMO-LEARN-'+domain.toUpperCase(),()=>learningWorkflow(h!.url('/demo/index.html'),domain));
+    await probe('DEMO-LEARN-PRESENTER-'+domain.toUpperCase(),()=>learningPresenter(h!.url('/demo/index.html'),domain));
     await probe('DEMO-LEARN-LIFECYCLE-'+domain.toUpperCase(),()=>learningLifecycle(h!.url('/demo/index.html'),domain));
   }
   await probe('DEMO-LEARN-EVIDENCE',()=>learningEvidence(h!.url('/demo/index.html')));
