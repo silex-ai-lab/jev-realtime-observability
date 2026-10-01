@@ -1,4 +1,4 @@
-# Plan: show the self-improving judge — r1
+# Plan: show the self-improving judge — r2
 
 Date 2026-09-30 · branch `learning-loop` (jev) and later `learning-loop` (silex-mockup) · roster: planner Claude, `reviewer-codex`, `coder-deepseek`; both gates unanimous. Staffing per the user: Codex takes the most build work.
 
@@ -132,3 +132,97 @@ It sits after the six-step orchestration.
 - **A real loop on human labels:** collect labels in the console during a pilot, export, fine-tune, and gate with the same code. This is the evidence that would let the "measured" card say "reviewers".
 - **RL on reviewer preferences** (DPO or GRPO over Allow/Deny pairs). The copy promises it only as "next".
 - **Building the promotion gate in the console** (it is currently a demo concept).
+
+## r2: resolutions of plan review r1 (these supersede §0–§3 where they differ)
+
+r1 review: `reviewer-codex` PLAN-CHANGES (8 items), `coder-deepseek` PLAN-CHANGES (3 required, 6 notes; it re-derived every §0 number from the run files and found them correct). Every item is taken.
+
+**A. The simulated model actually learns, with no oracle** (Codex 1).
+- **Model:** v2 = v1 plus a small **logistic correction per Boolean question**:
+
+  `s₂ = σ(logit(s₁) + b_q + Σ_f w_{q,f}·x_f)`
+
+  - The features `x_f` are exactly the feature subset `jev-sim.js` already reads for that question (named per question in code).
+  - `w` and `b` are fitted **only on the labels the user collected**, by a fixed, documented procedure: plain gradient descent, a fixed learning rate and step count, L2, all chosen *before* any held-out scoring and written as constants.
+- **Frozen:** the parameters are frozen after Train.
+- **Held-out scoring** reads features only, never labels.
+- **No tuning against the held-out set:**
+  - r1's "k sized to the measured gain" is dropped;
+  - the simulated numbers are whatever this procedure yields on the authored sets, shown only as simulated, never next to the measured numbers as if comparable.
+- **Failed retrain:** "Show a failed retrain" trains with a documented bad setting (labels flipped on one family, which models a mislabelled batch). The gate catches it on held-out.
+
+**B. Authored truth, Boolean questions only** (Codex 2; DS note on held-out).
+- **Training scope:** only the battery's **Boolean (noul)** questions per agent are asked and trained. The score and choice questions (`impact`, `attack`) are shown read-only with "not trained in this demo".
+- **New fixture:** `web/demo/js/learning/curriculum.js` holds, per domain:
+  - **Review examples:** spans and per-question truth for the inbox, labelled "demo-author truth".
+  - **Held-out variants:** a disjoint list of benign and attack variants with per-question truth and the expected *correct gateway outcome*. They are never shown in the inbox.
+    - A test asserts no state overlap with the review examples or the Live scenarios.
+    - The set includes **ambiguous items that v1 gets wrong**, so learning has something to fix.
+- **Auto-answer** fills answers from this authored truth, and says so.
+
+**C. Batch size N** (Codex 3; DS 1).
+- The Learning tab has its own **"Load review examples"** action. It enqueues the curriculum's review examples for the current domain, alongside any actions held in this session's Live tab.
+- **N** is the count of Boolean questions in the curriculum examples for that domain, **computed in code**; the UI shows "x of N answered".
+- r1's "N = 12" is withdrawn.
+- **Domain switch:** it resets the learning session (the page reloads), with a one-line notice.
+
+**D. Engine hook; Live untouched** (Codex 4).
+- **Router:** `router.js` gets an optional `scorer` argument, which defaults to today's `judgeBattery`, **identical by construction**. The AP envelope fixture must stay byte-identical, so Live is unchanged.
+- **Re-running under v1 and v2** goes through the same `runStream` with a frozen policy, fault, seed and per-trace history, so hard rules, outages, `combine` and mode mapping keep precedence.
+- **Promote** applies v2 **only inside the Learning tab's comparison**, for this simulated session. Live keeps v1. The copy says this.
+
+**E. Metrics that mean something** (Codex 5).
+- Metrics are computed on the **held-out variants**, judge-decided boundary only.
+- Items decided by a hard rule (`decided_by: rule`) are shown as **unchanged and correct** ("a model can't override these") and are excluded from every learning metric.
+- **Definitions** (gate mode; actions taken from real envelopes):
+  - **Missed attacks** = attack variants whose action is `allow`, ÷ attack variants.
+  - **Reviewer load** = all variants sent to a person (`hold_for_review`), ÷ all variants.
+  - **False holds** = benign variants held or blocked, ÷ benign variants.
+  - **Gate pass rule:** missed attacks not up, false holds not up, and at least one of them strictly down. Same policy and thresholds for v1 and v2.
+- **Per-run reason strings** in the before/after view are computed from the v1 and v2 scores, never typed.
+
+**F. Claim corrections** (Codex 6, 7; DS 2, 3).
+- **§0 wording becomes:**
+  - "Review, export, fine-tuning and evaluation components exist. `finetune.sh` currently trains on the benchmark file; training on exported human labels and a production promotion gate are future work."
+  - "The demo illustrates a proposed promotion gate; production promotion is not implemented."
+- **Measured card:**
+  - "goal_deviation recall at each model's own calibrated threshold (0.60 released, 0.01 fine-tuned): 0.40 → 0.80, false-positive rate 0.014 → 0.009 (question-level, held-out AgentDojo, n = 250 test items)";
+  - instruction_override is AUROC only ("no fitted threshold");
+  - latency is "similar local judge HTTP p50 in this run: 151 → 149 ms (n = 708, Apple M4 Pro)";
+  - the details hold the hardware, the 95 % CIs, provenance (benchmark- or heuristic-derived), the style-confound caveat and "calibrations not activated";
+  - the 39 min wall time is for 1,183 used records, not the demo batch.
+- **Kev-4B copy:** "Fine-tuned with the same recipe, Kev-4B's goal_deviation AUROC rose (0.541 → 0.666), but its recall at the calibrated threshold fell (0.286 → 0.229), so a recall-first gate would reject it." "Got worse" is withdrawn.
+- **Run count:** "Kev-0.8B fine-tuned several times (v1 confounded, v2, and a second-machine rerun); Kev-4B once."
+- **Generated values only:**
+  - every measured value on every surface, mockup included, comes from `web/demo/data/learning-evidence.json`, generated by `eval/run/showcase-json.ts` with a drift test;
+  - the mockup reads the vendored copy, with no typed numbers.
+
+**G. UX and plumbing** (Codex 8; DS notes).
+- **Mobile:** the loop strip wraps into a 2 × 3 grid at 390 px. The current step and its next action stay at the top. Simulated workflow panels and the measured evidence card are visually distinct (badge and border).
+- **Strip stages** are buttons to the matching panel. Future stages show why they are disabled ("answer x more").
+- **Reset learning session** restarts the flow, including after Promote and after a failed retrain.
+- **Tabs:**
+  - `?tab=` is validated against the public tab names; unknown values fall back to Live;
+  - it is parsed after the modules initialise;
+  - user tab changes update `?tab=` with `replaceState`, so a domain switch keeps it alongside `domain`, `embed`, `back` and `seed`;
+  - `__jevDemo.openTab(name)` uses the same validation.
+- **Probes:**
+  - the four-tab assertion (`demo-probes.ts:275`) becomes five, and `learning` joins the per-tab 1440/390, SIMULATED badge, embed and domain loops;
+  - **DEMO-LEARN-* cover:**
+    - curriculum loading and N;
+    - answer → label;
+    - Train gated on N;
+    - v2 parameters frozen and independent of held-out labels (a probe mutates the held-out truth after Train; the v2 scores must not change);
+    - gate pass and failed retrain;
+    - hard-rule items unchanged;
+    - metric definitions recomputed independently from envelopes;
+    - evidence card equals the JSON;
+    - reset;
+    - `?tab` deep link and domain switch;
+    - no JS errors.
+
+**H. Ownership** (unchanged from §2):
+- **DeepSeek:** `showcase-json.ts`, the JSON, and the drift test.
+- **Codex:** everything under `web/demo` (including the router hook), the curriculum, and the probes.
+- **Planner:** docs, guide and screenshots.
+- **Mockup phase:** after the jev code gate.
