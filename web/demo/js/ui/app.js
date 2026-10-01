@@ -90,6 +90,8 @@ function inject(id) {
   const focus = [...routed].reverse().find(r => r.env.decision !== 'ALLOW' || r.env.alert) ?? routed.at(-1);
   if (focus) select(focus.seq);
   renderKpis();
+  // Show the injected run even if the viewer had pinned an older one (silex-mockup Runtime Validation, code review r1).
+  runsView?.select(made[0].trace_id);
   return routed.map(r => r.env);
 }
 

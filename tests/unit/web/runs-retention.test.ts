@@ -67,3 +67,20 @@ test('under 50 runs: no window label', () => {
   assert.doesNotMatch(nodes['#runs-summary'].innerHTML, /most recent runs/);
   v.reset();
 });
+
+test('select(runId) shows that run even after a manual pick of an older one, and keeps later manual picks pinned', () => {
+  for (const n of Object.values(nodes)) { n.innerHTML = ''; n.on = []; }
+  const v = createRunsView({ api: async () => ({ timeline: [] }), mode: () => 'gate', onDetails() {} })!;
+  for (let i = 0; i < 3; i++) feed(v, i);
+  v.render();
+  for (const f of nodes['#run-rows'].on) f({ target: { closest: () => ({ dataset: { runRow: 'run-0' } }) } });
+  assert.equal(selected(), 'run-0');
+  feed(v, 3); v.render();
+  assert.equal(selected(), 'run-0', 'a manual pick stays pinned while new runs arrive');
+  assert.equal(v.select('run-3'), true);
+  assert.equal(selected(), 'run-3');
+  feed(v, 4); v.render();
+  assert.equal(selected(), 'run-4', 'selecting the newest run resumes following');
+  assert.equal(v.select('nope'), false);
+  v.reset();
+});

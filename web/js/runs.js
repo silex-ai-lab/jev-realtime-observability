@@ -268,5 +268,14 @@ export function createRunsView(deps) {
   /** Forget every run (the demo page re-feeds its whole simulated stream after each step). */
   function reset() { for (const r of runs.values()) clearTimeout(r.fetchTimer); runs.clear(); byOperation.clear(); evicted.clear(); evictedCount = 0; }
   const runIds = () => [...runs.values()].sort((a, b) => maxSeq(b) - maxSeq(a)).map(r => r.runId);
-  return { onRecord, setScenarioMeta, setReviews, render, runIds, reset, rerender: scheduleRender };
+  /** Selects a run on behalf of the page (the demo after an injection). Like a click on its row: auto-follow stays on
+   *  only when it is the newest followable run, so a viewer's later manual pick still pins. */
+  function select(runId) {
+    if (!runs.has(runId)) return false;
+    selectedRun = runId;
+    autoFollow = runId === [...runs.values()].filter(followable).sort((a, c) => maxSeq(c) - maxSeq(a))[0]?.runId;
+    render();
+    return true;
+  }
+  return { onRecord, setScenarioMeta, setReviews, render, runIds, reset, select, rerender: scheduleRender };
 }
