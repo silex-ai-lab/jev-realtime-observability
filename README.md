@@ -68,6 +68,8 @@ All of it runs on 127.0.0.1 with login off. The prerequisites and what the scrip
 
 [`docs/demo/guide/`](docs/demo/guide/README.md) (in Chinese) explains every page of the simulated demo (`/demo/`) in plain language, with screenshots.
 
+**Learning loop** (`/demo/index.html?tab=learning`): the demo's story of how the judge improves from reviewer labels (review → labels → train → held-out gate → proposed promotion). A presenter can press **Play the loop**. The in-browser model is a simulated toy, labelled as such. The measured card underneath shows the real Kev-0.8B fine-tune result on held-out AgentDojo, generated from the eval runs by `eval/run/showcase-json.ts`. That fine-tune used benchmark labels, not human ones, and it is supervised LoRA, not RL. Plan and reviews: [`logs/2026-09-30_LEARNING_LOOP_SHOWCASE_PLAN.md`](logs/2026-09-30_LEARNING_LOOP_SHOWCASE_PLAN.md).
+
 [`docs/judge/`](docs/judge/) (in Chinese) explains why Kev is the default judge, what Kev was trained on, and the plan for fine-tuning on this deployment's own labelled data.
 
 ## Deploying on another host

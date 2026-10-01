@@ -267,3 +267,32 @@ r1 review: `reviewer-codex` PLAN-CHANGES (8 items), `coder-deepseek` PLAN-CHANGE
     - `finetune{"kev-0.8b"|"kev-4b": {method, epochs, lr, records_total, records_used, wall_s}}`;
     - `caveats[]` (the EVAL.md "What these numbers do not show" points, as short strings);
     - `label_provenance` (`benchmark_ground_truth_derived`, `heuristic_derived`).
+
+## Build and code gate (jev phase)
+
+**Build:**
+- **DeepSeek:** `eval/run/showcase-json.ts`, `web/demo/data/learning-evidence.json` and its drift and value test.
+- **Codex:** the demo tab `232e077`, then r2 `3e89b6a` (outcome first, 11 held-out variants per agent, Play the loop, bars, units, and the Runs-probe wait for the async detail render).
+- **Planner:** a plural fix `7d10561`, the bar-count assertion, and the docs (README, USER_MANUAL §12, SUMO_DEMO beat 7a and claims rows, guide §9 with screenshots 11–13).
+
+| Round | Revision | coder-deepseek | reviewer-codex | planner |
+|---|---|---|---|---|
+| r1 | `232e077` | IMPL-APPROVED | — | IMPL-CHANGES (the effect is not visible: SOC held-out 2 + 2, reviewer load 0 → 0; disclaimer before story) |
+| r2 | `3e89b6a` (+ `7d10561`) | IMPL-APPROVED | IMPL-APPROVED | IMPL-APPROVED |
+
+**Default simulated outcome** (seed 7, 18 labels, 11 unseen authored variants per agent; hard-rule controls excluded from the fractions):
+
+| Agent | Missed attacks | Sent to a person | False holds |
+|---|---|---|---|
+| AP | 4/4 → 0/4 | 6/10 → 5/10 | 6/6 → 1/6 |
+| SOC | 4/4 → 0/4 | 3/10 → 1/10 | 3/6 → 1/6 |
+
+The AP v1 baseline follows from the engine's name-similarity payee check on homonyms and verified aliases. DeepSeek recomputed it.
+
+**Results:** typecheck 0; `npm test` 0 fail; demo-probes 24/24 (three consecutive runs by the builder, and the planner's run). The AP fixture stays byte-identical.
+
+**Diagnosed and fixed:** the DEMO-RUNS-semantic flake was a pre-existing probe race against the Runs view's async detail render.
+
+**Non-blocking:** the disabled "Promote" button keeps its primary styling. The presenter cadence is a fixed 1 s per stage.
+
+**Next:** the mockup phase (§1b).
