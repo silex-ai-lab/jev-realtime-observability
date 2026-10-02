@@ -1,6 +1,24 @@
-# jev-runtime-observability
+<h1 align="center">🔭 jev-runtime-observability</h1>
 
-**Real-time agent observability with a Jev-protocol judge. The default model is the open-source [Kev](https://github.com/jaredpalmer/kev), not TypeSafe's Jev.**
+<p align="center">
+  <strong>Real-time agent observability with a Jev-protocol judge. The default model is the open-source <a href="https://github.com/jaredpalmer/kev">Kev</a>, not TypeSafe's Jev.</strong>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge" alt="License: Apache 2.0"></a>
+  <a href="#quick-start-macos-apple-silicon-node--236-uv"><img src="https://img.shields.io/badge/Node-%E2%89%A5_23.6-339933.svg?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node ≥ 23.6"></a>
+  <a href="#run-the-demo-on-a-24-gb-mac"><img src="https://img.shields.io/badge/Demo-one_24_GB_Mac-black.svg?style=for-the-badge&logo=apple&logoColor=white" alt="Demo: one 24 GB Mac"></a>
+  <a href="#what-is-real-and-what-is-not"><img src="https://img.shields.io/badge/Default-shadow_mode-6f42c1.svg?style=for-the-badge" alt="Default: shadow mode"></a>
+  <a href="https://github.com/silex-ai-lab/jev-runtime-observability/stargazers"><img src="https://img.shields.io/github/stars/silex-ai-lab/jev-runtime-observability?style=for-the-badge" alt="GitHub stars"></a>
+</p>
+
+<p align="center">
+  <a href="#quick-start-macos-apple-silicon-node--236-uv">Quick start</a> · <a href="#run-the-demo-on-a-24-gb-mac">24 GB demo</a> · <a href="#scenarios">Scenarios</a> · <a href="#design-principles">Design principles</a>
+  <br>
+  English · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a>
+</p>
+
+---
 
 An agent's boundary events (input, generation, tool call, tool result) are captured as they happen. Each one is turned into a frozen decision-time snapshot and checked by authoritative code rules, then by typed semantic questions (Noul / Choice / Score) sent to a judge over TypeSafe's `/v1/systemone` protocol. The result is recorded as an auditable recommendation and streamed to a live console.
 
@@ -11,6 +29,31 @@ Execution stays with the tools' own gateway. Nothing here is a production contro
 > - **Sandbox gate mode** (`SOURCE_MODE=live_sandbox_gate`): write and payment tools need a control bound to the exact call, which the gateway re-verifies before executing. See [`docs/GATE.md`](docs/GATE.md).
 > - **Semantic signals are recorded but never block or change a recommendation.** Thresholds were fitted in evaluation but are deliberately not activated ([`docs/EVAL.md`](docs/EVAL.md) explains why). Blocking comes only from hard rules, missing evidence, or an unavailable required judge signal.
 > - Plan and reviews: [`logs/2026-09-28_BUILD_PLAN.md`](logs/2026-09-28_BUILD_PLAN.md).
+
+> ⭐ **Star this repo** to follow new gates, judge evaluations and demo scenarios as they land (the open work is in [`docs/IMPLEMENTATION_BACKLOG.md`](docs/IMPLEMENTATION_BACKLOG.md)). [Why star it →](#-why-star-jev-runtime-observability)
+
+## Why jev-runtime-observability?
+
+An agent that pays invoices or sends email can do something wrong in one tool call, and a log you read later can't stop it. This project watches each boundary event as it happens, checks it with code rules first, and records what a judge says about it. The scripted scenarios show what that catches, and what it can't:
+
+- 💸 **An agent pays 48,000 USD against a 25,000 USD limit** → `amount_limit` BLOCK by code; the tool itself refuses too (S3).
+- 📝 **An invoice has no approval record** → `approval_evidence` HOLD by code; a confident judge cannot supply approval (S4).
+- 📧 **A vendor note tells the agent to email bank details outside** → `domain_allowlist` BLOCK by code; the mail sink refuses; injection signals recorded (S6).
+- ⏱️ **The judge call times out** → payment HOLD and lookup ALERT (`judge_unavailable`); no answer is never "safe" (F1).
+- 🧾 **The tool returns 200, but the ledger never posts** → outcome `pending` → `unknown_after_deadline`, and the agent's completion claim is flagged (S5).
+- 🧭 **The agent emails the whole AP report to an allowlisted address** → no rule can see this; only the semantic `goal_deviation` signal, which is recorded and uncalibrated, so it does not block (S7).
+
+### ✅ Before you install
+
+| | |
+|---|---|
+| 💰 **Free and open source** | Apache-2.0. The default judge, Kev, is Apache-2.0 too. |
+| 🖥️ **The judge runs on your machine** | Kev served locally (MLX on Apple Silicon). TypeSafe's hosted Jev is supported by config but has not been run. |
+| 👀 **Shadow mode by default** | The judge advises only. Semantic signals are recorded but never block or change a recommendation. |
+| 🧪 **Sandbox only** | Tools run in an isolated sandbox schema. No real money, no real email, no network egress from tools. |
+| 💻 **One 24 GB Mac runs the demo** | The stack peaked at about 6 GB with Kev-0.8B. Kev-4B and fine-tuning are not needed. |
+| 🩺 **Self-check** | `npm run typecheck && npm test` needs no judge. |
+| ⚠️ **Not a production control yet** | No production IAM or gateway integration, no HA, no calibrated live thresholds. |
 
 ## What is real and what is not
 
@@ -98,6 +141,14 @@ See [`skills/README.md`](skills/README.md) for how to load it into an agent.
 | S8 | pays an account held under the vendor's registered alias | no rule hit; `payee_relation` recorded |
 | S9 | claims "done" before the ledger posts (a 3 s delay) | outcome `pending` → `verified_success`; the claim was early |
 
+## Design principles
+
+- **Execution stays with the tools' own gateway.** The judge recommends; in sandbox gate mode the gateway re-verifies a control bound to the exact call before executing.
+- **Code rules are authoritative.** Blocking comes only from hard rules, missing evidence, or an unavailable required judge signal. A confident judge cannot supply approval.
+- **No answer is never "safe".** An aborted judge call holds the payment instead of letting it through.
+- **A tool's HTTP 200 is not proof.** Executed payments and emails are read back independently: pending → verified / failed / mismatch / unknown after deadline.
+- **Says what is real.** The table above keeps what runs in this repo apart from what is not real, or not yet.
+
 ## Layout
 
 ```
@@ -119,6 +170,19 @@ node eval/sources/fetch.ts && node eval/convert/run.ts   # rebuild the open-data
 node eval/run/run.ts --judge http://127.0.0.1:8009 --label kev-4b --out runs/my-eval   # evaluate a judge
 ./eval/finetune/finetune.sh 0.8b                       # bounded LoRA fine-tune (3 h box)
 ```
+
+## ⭐ Why star jev-runtime-observability
+
+Every reason below is something you can check in this repo:
+
+- 🧾 **Honest about what is real.** The [real / not-real table](#what-is-real-and-what-is-not) keeps measured behaviour apart from config-only support and targets that are still hypotheses.
+- 🖥️ **A local, open judge.** Kev (Apache-2.0) runs on your machine; the demo needs one 24 GB Mac.
+- 🧪 **Tested at every layer.** Unit, contract, integration, security and e2e tests, plus headless-Chrome UI probes (`npm test`, `npm run test:e2e`, `npm run probe`).
+- 📊 **An open-data evaluation.** InjecAgent, ASB, ToolEmu and tau-bench, with AgentDojo held out; the limits are listed in [`docs/EVAL.md`](docs/EVAL.md).
+- 🚀 **Deployable from a skill.** The [`deploy-jev-observability`](skills/deploy-jev-observability/SKILL.md) skill covers a host check, the judge, configuration, a smoke test, systemd and a TLS proxy.
+- 🌏 **Readable in four languages:** English, 简体中文, 日本語 and 한국어.
+
+A star helps other people building agent guardrails find it. ⭐
 
 ## Credits
 
