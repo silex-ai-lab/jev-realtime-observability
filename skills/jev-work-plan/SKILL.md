@@ -7,7 +7,7 @@ description: Resume or continue the dated work plan for jev-runtime-observabilit
 
 ## Where things stand (update this when a plan closes)
 
-Last updated 2026-10-01, at jev `main` `035caab` plus this skill update, and silex-mockup `main` `74ed19a`. Nothing is in progress: no open branch, no undeployed change, no pending review. Both repos are pushed, and their local `main` equals `origin/main`.
+Last updated 2026-10-02, at jev `main` `035caab` plus this skill update, silex-mockup `main` `74ed19a`, and jev-simplified `main` `c073c61`. Nothing is in progress: no open branch, no undeployed change, no pending review. Both repos are pushed, and their local `main` equals `origin/main`.
 
 **Key links:**
 
@@ -15,6 +15,8 @@ Last updated 2026-10-01, at jev `main` `035caab` plus this skill update, and sil
 |---|---|
 | this repo | https://github.com/silex-ai-lab/jev-runtime-observability |
 | silex-mockup | https://github.com/silex-security/silex-mockup |
+| jev-simplified (private; ontology-linked SOC demo) | https://github.com/silex-lab-ai/jev-simplified (note the org: `silex-lab-ai`) |
+| jev-simplified record (English plan + reviews / 中文总结) | `logs/2026-10-02_ONTOLOGY_LINK_PLAN.md` · `logs/2026-10-02_SESSION_SUMMARY_ZH.md` in that repo |
 | live site: Runtime Observation | https://silex-mockup.vercel.app/#view=runtime-observation |
 | live demo: Learning loop tab | https://silex-mockup.vercel.app/jev-runtime/demo/index.html?domain=soc&tab=learning |
 | latest plan and review record | [`logs/2026-10-01_LINEAGE_GATE_PLAN.md`](../../logs/2026-10-01_LINEAGE_GATE_PLAN.md) |
@@ -79,6 +81,15 @@ Last updated 2026-10-01, at jev `main` `035caab` plus this skill update, and sil
      - **The measured card:** Kev-0.8B fine-tuned KEEP (17/2); Kev-4B fine-tuned DISCARD by the safety check (missed 25 → 27).
      - **The generator** (`showcase-json.ts`) fails closed on malformed predictions.
      - **Possible next steps** (not started): a label critique gate (two-reviewer agreement); uncertainty-first review queue; a stop rule after N retrains without a KEEP.
+  9. **jev-simplified: Jev linked to the Enterprise World Model ontology** (repo `silex-lab-ai/jev-simplified`, checked out at `~/workplace/Silex/jev-simplified`; plan and reviews in its `logs/2026-10-02_ONTOLOGY_LINK_PLAN.md`, r1–r5; Chinese summary in `logs/2026-10-02_SESSION_SUMMARY_ZH.md`). Pushed 2026-10-02; **no deployment is configured**.
+     - **The user's rule:** for this work, change only that repo; the UI may be copied from silex-mockup (World Model and Runtime Observation).
+     - **Structure:** a shell copied from the mockup with two views, Runtime Observation (the unchanged three-step SOC demo) and Enterprise World Model (Ontology Graph and Layers, adapted to a strict CSP).
+     - **Ontology chips** on each decision ("Decided by" / "Also checked"), from `site/onto-link.js` and `site/ontology/jev-map.js`. The Jev ids are `attack` (with categories), `exfil`, `goal_deviation`, and the three rules.
+     - **"Show what Jev checks at runtime"** toggle: highlights the mapped nodes and adds a SOC L4 overlay; at L4 it shows L3 context (SOC agent → INSTANCE_OF Planner ← THREATENS LLM01, AML.T0051 and T6, labelled Silex-authored relations).
+     - **Inspector:** "Checked at runtime by Jev", with counts over the revealed events.
+     - **Run and test:** `npm start` serves http://127.0.0.1:8771. `npm test` 40/40; `npm run check`; `npm run test:browser` 19/19 (server on 8771).
+     - **Its own rules** (`logs/2026-10-01_MINIMAL_SITE_PLAN.md`): strict CSP (no inline style or script, no external fonts), no build step or npm deps; only `site/` is deployable.
+     - **Next ideas, not chosen:** add Codex's degree-filter and reduced-motion probes to the browser suite; enlarge or auto-fit the L4 context cluster (it renders small in the default view).
 - **Open follow-ups** (non-blocking review notes, not done; details at the end of each log):
   - **Console** (`CONSOLE_UX_PLAN` code gate):
     - `/v1/sandbox/reexec` takes its rate slot before the run lookup;
@@ -137,7 +148,7 @@ Then pick the next work:
 - **New day plan:** create `plans/<date>.md` from the follow-ups above, with the user's priorities. The 4B fine-tune needs 32 GB+ Apple Silicon or a datacenter GPU, plus the Kev checkout at `~/workplace/Silex/third_party/kev` (deploy skill step 3).
 
 **Fleet notes** (`herdr-agent-fleet`):
-- **Staffing (user, 2026-10-01):** give Codex more of the build, including features and probes; DeepSeek reviews and does mechanical slices. Between unrelated tasks, start fresh sessions (`/new` in both panes).
+- **Staffing:** on 2026-10-01 the user said to give Codex more of the build; on 2026-10-02, "if GPT is running out of tokens", to move coding to Claude and DeepSeek. At that point Codex's weekly limit was about 9 %: use it for brief reviews only until it resets (check `/status` in its pane). DeepSeek handles mechanical slices. Between unrelated tasks, start fresh sessions (`/new` in both panes).
 - **Codex outside its workspace:** when its pane runs in silex-mockup and the work is in the jev repo, it stages files in /tmp and installs them with a script. Read the script before approving; it should only copy assigned paths.
 - **Approval watcher:** a session-scratch `watch.sh` polled both panes and approved only matching prompts: DeepSeek file access under the scratch directory or the repo, and Codex commands matching an allow-list regex. It is not in either repo; rewrite it if needed. Two quirks:
   - Herdr sometimes reports `blocked` while the agent is working. Act only when the screen shows "Would you like" or "Permission required".
